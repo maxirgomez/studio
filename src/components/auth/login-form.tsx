@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { signInWithPopup } from "firebase/auth";
+import { useEffect } from "react";
+import { signInWithRedirect, getRedirectResult } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,10 +48,29 @@ export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
 
+  useEffect(() => {
+    const checkRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          router.push("/dashboard");
+        }
+      } catch (error: any) {
+        console.error("Authentication failed on redirect", error);
+        toast({
+          title: "Authentication Failed",
+          description: "Could not sign in with Google. Please try again.",
+          variant: "destructive",
+        });
+      }
+    };
+    checkRedirectResult();
+  }, [router, toast]);
+
+
   const handleLogin = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
-      router.push("/dashboard");
+      await signInWithRedirect(auth, googleProvider);
     } catch (error) {
       console.error("Authentication failed", error);
       toast({
