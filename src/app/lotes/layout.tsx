@@ -27,32 +27,6 @@ export default function DashboardLayout({
     { href: "/dashboard/mapa", icon: MapPin, label: "Mapa" },
   ];
 
-  const desktopNav = (
-      <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 lg:gap-6">
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-2 text-lg font-semibold md:text-base"
-        >
-          <BaigunRealtyLogo className="h-8 w-auto" />
-          <span className="sr-only">Baigun Realty</span>
-        </Link>
-        {navItems.map((item) => (
-          <Link
-            key={item.label}
-            href={item.href}
-            className={cn(
-              "transition-opacity",
-              pathname === item.href
-                ? "opacity-100"
-                : "opacity-70 hover:opacity-100"
-            )}
-          >
-            {item.label}
-          </Link>
-        ))}
-      </nav>
-  );
-
   const mobileNav = (
     <nav className="grid gap-2 text-lg font-medium">
       <Link
@@ -80,25 +54,51 @@ export default function DashboardLayout({
   
   return (
     <div className="flex min-h-screen w-full flex-col">
-      <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-header text-header-foreground px-6">
-        {desktopNav}
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              className="shrink-0 md:hidden"
+      <header className="sticky top-0 flex h-16 items-center justify-between border-b bg-header px-6 text-header-foreground">
+        <div className="flex items-center gap-4">
+          <Link
+              href="/dashboard"
+              className="flex items-center gap-2 text-lg font-semibold"
             >
-              <PanelLeft className="h-5 w-5" />
-              <span className="sr-only">Toggle navigation menu</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="flex flex-col">
-            {mobileNav}
-          </SheetContent>
-        </Sheet>
-        <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
-          <div className="ml-auto flex-1 sm:flex-initial" />
+              <BaigunRealtyLogo className="h-8 w-auto" />
+              <span className="sr-only">Baigun Realty</span>
+            </Link>
+        </div>
+
+        <div className="flex items-center gap-6">
+          <nav className="hidden md:flex md:items-center md:gap-5 lg:gap-6">
+            {navItems.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={cn(
+                  "text-sm font-medium transition-opacity",
+                  pathname === item.href
+                    ? "opacity-100"
+                    : "opacity-70 hover:opacity-100"
+                )}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+          
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0 md:hidden"
+              >
+                <PanelLeft className="h-5 w-5" />
+                <span className="sr-only">Toggle navigation menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="flex flex-col">
+              {mobileNav}
+            </SheetContent>
+          </Sheet>
+
           <UserNav />
         </div>
       </header>
