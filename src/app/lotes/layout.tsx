@@ -33,7 +33,7 @@ export default function DashboardLayout({
           href="/dashboard"
           className="flex items-center gap-2 text-lg font-semibold md:text-base"
         >
-          <BaigunRealtyLogo className="h-8 w-auto text-primary" />
+          <BaigunRealtyLogo className="h-8 w-auto" />
           <span className="sr-only">Baigun Realty</span>
         </Link>
         {navItems.map((item) => (
@@ -41,10 +41,10 @@ export default function DashboardLayout({
             key={item.label}
             href={item.href}
             className={cn(
-              "transition-colors hover:text-primary",
+              "transition-opacity",
               pathname === item.href
-                ? "text-foreground"
-                : "text-muted-foreground"
+                ? "opacity-100"
+                : "opacity-70 hover:opacity-100"
             )}
           >
             {item.label}
@@ -80,7 +80,7 @@ export default function DashboardLayout({
   
   return (
     <div className="flex min-h-screen w-full flex-col">
-      <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-card px-6">
+      <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-header text-header-foreground px-6">
         {desktopNav}
         <Sheet>
           <SheetTrigger asChild>
