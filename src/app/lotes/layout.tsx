@@ -1,7 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import Image from "next/image"
 import {
   Home,
   PanelLeft,
@@ -14,6 +13,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { UserNav } from "@/components/dashboard/user-nav"
 import { cn } from "@/lib/utils"
 import { usePathname } from "next/navigation"
+import { BaigunRealtyLogo } from "@/components/ui/logo"
 
 export default function DashboardLayout({
   children,
@@ -22,25 +22,18 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const navItems = [
-    { href: "/dashboard", icon: Home, label: "Lotes" },
-    { href: "/dashboard/profile", icon: Users, label: "Usuarios" },
-    { href: "/dashboard/mapa", icon: MapPin, label: "Mapa" },
+    { href: "/lotes", icon: Home, label: "Lotes" },
+    { href: "/lotes/profile", icon: Users, label: "Usuarios" },
+    { href: "/lotes/mapa", icon: MapPin, label: "Mapa" },
   ];
 
   const mobileNav = (
     <nav className="grid gap-2 text-lg font-medium">
       <Link
-        href="/dashboard"
+        href="/lotes"
         className="flex items-center gap-2 text-lg font-semibold mb-4"
       >
-        <Image
-            src="https://placehold.co/251x98.png"
-            alt="Baigun Realty Logo"
-            width={251}
-            height={98}
-            className="h-8 w-auto"
-            data-ai-hint="logo"
-        />
+        <BaigunRealtyLogo className="h-8 w-auto" />
         <span className="sr-only">Baigun Realty</span>
       </Link>
       {navItems.map((item) => (
@@ -64,17 +57,10 @@ export default function DashboardLayout({
       <header className="sticky top-0 flex h-16 items-center justify-between border-b bg-header px-6 text-header-foreground">
         <div className="flex items-center gap-4">
           <Link
-              href="/dashboard"
+              href="/lotes"
               className="flex items-center gap-2 text-lg font-semibold"
             >
-              <Image
-                src="https://placehold.co/251x98.png"
-                alt="Baigun Realty Logo"
-                width={251}
-                height={98}
-                className="h-8 w-auto"
-                data-ai-hint="logo"
-              />
+              <BaigunRealtyLogo className="h-8 w-auto" />
               <span className="sr-only">Baigun Realty</span>
             </Link>
         </div>

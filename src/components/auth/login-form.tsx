@@ -55,7 +55,7 @@ export function LoginForm() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        router.push("/dashboard");
+        router.push("/lotes");
       }
     });
 

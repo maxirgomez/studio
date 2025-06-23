@@ -49,10 +49,10 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <Link href="/dashboard/profile">
+          <Link href="/lotes/profile">
             <DropdownMenuItem>
               <User className="mr-2 h-4 w-4" />
-              <span>Profile</span>
+              <span>Usuarios</span>
             </DropdownMenuItem>
           </Link>
           <DropdownMenuItem>

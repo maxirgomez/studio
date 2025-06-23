@@ -1,19 +1,12 @@
 import { LoginForm } from "@/components/auth/login-form";
-import Image from "next/image";
+import { BaigunRealtyLogo } from "@/components/ui/logo";
 
 export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
-           <Image
-            src="https://placehold.co/251x98.png"
-            alt="Baigun Realty Logo"
-            width={251}
-            height={98}
-            className="h-20 w-auto"
-            data-ai-hint="logo"
-          />
+           <BaigunRealtyLogo className="h-20 w-auto" />
         </div>
         <LoginForm />
       </div>
