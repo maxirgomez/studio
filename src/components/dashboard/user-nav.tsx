@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,9 +20,14 @@ import { User, LogOut, Settings } from "lucide-react";
 export function UserNav() {
   const router = useRouter();
 
-  const handleLogout = () => {
-    // In a real app, you'd handle logout logic here
-    router.push("/");
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push("/");
+    } catch (error) {
+      console.error("Logout failed", error);
+      // Optionally show a toast message on error
+    }
   };
 
   return (
