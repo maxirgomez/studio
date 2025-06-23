@@ -1,4 +1,3 @@
-import { ProfileForm } from "@/components/profile/profile-form"
 import {
   Card,
   CardContent,
@@ -7,22 +6,19 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
-export default function ProfilePage() {
+export default function UsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">User Profile</h1>
-        <p className="text-muted-foreground">Manage your account settings and personal information.</p>
+        <h1 className="text-3xl font-bold tracking-tight">Usuarios</h1>
+        <p className="text-muted-foreground">Administra los usuarios de tu organización.</p>
       </div>
-      <Card>
+       <Card>
         <CardHeader>
-          <CardTitle>Edit Profile</CardTitle>
-          <CardDescription>
-            Update your details here. Click save when you're done.
-          </CardDescription>
+          <CardTitle>Lista de Usuarios</CardTitle>
         </CardHeader>
         <CardContent>
-          <ProfileForm />
+          <p>Aquí se mostrará la lista de usuarios.</p>
         </CardContent>
       </Card>
     </div>

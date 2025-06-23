@@ -1,91 +1,253 @@
+"use client";
+
+import Image from "next/image";
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { DollarSign, Home, Users, BarChart } from "lucide-react"
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  MapPin,
+  Scan,
+  Ruler,
+  Search,
+  Plus,
+} from "lucide-react";
 
-export default function Dashboard() {
+const listings = [
+  {
+    address: "Av. Santa Fe 1060",
+    neighborhood: "Palermo",
+    smp: "017-027-020A",
+    area: 110,
+    status: "Tomar Acción",
+    agent: { name: "Admin User", initials: "AU" },
+    imageUrl: null,
+  },
+  {
+    address: "Juramento 1196",
+    neighborhood: "Belgrano",
+    smp: "017-059-048D",
+    area: 162,
+    status: "Tasación",
+    agent: { name: "John Doe", initials: "JD" },
+    imageUrl: "https://placehold.co/600x400.png",
+    aiHint: "modern apartment building"
+  },
+  {
+    address: "Rivadavia 1298",
+    neighborhood: "Caballito",
+    smp: "017-027-006",
+    area: 185,
+    status: "Evolucionando",
+    agent: { name: "Alice Smith", initials: "AS" },
+    imageUrl: "https://placehold.co/600x400.png",
+    aiHint: "storefront supermarket"
+  },
+  {
+    address: "Corrientes 1341",
+    neighborhood: "Almagro",
+    smp: "031-036-034",
+    area: 174,
+    status: "Disponible",
+    agent: { name: "Ricardo Gonzalez", initials: "RG" },
+    imageUrl: "https://placehold.co/600x400.png",
+    aiHint: "industrial warehouse"
+  },
+  {
+    address: "Scalabrini Ortiz 1494",
+    neighborhood: "Recoleta",
+    smp: "017-026-022",
+    area: 210,
+    status: "Recicleta",
+    agent: { name: "Admin User", initials: "AU" },
+    imageUrl: "https://placehold.co/600x400.png",
+    aiHint: "old city building"
+  },
+  {
+    address: "Quintana 1577",
+    neighborhood: "San Telmo",
+    smp: "031-053-037",
+    area: 150,
+    status: "Tasación",
+    agent: { name: "John Doe", initials: "JD" },
+    imageUrl: "https://placehold.co/600x400.png",
+    aiHint: "yellow historic house"
+  },
+  {
+    address: "Defensa 1684",
+    neighborhood: "Villa Crespo",
+    smp: "031-055-029",
+    area: 195,
+    status: "Evolucionando",
+    agent: { name: "Alice Smith", initials: "AS" },
+    imageUrl: "https://placehold.co/600x400.png",
+    aiHint: "suburban brick house"
+  },
+  {
+    address: "Login Exitoso",
+    neighborhood: "Bienvenido, Admin!",
+    smp: "031-114-032",
+    area: 95,
+    status: "Disponible",
+    agent: { name: "Ricardo Gonzalez", initials: "RG" },
+    imageUrl: "https://placehold.co/600x400.png",
+    aiHint: "red modern house"
+  },
+];
+
+const ListingCard = ({ listing }: { listing: (typeof listings)[0] }) => (
+  <Card className="overflow-hidden">
+    <CardContent className="p-0">
+      <div className="relative">
+        {listing.imageUrl ? (
+          <Image
+            src={listing.imageUrl}
+            alt={listing.address}
+            width={600}
+            height={400}
+            className="aspect-video object-cover"
+            data-ai-hint={listing.aiHint}
+          />
+        ) : (
+          <div className="aspect-video bg-muted flex items-center justify-center">
+            <p className="text-muted-foreground">Imagen no disponible</p>
+          </div>
+        )}
+      </div>
+      <div className="p-4 space-y-2">
+        <h3 className="font-semibold text-lg">{listing.address}</h3>
+        <div className="flex items-center text-sm text-muted-foreground">
+          <MapPin className="h-4 w-4 mr-2" />
+          <span>{listing.neighborhood}</span>
+        </div>
+        <div className="flex items-center text-sm text-muted-foreground">
+          <Scan className="h-4 w-4 mr-2" />
+          <span>SMP: {listing.smp}</span>
+        </div>
+        <div className="flex items-center text-sm text-muted-foreground">
+          <Ruler className="h-4 w-4 mr-2" />
+          <span>{listing.area} m² estimados</span>
+        </div>
+      </div>
+    </CardContent>
+    <CardFooter className="bg-card p-4 flex justify-between items-center">
+        <Badge variant={listing.status === "Disponible" ? "default" : "secondary"}>{listing.status}</Badge>
+        <div className="flex items-center gap-2">
+            <Avatar className="h-6 w-6">
+                <AvatarFallback>{listing.agent.initials}</AvatarFallback>
+            </Avatar>
+            <span className="text-xs text-muted-foreground">{listing.agent.name}</span>
+        </div>
+    </CardFooter>
+  </Card>
+);
+
+export default function LotesPage() {
   return (
-    <>
-      <h1 className="text-3xl font-bold tracking-tight mb-4">Dashboard</h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 lg:grid-cols-[280px_1fr]">
+      <div className="hidden lg:block">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          <CardHeader>
+            <CardTitle>Filtrar Lotes</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">$45,231.89</div>
-            <p className="text-xs text-muted-foreground">+20.1% from last month</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Listings</CardTitle>
-            <Home className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">128</div>
-            <p className="text-xs text-muted-foreground">+12 since last week</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New Clients</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+23</div>
-            <p className="text-xs text-muted-foreground">+180.1% from last month</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sales This Month</CardTitle>
-            <BarChart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+12</div>
-            <p className="text-xs text-muted-foreground">+19% from last month</p>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label>Origen</Label>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Origenes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="origen1">Origen 1</SelectItem>
+                  <SelectItem value="origen2">Origen 2</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Estado</Label>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Estados" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="estado1">Estado 1</SelectItem>
+                  <SelectItem value="estado2">Estado 2</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Barrio</Label>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Barrios" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="barrio1">Barrio 1</SelectItem>
+                  <SelectItem value="barrio2">Barrio 2</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Agente</Label>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Agentes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="agente1">Agente 1</SelectItem>
+                  <SelectItem value="agente2">Agente 2</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-4">
+              <Label>M² Estimados:</Label>
+              <div className="flex gap-2">
+                <Input placeholder="Min." />
+                <Input placeholder="Máx." />
+              </div>
+              <Slider defaultValue={[0]} max={1000} step={10} />
+            </div>
           </CardContent>
         </Card>
       </div>
-       <div className="mt-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>An overview of recent property listings and sales.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center">
-                  <div className="ml-4 space-y-1">
-                    <p className="text-sm font-medium leading-none">New Listing: 123 Maple St</p>
-                    <p className="text-sm text-muted-foreground">Listed by Alex Johnson</p>
-                  </div>
-                  <div className="ml-auto font-medium">2 hours ago</div>
-                </div>
-                 <div className="flex items-center">
-                  <div className="ml-4 space-y-1">
-                    <p className="text-sm font-medium leading-none">Sale Closed: 456 Oak Ave</p>
-                    <p className="text-sm text-muted-foreground">Client: Maria Garcia</p>
-                  </div>
-                  <div className="ml-auto font-medium">1 day ago</div>
-                </div>
-                <div className="flex items-center">
-                  <div className="ml-4 space-y-1">
-                    <p className="text-sm font-medium leading-none">Price Reduction: 789 Pine Ln</p>
-                    <p className="text-sm text-muted-foreground">Now $450,000</p>
-                  </div>
-                  <div className="ml-auto font-medium">3 days ago</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+
+      <div className="flex flex-col">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold">Lotes</h2>
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="SMP o Dirección" className="pl-8" />
+            </div>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Nuevo Lote
+            </Button>
+          </div>
         </div>
-    </>
-  )
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {listings.map((listing) => (
+            <ListingCard key={listing.smp} listing={listing} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }

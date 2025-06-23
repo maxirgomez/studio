@@ -26,7 +26,6 @@ export function UserNav() {
       router.push("/");
     } catch (error) {
       console.error("Logout failed", error);
-      // Optionally show a toast message on error
     }
   };
 
@@ -35,17 +34,16 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src="https://placehold.co/100x100.png" alt="@user" data-ai-hint="person" />
-            <AvatarFallback>BR</AvatarFallback>
+            <AvatarFallback>AU</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Baigun Agent</p>
+            <p className="text-sm font-medium leading-none">Admin</p>
             <p className="text-xs leading-none text-muted-foreground">
-              agent@baigun.com
+              admin@baigun.realty
             </p>
           </div>
         </DropdownMenuLabel>
