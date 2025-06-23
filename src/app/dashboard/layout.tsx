@@ -22,7 +22,7 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const navItems = [
-    { href: "/dashboard", icon: Home, label: "Dashboard" },
+    { href: "/dashboard", icon: Home, label: "Lotes" },
     { href: "/dashboard/profile", icon: Users, label: "Usuarios" },
     { href: "/dashboard/mapa", icon: MapPin, label: "Mapa" },
   ];
