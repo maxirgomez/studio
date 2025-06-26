@@ -1,7 +1,9 @@
+
 "use client";
 
 import Image from "next/image";
 import { useState } from "react";
+import { useSearchParams } from 'next/navigation';
 import {
   Card,
   CardContent,
@@ -189,13 +191,21 @@ const ListingCard = ({ listing }: { listing: (typeof listings)[0] }) => (
 );
 
 export default function LotesPage() {
+  const searchParams = useSearchParams();
+  const agentFilter = searchParams.get('agent');
+  
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
-  const totalPages = Math.ceil(listings.length / itemsPerPage);
+
+  const filteredListings = agentFilter
+    ? listings.filter(listing => listing.agent.name === agentFilter)
+    : listings;
+
+  const totalPages = Math.ceil(filteredListings.length / itemsPerPage);
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentListings = listings.slice(startIndex, endIndex);
+  const currentListings = filteredListings.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
@@ -273,7 +283,7 @@ export default function LotesPage() {
 
       <div className="flex flex-col">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Lotes</h2>
+          <h2 className="text-2xl font-bold">{agentFilter ? `Lotes de ${agentFilter}` : "Lotes"}</h2>
           <div className="flex items-center gap-4">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />

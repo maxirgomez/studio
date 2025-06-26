@@ -1,4 +1,5 @@
 
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -168,7 +169,9 @@ const UserCard = ({ user }: { user: (typeof users)[0] }) => (
       </div>
     </CardContent>
     <CardFooter>
-      <Button className="w-full">Ver Lotes</Button>
+      <Link href={`/lotes?agent=${encodeURIComponent(user.name)}`} className="w-full">
+        <Button className="w-full">Ver Lotes</Button>
+      </Link>
     </CardFooter>
   </Card>
 );
