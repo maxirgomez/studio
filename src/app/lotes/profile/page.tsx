@@ -45,6 +45,12 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { useToast } from "@/hooks/use-toast"
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const users = [
   {
@@ -350,14 +356,20 @@ export default function UsersPage() {
         <p className="text-muted-foreground">Administra los usuarios de tu organización.</p>
       </div>
 
-      {sortedRoles.map((role) => (
-        <div key={role}>
-          <h2 className="text-2xl font-bold mb-4">{role}</h2>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {groupedUsers[role].map(user => <UserCard key={user.email} user={user} />)}
-          </div>
-        </div>
-      ))}
+      <Accordion type="multiple" defaultValue={sortedRoles} className="w-full space-y-4">
+        {sortedRoles.map((role) => (
+          <AccordionItem value={role} key={role} className="border-none">
+            <AccordionTrigger className="p-0 hover:no-underline mb-4">
+              <h2 className="text-2xl font-bold">{role}</h2>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {groupedUsers[role].map(user => <UserCard key={user.email} user={user} />)}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
     </div>
   )
 }
