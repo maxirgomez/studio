@@ -31,6 +31,14 @@ import {
   Ruler,
   Search,
   Plus,
+  Target,
+  Briefcase,
+  TrendingUp,
+  CheckCircle,
+  XCircle,
+  Clock,
+  DollarSign,
+  Trash2,
 } from "lucide-react";
 import { 
   Pagination,
@@ -48,7 +56,7 @@ const listings = [
     smp: "017-027-020A",
     area: 110,
     status: "Tomar Acción",
-    agent: { name: "Maria Bailo Newton", initials: "MN" },
+    agent: { name: "Roxana Rajich", initials: "RR" },
     imageUrl: null,
   },
   {
@@ -57,7 +65,7 @@ const listings = [
     smp: "017-059-048D",
     area: 162,
     status: "Tasación",
-    agent: { name: "Roxana Rajich", initials: "RR" },
+    agent: { name: "Santiago Liscovsky", initials: "SL" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "modern apartment building"
   },
@@ -67,7 +75,7 @@ const listings = [
     smp: "017-027-006",
     area: 185,
     status: "Evolucionando",
-    agent: { name: "Santiago Liscovsky", initials: "SL" },
+    agent: { name: "Iair Baredes", initials: "IB" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "storefront supermarket"
   },
@@ -87,7 +95,7 @@ const listings = [
     smp: "017-026-022",
     area: 210,
     status: "Descartado",
-    agent: { name: "Iair Baredes", initials: "IB" },
+    agent: { name: "Ariel Naem", initials: "AN" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "old city building"
   },
@@ -97,7 +105,7 @@ const listings = [
     smp: "031-053-037",
     area: 150,
     status: "No vende",
-    agent: { name: "Ariel Naem", initials: "AN" },
+    agent: { name: "Matías Poczter", initials: "MP" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "yellow historic house"
   },
@@ -107,7 +115,7 @@ const listings = [
     smp: "031-055-029",
     area: 195,
     status: "Reservado",
-    agent: { name: "Matías Poczter", initials: "MP" },
+    agent: { name: "Matias Chirom", initials: "MC" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "suburban brick house"
   },
@@ -117,7 +125,7 @@ const listings = [
     smp: "031-114-032",
     area: 95,
     status: "Vendido",
-    agent: { name: "Matias Chirom", initials: "MC" },
+    agent: { name: "Maria Bailo Newton", initials: "MN" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "red modern house"
   },
@@ -247,8 +255,9 @@ export default function LotesPage() {
                   <SelectValue placeholder="Origenes" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="origen1">Origen 1</SelectItem>
-                  <SelectItem value="origen2">Origen 2</SelectItem>
+                  <SelectItem value="tor">Tor</SelectItem>
+                  <SelectItem value="baigun-realty">Baigun Realty</SelectItem>
+                  <SelectItem value="produccion">Produccion</SelectItem>
                 </SelectContent>
               </Select>
             </div>
