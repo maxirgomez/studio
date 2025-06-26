@@ -1,56 +1,61 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import {
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
   onAuthStateChanged,
 } from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase";
+import { auth } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+  DialogFooter
+} from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast";
+import { Label } from "@/components/ui/label";
 
-function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 48 48"
-      width="24px"
-      height="24px"
-      {...props}
-    >
-      <path
-        fill="#FFC107"
-        d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"
-      />
-      <path
-        fill="#FF3D00"
-        d="M6.306,14.691l6.06,4.71c2.27-1.732,4.94-2.8,7.634-2.8c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"
-      />
-      <path
-        fill="#4CAF50"
-        d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-4.938C29.211,35.091,26.715,36,24,36c-5.222,0-9.519-3.355-11.303-8H6.399v4.84C9.696,40.165,16.318,44,24,44z"
-      />
-      <path
-        fill="#1976D2"
-        d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,4.938C40.088,34.438,44,28.663,44,24C44,22.659,43.862,21.35,43.611,20.083z"
-      />
-    </svg>
-  );
-}
+const formSchema = z.object({
+  email: z.string().email({
+    message: "Por favor, introduce una dirección de correo electrónico válida.",
+  }),
+  password: z.string().min(1, {
+    message: "La contraseña no puede estar vacía.",
+  }),
+});
 
 export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -58,50 +63,154 @@ export function LoginForm() {
         router.push("/lotes");
       }
     });
-
-    getRedirectResult(auth).catch((error: any) => {
-      console.error("Authentication failed on redirect", error);
-      toast({
-        title: "Authentication Failed",
-        description: "Could not sign in with Google. Please try again.",
-        variant: "destructive",
-      });
-    });
-
     return () => unsubscribe();
-  }, [router, toast]);
+  }, [router]);
 
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
 
-  const handleLogin = async () => {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      await signInWithRedirect(auth, googleProvider);
-    } catch (error) {
-      console.error("Authentication failed", error);
+      await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({
-        title: "Authentication Failed",
-        description: "Could not sign in with Google. Please try again.",
+        title: "Login exitoso",
+        description: "Bienvenido de nuevo!",
+      });
+      router.push("/lotes");
+    } catch (error: any) {
+      console.error("Login failed", error);
+      let description = "Por favor, comprueba tus credenciales e inténtalo de nuevo.";
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        description = "Email o contraseña incorrectos.";
+      }
+      toast({
+        title: "Error de inicio de sesión",
+        description: description,
         variant: "destructive",
       });
     }
-  };
+  }
+  
+  async function handlePasswordReset() {
+    if (!resetEmail) {
+       toast({
+        title: "Error",
+        description: "Por favor, introduce tu email.",
+        variant: "destructive",
+      });
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, resetEmail);
+      toast({
+        title: "Email de recuperación enviado",
+        description: "Revisa tu bandeja de entrada para restablecer tu contraseña.",
+      });
+      setIsResetDialogOpen(false);
+      setResetEmail("");
+    } catch (error: any) {
+       console.error("Password reset failed", error);
+       toast({
+        title: "Error",
+        description: "No se pudo enviar el email de recuperación. Verifica que el correo sea correcto.",
+        variant: "destructive",
+      });
+    }
+  }
 
   return (
-    <Card className="shadow-lg">
-      <CardHeader>
-        <CardTitle className="text-center">Secure Sign In</CardTitle>
-        <CardDescription className="text-center">
-          Use your Google account to continue.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Button onClick={handleLogin} className="w-full" size="lg">
-          <GoogleIcon className="mr-2" />
-          Sign in with Google
-        </Button>
-      </CardContent>
-      <CardFooter>
-         <p className="text-xs text-muted-foreground text-center w-full">By continuing, you agree to our Terms of Service and Privacy Policy.</p>
-      </CardFooter>
-    </Card>
+    <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+      <Card className="shadow-lg">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl text-center">Iniciar Sesión</CardTitle>
+          <CardDescription className="text-center">
+            Introduce tu email y contraseña para acceder a tu cuenta
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="email@ejemplo.com"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center">
+                      <FormLabel>Contraseña</FormLabel>
+                       <DialogTrigger asChild>
+                         <Button variant="link" type="button" className="ml-auto inline-block px-0 text-sm">
+                            ¿Olvidaste tu contraseña?
+                         </Button>
+                      </DialogTrigger>
+                    </div>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••••" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" className="w-full">
+                Iniciar Sesión
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+         <CardFooter>
+          <p className="text-xs text-muted-foreground text-center w-full">Al continuar, aceptas nuestros Términos de Servicio y Política de Privacidad.</p>
+        </CardFooter>
+      </Card>
+      
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Restablecer Contraseña</DialogTitle>
+          <DialogDescription>
+            Introduce tu dirección de email y te enviaremos un enlace para restablecer tu contraseña.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid items-center gap-1.5">
+            <Label htmlFor="reset-email">Email</Label>
+            <Input
+              id="reset-email"
+              type="email"
+              placeholder="email@ejemplo.com"
+              value={resetEmail}
+              onChange={(e) => setResetEmail(e.target.value)}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="secondary">Cancelar</Button>
+          </DialogClose>
+          <Button type="button" onClick={handlePasswordReset}>
+            Enviar enlace
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
