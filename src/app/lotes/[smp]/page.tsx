@@ -4,6 +4,7 @@ import * as React from "react"
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { useParams } from 'next/navigation'
 
 import {
   Card,
@@ -150,7 +151,8 @@ const getStatusStyles = (status: string): React.CSSProperties => {
 };
 
 
-export default function LoteDetailPage({ params }: { params: { smp: string } }) {
+export default function LoteDetailPage() {
+  const params = useParams<{ smp: string }>();
   const listing = listings.find((l) => l.smp === params.smp);
   
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
