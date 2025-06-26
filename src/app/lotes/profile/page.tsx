@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -12,13 +13,13 @@ import { Target, Briefcase, TrendingUp, CheckCircle } from "lucide-react"
 
 const users = [
   {
-    role: "Admin",
-    name: "Admin User",
-    username: "@adminuser",
-    email: "admin@baigun.realty",
+    role: "Architect",
+    name: "Maria Bailo Newton",
+    username: "@mariabailo",
+    email: "maria.bailo@baigunrealty.com",
     avatarUrl: "https://placehold.co/100x100.png",
-    aiHint: "man smiling",
-    initials: "AU",
+    aiHint: "woman professional",
+    initials: "MN",
     lots: {
       accion: 5,
       tasacion: 2,
@@ -27,13 +28,13 @@ const users = [
     },
   },
   {
-    role: "Agente",
-    name: "John Doe",
-    username: "@johndoe",
-    email: "john.doe@baigun.realty",
+    role: "Asesor",
+    name: "Roxana Rajich",
+    username: "@roxanarajich",
+    email: "roxana.rajich@baigunrealty.com",
     avatarUrl: "https://placehold.co/100x100.png",
-    aiHint: "person portrait",
-    initials: "JD",
+    aiHint: "woman smiling",
+    initials: "RR",
     lots: {
       accion: 12,
       tasacion: 8,
@@ -42,13 +43,13 @@ const users = [
     },
   },
   {
-    role: "Agente",
-    name: "Alice Smith",
-    username: "@alicesmith",
-    email: "alice.smith@baigun.realty",
+    role: "Asesor",
+    name: "Santiago Liscovsky",
+    username: "@santiagoliscovsky",
+    email: "santiago.liscovsky@baigunrealty.com",
     avatarUrl: "https://placehold.co/100x100.png",
-    aiHint: "woman smiling",
-    initials: "AS",
+    aiHint: "man professional",
+    initials: "SL",
     lots: {
       accion: 3,
       tasacion: 5,
@@ -56,19 +57,79 @@ const users = [
       disponible: 12,
     },
   },
-   {
-    role: "Agente",
-    name: "Ricardo Gonzalez",
-    username: "@ricardog",
-    email: "ricardo.gonzalez@baigun.realty",
+  {
+    role: "Asesor",
+    name: "Martín Beorlegui",
+    username: "@martinbeorlegui",
+    email: "martin.beorlegui@baigunrealty.com",
     avatarUrl: "https://placehold.co/100x100.png",
-    aiHint: "man with glasses",
-    initials: "RG",
+    aiHint: "man portrait",
+    initials: "MB",
     lots: {
       accion: 8,
       tasacion: 4,
       evolucionando: 10,
       disponible: 8,
+    },
+  },
+  {
+    role: "Asesor",
+    name: "Iair Baredes",
+    username: "@iairbaredes",
+    email: "iair.baredes@baigunrealty.com",
+    avatarUrl: "https://placehold.co/100x100.png",
+    aiHint: "man happy",
+    initials: "IB",
+    lots: {
+      accion: 7,
+      tasacion: 6,
+      evolucionando: 9,
+      disponible: 11,
+    },
+  },
+  {
+    role: "Asesor",
+    name: "Ariel Naem",
+    username: "@arielnaem",
+    email: "Ariel.naem@baigunrealty.com",
+    avatarUrl: "https://placehold.co/100x100.png",
+    aiHint: "man with glasses",
+    initials: "AN",
+    lots: {
+      accion: 9,
+      tasacion: 3,
+      evolucionando: 12,
+      disponible: 7,
+    },
+  },
+  {
+    role: "Administrador",
+    name: "Matías Poczter",
+    username: "@matiaspoczter",
+    email: "Matias.poczter@baigunrealty.com",
+    avatarUrl: "https://placehold.co/100x100.png",
+    aiHint: "person smiling",
+    initials: "MP",
+    lots: {
+      accion: 2,
+      tasacion: 1,
+      evolucionando: 5,
+      disponible: 15,
+    },
+  },
+  {
+    role: "Administrador",
+    name: "Matias Chirom",
+    username: "@matiaschirom",
+    email: "Matias.chirom@baigunrealty.com",
+    avatarUrl: "https://placehold.co/100x100.png",
+    aiHint: "man office",
+    initials: "MC",
+    lots: {
+      accion: 4,
+      tasacion: 3,
+      evolucionando: 6,
+      disponible: 18,
     },
   },
 ];
@@ -118,6 +179,15 @@ export default function UsersPage() {
     (acc[user.role] = acc[user.role] || []).push(user);
     return acc;
   }, {} as Record<string, typeof users>);
+  
+  const roleOrder = ["Administrador", "Architect", "Asesor"];
+  const sortedRoles = Object.keys(groupedUsers).sort((a, b) => {
+    const indexA = roleOrder.indexOf(a);
+    const indexB = roleOrder.indexOf(b);
+    if (indexA === -1) return 1;
+    if (indexB === -1) return -1;
+    return indexA - indexB;
+  });
 
   return (
     <div className="space-y-8">
@@ -126,11 +196,11 @@ export default function UsersPage() {
         <p className="text-muted-foreground">Administra los usuarios de tu organización.</p>
       </div>
 
-      {Object.entries(groupedUsers).map(([role, usersInRole]) => (
+      {sortedRoles.map((role) => (
         <div key={role}>
           <h2 className="text-2xl font-bold mb-4">{role}</h2>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {usersInRole.map(user => <UserCard key={user.email} user={user} />)}
+            {groupedUsers[role].map(user => <UserCard key={user.email} user={user} />)}
           </div>
         </div>
       ))}
