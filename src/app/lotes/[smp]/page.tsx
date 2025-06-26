@@ -11,8 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, MapPin, Scan, Ruler, Edit, MessageSquare, Files } from "lucide-react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ArrowLeft, MapPin, Scan, Ruler, Edit, Download, Upload } from "lucide-react"
 
 // Data duplicated for now. Ideally, this would be in a shared file.
 const listings = [
@@ -164,80 +163,49 @@ export default function LoteDetailPage({ params }: { params: { smp: string } }) 
         </div>
       </div>
       
-      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid gap-8 md:grid-cols-3">
+        {/* Left Column */}
+        <div className="md:col-span-1 space-y-6">
             <Card>
                 <CardContent className="p-0">
                 {listing.imageUrl ? (
                     <Image
                         src={listing.imageUrl}
                         alt={listing.address}
-                        width={1200}
-                        height={800}
-                        className="aspect-video object-cover rounded-t-lg"
+                        width={600}
+                        height={400}
+                        className="aspect-video object-cover rounded-lg"
                         data-ai-hint={listing.aiHint}
                     />
                 ) : (
-                    <div className="aspect-video bg-muted flex items-center justify-center rounded-t-lg">
+                    <div className="aspect-video bg-muted flex items-center justify-center rounded-lg">
                         <p className="text-muted-foreground">Imagen no disponible</p>
                     </div>
                 )}
                 </CardContent>
             </Card>
 
-            <Tabs defaultValue="detalles" className="w-full">
-              <TabsList>
-                <TabsTrigger value="detalles">Detalles</TabsTrigger>
-                <TabsTrigger value="analisis">Análisis</TabsTrigger>
-                <TabsTrigger value="archivos">Archivos</TabsTrigger>
-              </TabsList>
-              <TabsContent value="detalles" className="mt-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Información del Lote</CardTitle>
-                  </CardHeader>
-                   <CardContent className="space-y-4">
-                      <div className="flex items-center">
-                        <MapPin className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Dirección:</span>
-                        <span className="ml-auto text-muted-foreground">{listing.address}</span>
-                      </div>
-                       <div className="flex items-center">
-                        <MapPin className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Barrio:</span>
-                        <span className="ml-auto text-muted-foreground">{listing.neighborhood}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Scan className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">SMP:</span>
-                        <span className="ml-auto text-muted-foreground">{listing.smp}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Ruler className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Superficie:</span>
-                        <span className="ml-auto text-muted-foreground">{listing.area} m²</span>
-                      </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              <TabsContent value="analisis" className="mt-4">
-                <Card>
-                   <CardContent className="p-6">
-                    <p className="text-muted-foreground">Análisis de la propiedad y viabilidad del proyecto se mostrarán aquí.</p>
-                   </CardContent>
-                </Card>
-              </TabsContent>
-              <TabsContent value="archivos" className="mt-4">
-                <Card>
-                   <CardContent className="p-6">
-                    <p className="text-muted-foreground">Documentos y archivos relacionados con el lote se mostrarán aquí.</p>
-                   </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
+            <div className="flex flex-col gap-2">
+                <Button variant="outline"><Edit className="mr-2 h-4 w-4"/> Editar foto</Button>
+                <Button><Edit className="mr-2 h-4 w-4"/> Editar lote</Button>
+                <Button variant="outline"><Download className="mr-2 h-4 w-4"/> Descargar Ficha PDF</Button>
+            </div>
 
+            <Card>
+                <CardHeader>
+                    <CardTitle>Informes adjuntos</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Button variant="outline" className="w-full">
+                        <Upload className="mr-2 h-4 w-4" />
+                        Seleccionar PDF
+                    </Button>
+                </CardContent>
+            </Card>
         </div>
-        <div className="space-y-6">
+
+        {/* Right Column */}
+        <div className="md:col-span-2 space-y-6">
              <Card>
                 <CardHeader>
                     <CardTitle>Estado y Agente</CardTitle>
@@ -259,15 +227,51 @@ export default function LoteDetailPage({ params }: { params: { smp: string } }) 
                     </div>
                 </CardContent>
             </Card>
+
             <Card>
-              <CardHeader>
-                <CardTitle>Acciones</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-2">
-                <Button><Edit className="mr-2 h-4 w-4"/> Editar Lote</Button>
-                <Button variant="outline"><MessageSquare className="mr-2 h-4 w-4"/> Ver Comentarios</Button>
-                <Button variant="outline"><Files className="mr-2 h-4 w-4"/> Gestionar Archivos</Button>
-              </CardContent>
+                <CardHeader>
+                    <CardTitle>Información Urbanística y Catastral</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                      <div className="flex items-center">
+                        <MapPin className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <span className="font-medium">Dirección:</span>
+                        <span className="ml-auto text-muted-foreground">{listing.address}</span>
+                      </div>
+                       <div className="flex items-center">
+                        <MapPin className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <span className="font-medium">Barrio:</span>
+                        <span className="ml-auto text-muted-foreground">{listing.neighborhood}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Scan className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <span className="font-medium">SMP:</span>
+                        <span className="ml-auto text-muted-foreground">{listing.smp}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Ruler className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <span className="font-medium">Superficie:</span>
+                        <span className="ml-auto text-muted-foreground">{listing.area} m²</span>
+                      </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Información del propietario</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-muted-foreground">Los detalles del propietario se mostrarán aquí.</p>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Datos de Tasación</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-muted-foreground">Los datos de tasación y valoración se mostrarán aquí.</p>
+                </CardContent>
             </Card>
         </div>
       </div>
