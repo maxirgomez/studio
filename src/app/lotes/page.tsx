@@ -48,7 +48,7 @@ const listings = [
     smp: "017-027-020A",
     area: 110,
     status: "Tomar Acción",
-    agent: { name: "Admin User", initials: "AU" },
+    agent: { name: "Maria Bailo Newton", initials: "MN" },
     imageUrl: null,
   },
   {
@@ -57,7 +57,7 @@ const listings = [
     smp: "017-059-048D",
     area: 162,
     status: "Tasación",
-    agent: { name: "John Doe", initials: "JD" },
+    agent: { name: "Roxana Rajich", initials: "RR" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "modern apartment building"
   },
@@ -67,7 +67,7 @@ const listings = [
     smp: "017-027-006",
     area: 185,
     status: "Evolucionando",
-    agent: { name: "Alice Smith", initials: "AS" },
+    agent: { name: "Santiago Liscovsky", initials: "SL" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "storefront supermarket"
   },
@@ -77,7 +77,7 @@ const listings = [
     smp: "031-036-034",
     area: 174,
     status: "Disponible",
-    agent: { name: "Ricardo Gonzalez", initials: "RG" },
+    agent: { name: "Martín Beorlegui", initials: "MB" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "industrial warehouse"
   },
@@ -87,7 +87,7 @@ const listings = [
     smp: "017-026-022",
     area: 210,
     status: "Recicleta",
-    agent: { name: "Admin User", initials: "AU" },
+    agent: { name: "Iair Baredes", initials: "IB" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "old city building"
   },
@@ -97,7 +97,7 @@ const listings = [
     smp: "031-053-037",
     area: 150,
     status: "Tasación",
-    agent: { name: "John Doe", initials: "JD" },
+    agent: { name: "Ariel Naem", initials: "AN" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "yellow historic house"
   },
@@ -107,7 +107,7 @@ const listings = [
     smp: "031-055-029",
     area: 195,
     status: "Evolucionando",
-    agent: { name: "Alice Smith", initials: "AS" },
+    agent: { name: "Matías Poczter", initials: "MP" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "suburban brick house"
   },
@@ -117,7 +117,7 @@ const listings = [
     smp: "031-114-032",
     area: 95,
     status: "Disponible",
-    agent: { name: "Ricardo Gonzalez", initials: "RG" },
+    agent: { name: "Matias Chirom", initials: "MC" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "red modern house"
   },
@@ -127,7 +127,7 @@ const listings = [
     smp: "017-027-021A",
     area: 120,
     status: "Tomar Acción",
-    agent: { name: "Admin User", initials: "AU" },
+    agent: { name: "Roxana Rajich", initials: "RR" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "modern house"
   },
@@ -137,7 +137,7 @@ const listings = [
     smp: "017-059-049D",
     area: 170,
     status: "Tasación",
-    agent: { name: "John Doe", initials: "JD" },
+    agent: { name: "Santiago Liscovsky", initials: "SL" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "luxury apartment"
   },
