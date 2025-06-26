@@ -1,4 +1,4 @@
-import type {Config} from 'tailwindcss';
+import type {Config} from 'next';
 
 export default {
   darkMode: ['class'],
@@ -16,19 +16,19 @@ export default {
       },
     },
     fontSize: {
-      xs: ['0.5625rem', { lineHeight: '0.75rem' }],
-      sm: ['0.65625rem', { lineHeight: '0.9375rem' }],
-      base: ['0.75rem', { lineHeight: '1.125rem' }],
-      lg: ['0.84375rem', { lineHeight: '1.3125rem' }],
-      xl: ['0.9375rem', { lineHeight: '1.3125rem' }],
-      '2xl': ['1.125rem', { lineHeight: '1.5rem' }],
-      '3xl': ['1.40625rem', { lineHeight: '1.6875rem' }],
-      '4xl': ['1.6875rem', { lineHeight: '1.875rem' }],
-      '5xl': ['2.25rem', { lineHeight: '1' }],
-      '6xl': ['2.8125rem', { lineHeight: '1' }],
-      '7xl': ['3.375rem', { lineHeight: '1' }],
-      '8xl': ['4.5rem', { lineHeight: '1' }],
-      '9xl': ['6rem', { lineHeight: '1' }],
+      xs: ['0.7875rem', { lineHeight: '1.05rem' }],
+      sm: ['0.91875rem', { lineHeight: '1.3125rem' }],
+      base: ['1.05rem', { lineHeight: '1.575rem' }],
+      lg: ['1.18125rem', { lineHeight: '1.875rem' }],
+      xl: ['1.3125rem', { lineHeight: '1.875rem' }],
+      '2xl': ['1.575rem', { lineHeight: '2.1rem' }],
+      '3xl': ['1.96875rem', { lineHeight: '2.3625rem' }],
+      '4xl': ['2.3625rem', { lineHeight: '2.625rem' }],
+      '5xl': ['3.15rem', { lineHeight: '1' }],
+      '6xl': ['3.9375rem', { lineHeight: '1' }],
+      '7xl': ['4.725rem', { lineHeight: '1' }],
+      '8xl': ['6.3rem', { lineHeight: '1' }],
+      '9xl': ['8.4rem', { lineHeight: '1' }],
     },
     extend: {
       fontFamily: {
