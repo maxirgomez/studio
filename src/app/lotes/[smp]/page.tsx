@@ -1,3 +1,10 @@
+"use client"
+
+import * as React from "react"
+import { useState } from "react"
+import Image from "next/image"
+import Link from "next/link"
+
 import {
   Card,
   CardContent,
@@ -8,10 +15,21 @@ import {
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import Image from "next/image"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, MapPin, Scan, Ruler, Edit, Download, Upload } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { useToast } from "@/hooks/use-toast"
 
 // Data duplicated for now. Ideally, this would be in a shared file.
 const listings = [
@@ -134,6 +152,47 @@ const getStatusStyles = (status: string): React.CSSProperties => {
 
 export default function LoteDetailPage({ params }: { params: { smp: string } }) {
   const listing = listings.find((l) => l.smp === params.smp);
+  
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [currentImageUrl, setCurrentImageUrl] = useState(listing?.imageUrl);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      setSelectedFile(file);
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const handleSaveChanges = () => {
+    if (previewUrl && selectedFile) {
+      setCurrentImageUrl(previewUrl);
+      toast({
+        title: "Foto Actualizada",
+        description: `La foto para el lote ${listing?.address} ha sido actualizada.`,
+      });
+      setIsEditDialogOpen(false);
+      setSelectedFile(null);
+    }
+  };
+
+  const onDialogClose = (open: boolean) => {
+    if (!open) {
+      setSelectedFile(null);
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(null);
+      }
+    }
+    setIsEditDialogOpen(open);
+  }
+
 
   if (!listing) {
     return (
@@ -168,9 +227,9 @@ export default function LoteDetailPage({ params }: { params: { smp: string } }) 
         <div className="md:col-span-1 space-y-6">
             <Card>
                 <CardContent className="p-0">
-                {listing.imageUrl ? (
+                {currentImageUrl ? (
                     <Image
-                        src={listing.imageUrl}
+                        src={currentImageUrl}
                         alt={listing.address}
                         width={600}
                         height={400}
@@ -208,7 +267,45 @@ export default function LoteDetailPage({ params }: { params: { smp: string } }) 
             </Card>
 
             <div className="flex flex-col gap-2">
-                <Button variant="outline"><Edit className="mr-2 h-4 w-4"/> Editar foto</Button>
+                <Dialog open={isEditDialogOpen} onOpenChange={onDialogClose}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline"><Edit className="mr-2 h-4 w-4"/> Editar foto</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Editar Foto del Lote</DialogTitle>
+                            <DialogDescription>
+                                Selecciona una nueva imagen para el lote. La imagen se actualizará al guardar los cambios.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="grid w-full max-w-sm items-center gap-1.5">
+                                <Label htmlFor="picture">Nueva Foto</Label>
+                                <Input id="picture" type="file" onChange={handleFileChange} accept="image/*" />
+                            </div>
+                            {(previewUrl || currentImageUrl) && (
+                              <div className="mt-4">
+                                <p className="text-sm font-medium mb-2">Vista Previa:</p>
+                                <Image 
+                                  src={previewUrl || currentImageUrl!} 
+                                  alt="Vista previa de la imagen"
+                                  width={400}
+                                  height={300}
+                                  className="rounded-md object-cover aspect-video"
+                                />
+                              </div>
+                            )}
+                        </div>
+                        <DialogFooter>
+                            <DialogClose asChild>
+                                <Button type="button" variant="secondary">Cancelar</Button>
+                            </DialogClose>
+                            <Button type="button" onClick={handleSaveChanges} disabled={!selectedFile}>
+                                Guardar Cambios
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
                 <Button><Edit className="mr-2 h-4 w-4"/> Editar lote</Button>
                 <Button variant="outline"><Download className="mr-2 h-4 w-4"/> Descargar Ficha PDF</Button>
             </div>
