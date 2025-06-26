@@ -125,7 +125,7 @@ const listings = [
     smp: "017-027-020A",
     area: 110,
     status: "Tomar Acción",
-    agent: { name: "Roxana Rajich", initials: "RR" },
+    agent: { name: "Ariel Naem", initials: "AN" },
     imageUrl: null,
   },
   {
@@ -287,13 +287,18 @@ export default function LotesPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const agentFilter = searchParams.get('agent');
+  const neighborhoodFilter = searchParams.get('neighborhood');
   
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
+  
+  const uniqueNeighborhoods = [...new Set(listings.map(l => l.neighborhood))];
 
-  const filteredListings = agentFilter
-    ? listings.filter(listing => listing.agent.name === agentFilter)
-    : listings;
+  const filteredListings = listings.filter(listing => {
+    const agentMatch = !agentFilter || listing.agent.name === agentFilter;
+    const neighborhoodMatch = !neighborhoodFilter || listing.neighborhood === neighborhoodFilter;
+    return agentMatch && neighborhoodMatch;
+  });
 
   const totalPages = Math.ceil(filteredListings.length / itemsPerPage);
 
@@ -306,16 +311,28 @@ export default function LotesPage() {
       setCurrentPage(page);
     }
   };
-
-  const handleAgentChange = (agentName: string) => {
+  
+  const handleFilterChange = (name: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (agentName && agentName !== 'todos') {
-      params.set('agent', agentName);
+    if (value && value !== 'todos') {
+      params.set(name, value);
     } else {
-      params.delete('agent');
+      params.delete(name);
     }
     router.replace(`${pathname}?${params.toString()}`);
-  };
+    setCurrentPage(1);
+  }
+
+  let title = "Lotes";
+  if (agentFilter) {
+    title = `Lotes de ${agentFilter}`;
+    if (neighborhoodFilter) {
+      title += ` en ${neighborhoodFilter}`;
+    }
+  } else if (neighborhoodFilter) {
+    title = `Lotes en ${neighborhoodFilter}`;
+  }
+
 
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 lg:grid-cols-[280px_1fr]">
@@ -358,19 +375,23 @@ export default function LotesPage() {
             </div>
             <div className="space-y-2">
               <Label>Barrio</Label>
-              <Select>
+              <Select onValueChange={(value) => handleFilterChange('neighborhood', value)} defaultValue={neighborhoodFilter || 'todos'}>
                 <SelectTrigger>
                   <SelectValue placeholder="Barrios" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="barrio1">Barrio 1</SelectItem>
-                  <SelectItem value="barrio2">Barrio 2</SelectItem>
+                  <SelectItem value="todos">Todos los Barrios</SelectItem>
+                  {uniqueNeighborhoods.map((neighborhood) => (
+                    <SelectItem key={neighborhood} value={neighborhood}>
+                      {neighborhood}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
               <Label>Agente</Label>
-              <Select onValueChange={handleAgentChange} defaultValue={agentFilter || 'todos'}>
+              <Select onValueChange={(value) => handleFilterChange('agent', value)} defaultValue={agentFilter || 'todos'}>
                 <SelectTrigger>
                   <SelectValue placeholder="Agentes" />
                 </SelectTrigger>
@@ -398,7 +419,7 @@ export default function LotesPage() {
 
       <div className="flex flex-col">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">{agentFilter ? `Lotes de ${agentFilter}` : "Lotes"}</h2>
+          <h2 className="text-2xl font-bold">{title}</h2>
           <div className="flex items-center gap-4">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
