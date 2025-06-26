@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Target, Briefcase, TrendingUp, CheckCircle, Pencil } from "lucide-react"
+import { Target, Briefcase, TrendingUp, CheckCircle, Pencil, Trash2, XCircle, Clock, DollarSign } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -62,10 +62,14 @@ const users = [
     aiHint: "woman professional",
     initials: "MN",
     lots: {
-      accion: 5,
+      tomarAccion: 5,
       tasacion: 2,
       evolucionando: 8,
       disponible: 10,
+      descartado: 1,
+      noVende: 3,
+      reservado: 0,
+      vendido: 4,
     },
   },
   {
@@ -77,10 +81,14 @@ const users = [
     aiHint: "woman smiling",
     initials: "RR",
     lots: {
-      accion: 12,
+      tomarAccion: 12,
       tasacion: 8,
       evolucionando: 15,
       disponible: 5,
+      descartado: 2,
+      noVende: 1,
+      reservado: 3,
+      vendido: 7,
     },
   },
   {
@@ -92,10 +100,14 @@ const users = [
     aiHint: "man professional",
     initials: "SL",
     lots: {
-      accion: 3,
+      tomarAccion: 3,
       tasacion: 5,
       evolucionando: 7,
       disponible: 12,
+      descartado: 0,
+      noVende: 4,
+      reservado: 2,
+      vendido: 9,
     },
   },
   {
@@ -107,10 +119,14 @@ const users = [
     aiHint: "man portrait",
     initials: "MB",
     lots: {
-      accion: 8,
+      tomarAccion: 8,
       tasacion: 4,
       evolucionando: 10,
       disponible: 8,
+      descartado: 3,
+      noVende: 2,
+      reservado: 1,
+      vendido: 6,
     },
   },
   {
@@ -122,10 +138,14 @@ const users = [
     aiHint: "man happy",
     initials: "IB",
     lots: {
-      accion: 7,
+      tomarAccion: 7,
       tasacion: 6,
       evolucionando: 9,
       disponible: 11,
+      descartado: 1,
+      noVende: 1,
+      reservado: 4,
+      vendido: 5,
     },
   },
   {
@@ -137,10 +157,14 @@ const users = [
     aiHint: "man with glasses",
     initials: "AN",
     lots: {
-      accion: 9,
+      tomarAccion: 9,
       tasacion: 3,
       evolucionando: 12,
       disponible: 7,
+      descartado: 4,
+      noVende: 0,
+      reservado: 2,
+      vendido: 8,
     },
   },
   {
@@ -152,10 +176,14 @@ const users = [
     aiHint: "person smiling",
     initials: "MP",
     lots: {
-      accion: 2,
+      tomarAccion: 2,
       tasacion: 1,
       evolucionando: 5,
       disponible: 15,
+      descartado: 0,
+      noVende: 0,
+      reservado: 5,
+      vendido: 20,
     },
   },
   {
@@ -167,10 +195,14 @@ const users = [
     aiHint: "man office",
     initials: "MC",
     lots: {
-      accion: 4,
+      tomarAccion: 4,
       tasacion: 3,
       evolucionando: 6,
       disponible: 18,
+      descartado: 1,
+      noVende: 2,
+      reservado: 3,
+      vendido: 15,
     },
   },
 ];
@@ -294,7 +326,7 @@ const UserCard = ({ user }: { user: UserType }) => {
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <Target className="h-4 w-4" />
-            <span>Tomar Acción: {user.lots.accion}</span>
+            <span>Tomar Acción: {user.lots.tomarAccion}</span>
           </div>
           <div className="flex items-center gap-2">
             <Briefcase className="h-4 w-4" />
@@ -307,6 +339,22 @@ const UserCard = ({ user }: { user: UserType }) => {
           <div className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4" />
             <span>Disponible: {user.lots.disponible}</span>
+          </div>
+           <div className="flex items-center gap-2">
+            <Trash2 className="h-4 w-4" />
+            <span>Descartado: {user.lots.descartado}</span>
+          </div>
+           <div className="flex items-center gap-2">
+            <XCircle className="h-4 w-4" />
+            <span>No vende: {user.lots.noVende}</span>
+          </div>
+           <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            <span>Reservado: {user.lots.reservado}</span>
+          </div>
+           <div className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4" />
+            <span>Vendido: {user.lots.vendido}</span>
           </div>
         </div>
       </CardContent>

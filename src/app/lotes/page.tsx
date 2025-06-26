@@ -86,7 +86,7 @@ const listings = [
     neighborhood: "Recoleta",
     smp: "017-026-022",
     area: 210,
-    status: "Recicleta",
+    status: "Descartado",
     agent: { name: "Iair Baredes", initials: "IB" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "old city building"
@@ -96,7 +96,7 @@ const listings = [
     neighborhood: "San Telmo",
     smp: "031-053-037",
     area: 150,
-    status: "Tasación",
+    status: "No vende",
     agent: { name: "Ariel Naem", initials: "AN" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "yellow historic house"
@@ -106,7 +106,7 @@ const listings = [
     neighborhood: "Villa Crespo",
     smp: "031-055-029",
     area: 195,
-    status: "Evolucionando",
+    status: "Reservado",
     agent: { name: "Matías Poczter", initials: "MP" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "suburban brick house"
@@ -116,7 +116,7 @@ const listings = [
     neighborhood: "Bienvenido, Admin!",
     smp: "031-114-032",
     area: 95,
-    status: "Disponible",
+    status: "Vendido",
     agent: { name: "Matias Chirom", initials: "MC" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "red modern house"
@@ -142,6 +142,25 @@ const listings = [
     aiHint: "luxury apartment"
   },
 ];
+
+const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+  switch (status) {
+    case "Disponible":
+    case "Vendido":
+    case "Reservado":
+      return "default";
+    case "Tomar Acción":
+      return "destructive";
+    case "Tasación":
+    case "Evolucionando":
+      return "secondary";
+    case "Descartado":
+    case "No vende":
+      return "outline";
+    default:
+      return "secondary";
+  }
+};
 
 const ListingCard = ({ listing }: { listing: (typeof listings)[0] }) => (
   <Card className="overflow-hidden">
@@ -179,7 +198,7 @@ const ListingCard = ({ listing }: { listing: (typeof listings)[0] }) => (
       </div>
     </CardContent>
     <CardFooter className="bg-card p-4 flex justify-between items-center">
-        <Badge variant={listing.status === "Disponible" ? "default" : "secondary"}>{listing.status}</Badge>
+        <Badge variant={getStatusVariant(listing.status)}>{listing.status}</Badge>
         <div className="flex items-center gap-2">
             <Avatar className="h-6 w-6">
                 <AvatarFallback>{listing.agent.initials}</AvatarFallback>
@@ -240,8 +259,14 @@ export default function LotesPage() {
                   <SelectValue placeholder="Estados" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="estado1">Estado 1</SelectItem>
-                  <SelectItem value="estado2">Estado 2</SelectItem>
+                  <SelectItem value="tomar-accion">Tomar acción</SelectItem>
+                  <SelectItem value="tasacion">Tasación</SelectItem>
+                  <SelectItem value="evolucionando">Evolucionando</SelectItem>
+                  <SelectItem value="disponible">Disponible</SelectItem>
+                  <SelectItem value="descartado">Descartado</SelectItem>
+                  <SelectItem value="no-vende">No vende</SelectItem>
+                  <SelectItem value="reservado">Reservado</SelectItem>
+                  <SelectItem value="vendido">Vendido</SelectItem>
                 </SelectContent>
               </Select>
             </div>
