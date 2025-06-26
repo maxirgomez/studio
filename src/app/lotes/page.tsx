@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -29,6 +30,14 @@ import {
   Search,
   Plus,
 } from "lucide-react";
+import { 
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationPrevious,
+  PaginationNext 
+} from "@/components/ui/pagination";
+
 
 const listings = [
   {
@@ -110,6 +119,26 @@ const listings = [
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "red modern house"
   },
+  {
+    address: "Another Listing 1",
+    neighborhood: "Palermo",
+    smp: "017-027-021A",
+    area: 120,
+    status: "Tomar Acción",
+    agent: { name: "Admin User", initials: "AU" },
+    imageUrl: "https://placehold.co/600x400.png",
+    aiHint: "modern house"
+  },
+  {
+    address: "Another Listing 2",
+    neighborhood: "Belgrano",
+    smp: "017-059-049D",
+    area: 170,
+    status: "Tasación",
+    agent: { name: "John Doe", initials: "JD" },
+    imageUrl: "https://placehold.co/600x400.png",
+    aiHint: "luxury apartment"
+  },
 ];
 
 const ListingCard = ({ listing }: { listing: (typeof listings)[0] }) => (
@@ -160,6 +189,20 @@ const ListingCard = ({ listing }: { listing: (typeof listings)[0] }) => (
 );
 
 export default function LotesPage() {
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+  const totalPages = Math.ceil(listings.length / itemsPerPage);
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentListings = listings.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 lg:grid-cols-[280px_1fr]">
       <div className="hidden lg:block">
@@ -242,10 +285,41 @@ export default function LotesPage() {
             </Button>
           </div>
         </div>
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {listings.map((listing) => (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {currentListings.map((listing) => (
             <ListingCard key={listing.smp} listing={listing} />
           ))}
+        </div>
+        <div className="mt-8 flex justify-center">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handlePageChange(currentPage - 1);
+                    }}
+                    className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                  />
+                </PaginationItem>
+                 <PaginationItem>
+                    <span className="p-2 text-sm font-medium">
+                        Página {currentPage} de {totalPages}
+                    </span>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handlePageChange(currentPage + 1);
+                    }}
+                     className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
         </div>
       </div>
     </div>
