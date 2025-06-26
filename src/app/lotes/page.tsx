@@ -5,6 +5,7 @@ import Image from "next/image";
 import * as React from "react";
 import { useState } from "react";
 import { useSearchParams } from 'next/navigation';
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -160,7 +161,7 @@ const getStatusStyles = (status: string): React.CSSProperties => {
 };
 
 const ListingCard = ({ listing }: { listing: (typeof listings)[0] }) => (
-  <Card className="overflow-hidden">
+  <Card className="overflow-hidden hover:shadow-lg transition-shadow">
     <CardContent className="p-0">
       <div className="relative">
         {listing.imageUrl ? (
@@ -320,7 +321,9 @@ export default function LotesPage() {
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {currentListings.map((listing) => (
-            <ListingCard key={listing.smp} listing={listing} />
+            <Link href={`/lotes/${listing.smp}`} key={listing.smp} className="block">
+              <ListingCard listing={listing} />
+            </Link>
           ))}
         </div>
         <div className="mt-8 flex justify-center">
