@@ -185,28 +185,7 @@ export default function LoteDetailPage({ params }: { params: { smp: string } }) 
                 </CardContent>
             </Card>
 
-            <div className="flex flex-col gap-2">
-                <Button variant="outline"><Edit className="mr-2 h-4 w-4"/> Editar foto</Button>
-                <Button><Edit className="mr-2 h-4 w-4"/> Editar lote</Button>
-                <Button variant="outline"><Download className="mr-2 h-4 w-4"/> Descargar Ficha PDF</Button>
-            </div>
-
             <Card>
-                <CardHeader>
-                    <CardTitle>Informes adjuntos</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <Button variant="outline" className="w-full">
-                        <Upload className="mr-2 h-4 w-4" />
-                        Seleccionar PDF
-                    </Button>
-                </CardContent>
-            </Card>
-        </div>
-
-        {/* Right Column */}
-        <div className="md:col-span-2 space-y-6">
-             <Card>
                 <CardHeader>
                     <CardTitle>Estado y Agente</CardTitle>
                 </CardHeader>
@@ -228,6 +207,27 @@ export default function LoteDetailPage({ params }: { params: { smp: string } }) 
                 </CardContent>
             </Card>
 
+            <div className="flex flex-col gap-2">
+                <Button variant="outline"><Edit className="mr-2 h-4 w-4"/> Editar foto</Button>
+                <Button><Edit className="mr-2 h-4 w-4"/> Editar lote</Button>
+                <Button variant="outline"><Download className="mr-2 h-4 w-4"/> Descargar Ficha PDF</Button>
+            </div>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Informes adjuntos</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Button variant="outline" className="w-full">
+                        <Upload className="mr-2 h-4 w-4" />
+                        Seleccionar PDF
+                    </Button>
+                </CardContent>
+            </Card>
+        </div>
+
+        {/* Right Column */}
+        <div className="md:col-span-2 space-y-6">
             <Card>
                 <CardHeader>
                     <CardTitle>Información Urbanística y Catastral</CardTitle>
