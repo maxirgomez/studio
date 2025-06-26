@@ -54,7 +54,7 @@ export default function DashboardLayout({
   
   return (
     <div className="flex min-h-screen w-full flex-col">
-      <header className="sticky top-0 flex h-16 items-center justify-between border-b bg-header px-6 text-header-foreground">
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-header px-6 text-header-foreground">
         <div className="flex items-center gap-4">
           <Link
               href="/lotes"
