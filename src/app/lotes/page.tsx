@@ -2,6 +2,7 @@
 "use client";
 
 import Image from "next/image";
+import * as React from "react";
 import { useState } from "react";
 import { useSearchParams } from 'next/navigation';
 import {
@@ -31,14 +32,6 @@ import {
   Ruler,
   Search,
   Plus,
-  Target,
-  Briefcase,
-  TrendingUp,
-  CheckCircle,
-  XCircle,
-  Clock,
-  DollarSign,
-  Trash2,
 } from "lucide-react";
 import { 
   Pagination,
@@ -151,23 +144,19 @@ const listings = [
   },
 ];
 
-const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
-  switch (status) {
-    case "Disponible":
-    case "Vendido":
-    case "Reservado":
-      return "default";
-    case "Tomar Acción":
-      return "destructive";
-    case "Tasación":
-    case "Evolucionando":
-      return "secondary";
-    case "Descartado":
-    case "No vende":
-      return "outline";
-    default:
-      return "secondary";
-  }
+const getStatusStyles = (status: string): React.CSSProperties => {
+  const styles: { [key: string]: { backgroundColor: string; color: string } } = {
+    "Tomar Acción": { backgroundColor: "#669bbc", color: "#ffffff" },
+    "Tasación": { backgroundColor: "#dda15e", color: "#ffffff" },
+    "Evolucionando": { backgroundColor: "#219ebc", color: "#ffffff" },
+    "Disponible": { backgroundColor: "#ffb703", color: "#000000" },
+    "Descartado": { backgroundColor: "#0d1b2a", color: "#ffffff" },
+    "No vende": { backgroundColor: "#c1121f", color: "#ffffff" },
+    "Reservado": { backgroundColor: "#fb8500", color: "#ffffff" },
+    "Vendido": { backgroundColor: "#4f772d", color: "#ffffff" },
+  };
+
+  return styles[status] || {};
 };
 
 const ListingCard = ({ listing }: { listing: (typeof listings)[0] }) => (
@@ -206,7 +195,7 @@ const ListingCard = ({ listing }: { listing: (typeof listings)[0] }) => (
       </div>
     </CardContent>
     <CardFooter className="bg-card p-4 flex justify-between items-center">
-        <Badge variant={getStatusVariant(listing.status)}>{listing.status}</Badge>
+        <Badge style={getStatusStyles(listing.status)}>{listing.status}</Badge>
         <div className="flex items-center gap-2">
             <Avatar className="h-6 w-6">
                 <AvatarFallback>{listing.agent.initials}</AvatarFallback>
