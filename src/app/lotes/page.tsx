@@ -4,7 +4,7 @@
 import Image from "next/image";
 import * as React from "react";
 import { useState } from "react";
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from "next/link";
 import {
   Card,
@@ -42,6 +42,81 @@ import {
   PaginationNext 
 } from "@/components/ui/pagination";
 
+
+const users = [
+  {
+    role: "Architect",
+    name: "Maria Bailo Newton",
+    username: "@mariabailo",
+    email: "maria.bailo@baigunrealty.com",
+    avatarUrl: "https://placehold.co/100x100.png",
+    aiHint: "woman professional",
+    initials: "MN",
+  },
+  {
+    role: "Asesor",
+    name: "Roxana Rajich",
+    username: "@roxanarajich",
+    email: "roxana.rajich@baigunrealty.com",
+    avatarUrl: "https://placehold.co/100x100.png",
+    aiHint: "woman smiling",
+    initials: "RR",
+  },
+  {
+    role: "Asesor",
+    name: "Santiago Liscovsky",
+    username: "@santiagoliscovsky",
+    email: "santiago.liscovsky@baigunrealty.com",
+    avatarUrl: "https://placehold.co/100x100.png",
+    aiHint: "man professional",
+    initials: "SL",
+  },
+  {
+    role: "Asesor",
+    name: "Martín Beorlegui",
+    username: "@martinbeorlegui",
+    email: "martin.beorlegui@baigunrealty.com",
+    avatarUrl: "https://placehold.co/100x100.png",
+    aiHint: "man portrait",
+    initials: "MB",
+  },
+  {
+    role: "Asesor",
+    name: "Iair Baredes",
+    username: "@iairbaredes",
+    email: "iair.baredes@baigunrealty.com",
+    avatarUrl: "https://placehold.co/100x100.png",
+    aiHint: "man happy",
+    initials: "IB",
+  },
+  {
+    role: "Asesor",
+    name: "Ariel Naem",
+    username: "@arielnaem",
+    email: "Ariel.naem@baigunrealty.com",
+    avatarUrl: "https://placehold.co/100x100.png",
+    aiHint: "man with glasses",
+    initials: "AN",
+  },
+  {
+    role: "Administrador",
+    name: "Matías Poczter",
+    username: "@matiaspoczter",
+    email: "Matias.poczter@baigunrealty.com",
+    avatarUrl: "https://placehold.co/100x100.png",
+    aiHint: "person smiling",
+    initials: "MP",
+  },
+  {
+    role: "Administrador",
+    name: "Matias Chirom",
+    username: "@matiaschirom",
+    email: "Matias.chirom@baigunrealty.com",
+    avatarUrl: "https://placehold.co/100x100.png",
+    aiHint: "man office",
+    initials: "MC",
+  },
+];
 
 const listings = [
   {
@@ -208,6 +283,8 @@ const ListingCard = ({ listing }: { listing: (typeof listings)[0] }) => (
 );
 
 export default function LotesPage() {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const agentFilter = searchParams.get('agent');
   
@@ -230,6 +307,16 @@ export default function LotesPage() {
     }
   };
 
+  const handleAgentChange = (agentName: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (agentName && agentName !== 'todos') {
+      params.set('agent', agentName);
+    } else {
+      params.delete('agent');
+    }
+    router.replace(`${pathname}?${params.toString()}`);
+  };
+
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 lg:grid-cols-[280px_1fr]">
       <div className="hidden lg:block">
@@ -247,7 +334,7 @@ export default function LotesPage() {
                 <SelectContent>
                   <SelectItem value="tor">Tor</SelectItem>
                   <SelectItem value="baigun-realty">Baigun Realty</SelectItem>
-                  <SelectItem value="produccion">Produccion</SelectItem>
+                  <SelectItem value="produccion">Producción</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -283,13 +370,17 @@ export default function LotesPage() {
             </div>
             <div className="space-y-2">
               <Label>Agente</Label>
-              <Select>
+              <Select onValueChange={handleAgentChange} defaultValue={agentFilter || 'todos'}>
                 <SelectTrigger>
                   <SelectValue placeholder="Agentes" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="agente1">Agente 1</SelectItem>
-                  <SelectItem value="agente2">Agente 2</SelectItem>
+                  <SelectItem value="todos">Todos los Agentes</SelectItem>
+                  {users.map((user) => (
+                    <SelectItem key={user.email} value={user.name}>
+                      {user.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
