@@ -15,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, LogOut, Settings } from "lucide-react";
+import { User, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export function UserNav() {
@@ -77,16 +77,12 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <Link href="/lotes/profile">
+          <Link href="/lotes/mi-perfil">
             <DropdownMenuItem>
               <User className="mr-2 h-4 w-4" />
-              <span>Usuarios</span>
+              <span>Mi Perfil</span>
             </DropdownMenuItem>
           </Link>
-          <DropdownMenuItem>
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
-          </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
