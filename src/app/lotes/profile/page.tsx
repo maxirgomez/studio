@@ -1,5 +1,9 @@
 
+"use client"
+
 import Link from "next/link";
+import * as React from "react";
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -10,7 +14,37 @@ import {
 } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Target, Briefcase, TrendingUp, CheckCircle } from "lucide-react"
+import { Target, Briefcase, TrendingUp, CheckCircle, Pencil } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+import { useToast } from "@/hooks/use-toast"
 
 const users = [
   {
@@ -135,46 +169,163 @@ const users = [
   },
 ];
 
-const UserCard = ({ user }: { user: (typeof users)[0] }) => (
-  <Card>
-    <CardHeader className="flex flex-row items-center gap-4">
-      <Avatar className="h-12 w-12">
-        <AvatarImage src={user.avatarUrl} data-ai-hint={user.aiHint} />
-        <AvatarFallback>{user.initials}</AvatarFallback>
-      </Avatar>
-      <div>
-        <CardTitle>{user.name}</CardTitle>
-        <CardDescription>{user.username} &middot; {user.email}</CardDescription>
-      </div>
-    </CardHeader>
-    <CardContent>
-      <p className="text-sm font-medium mb-2 text-muted-foreground">Lotes asignados:</p>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <Target className="h-4 w-4" />
-          <span>Tomar Acción: {user.lots.accion}</span>
+type UserType = (typeof users)[0];
+
+const profileFormSchema = z.object({
+  name: z.string().min(2, {
+    message: "El nombre debe tener al menos 2 caracteres.",
+  }),
+  email: z.string().email({
+    message: "Por favor, introduce una dirección de correo electrónico válida.",
+  }),
+  role: z.string({
+    required_error: "Por favor, selecciona un rol.",
+  }),
+});
+
+type ProfileFormValues = z.infer<typeof profileFormSchema>;
+
+function EditUserForm({ user, onFormSubmit }: { user: UserType, onFormSubmit: () => void }) {
+  const { toast } = useToast();
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileFormSchema),
+    defaultValues: {
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+    mode: "onChange",
+  });
+
+  function onSubmit(data: ProfileFormValues) {
+    toast({
+      title: "Perfil Actualizado",
+      description: `Los datos de ${data.name} han sido guardados.`,
+    });
+    onFormSubmit();
+  }
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Nombre y Apellido</FormLabel>
+              <FormControl>
+                <Input placeholder="Nombre completo" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input type="email" placeholder="email@ejemplo.com" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="role"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Rol</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar un rol" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="Administrador">Administrador</SelectItem>
+                  <SelectItem value="Architect">Architect</SelectItem>
+                  <SelectItem value="Asesor">Asesor</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="secondary">
+              Cancelar
+            </Button>
+          </DialogClose>
+          <Button type="submit">Guardar Cambios</Button>
+        </DialogFooter>
+      </form>
+    </Form>
+  )
+}
+
+const UserCard = ({ user }: { user: UserType }) => {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  return(
+    <Card>
+      <CardHeader className="flex flex-row items-center gap-4">
+        <Avatar className="h-12 w-12">
+          <AvatarImage src={user.avatarUrl} data-ai-hint={user.aiHint} />
+          <AvatarFallback>{user.initials}</AvatarFallback>
+        </Avatar>
+        <div>
+          <CardTitle>{user.name}</CardTitle>
+          <CardDescription>{user.username} &middot; {user.email}</CardDescription>
         </div>
-        <div className="flex items-center gap-2">
-          <Briefcase className="h-4 w-4" />
-          <span>Tasación: {user.lots.tasacion}</span>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm font-medium mb-2 text-muted-foreground">Lotes asignados:</p>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            <span>Tomar Acción: {user.lots.accion}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Briefcase className="h-4 w-4" />
+            <span>Tasación: {user.lots.tasacion}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            <span>Evolucionando: {user.lots.evolucionando}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CheckCircle className="h-4 w-4" />
+            <span>Disponible: {user.lots.disponible}</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <TrendingUp className="h-4 w-4" />
-          <span>Evolucionando: {user.lots.evolucionando}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <CheckCircle className="h-4 w-4" />
-          <span>Disponible: {user.lots.disponible}</span>
-        </div>
-      </div>
-    </CardContent>
-    <CardFooter>
-      <Link href={`/lotes?agent=${encodeURIComponent(user.name)}`} className="w-full">
-        <Button className="w-full">Ver Lotes</Button>
-      </Link>
-    </CardFooter>
-  </Card>
-);
+      </CardContent>
+      <CardFooter className="gap-2">
+        <Link href={`/lotes?agent=${encodeURIComponent(user.name)}`} className="w-full">
+          <Button className="w-full">Ver Lotes</Button>
+        </Link>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline">Editar</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Editar Perfil</DialogTitle>
+              <DialogDescription>
+                Realiza cambios en el perfil del usuario. Haz clic en guardar cuando termines.
+              </DialogDescription>
+            </DialogHeader>
+            <EditUserForm user={user} onFormSubmit={() => setIsDialogOpen(false)} />
+          </DialogContent>
+        </Dialog>
+      </CardFooter>
+    </Card>
+  );
+}
 
 
 export default function UsersPage() {
