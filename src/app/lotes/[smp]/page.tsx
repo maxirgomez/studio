@@ -71,9 +71,7 @@ const listings = [
     smp: "017-027-006",
     area: 185,
     status: "Evolucionando",
-    agent: { name: "Iair Baredes", initials: "IB", avatarUrl: "https://placehold.co/100x100.png", aiHint: "man happy" },
-    imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "storefront supermarket",
+    agent: { name: "Iair Baredes", initials: "IB", avatarUrl: "https://placehold.co/100x100.png", aiHint: "storefront supermarket" },
     origen: "Producción",
     codigoUrbanistico: "U.S.A.A.",
     cpu: "C3II",
@@ -85,7 +83,7 @@ const listings = [
     smp: "031-036-034",
     area: 174,
     status: "Disponible",
-    agent: { name: "Martín Beorlegui", initials: "MB", avatarUrl: "https://placehold.co/100x100.png", aiHint: "man portrait" },
+    agent: { name: "Martín Beorlegui", initials: "MB", avatarUrl: "https://placehold.co/100x100.png", aiHint: "industrial warehouse" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "industrial warehouse",
     origen: "Tor",
@@ -311,7 +309,7 @@ export default function LoteDetailPage() {
         </div>
       </div>
       
-      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-8 lg:grid-cols-3">
         {/* Left Column */}
         <div className="space-y-6 lg:col-span-1">
             <Card>
@@ -623,12 +621,12 @@ export default function LoteDetailPage() {
                                     </Avatar>
                                     <div className="flex-1">
                                         <div className="flex items-center justify-between">
-                                            <p className="font-medium">{note.user}</p>
+                                            <p className="text-sm font-medium">{note.user}</p>
                                             <p className="text-xs text-muted-foreground">
                                                 {format(note.timestamp, "dd/MM/yyyy HH:mm")}
                                             </p>
                                         </div>
-                                        <p className="text-muted-foreground">{note.text}</p>
+                                        <p className="text-sm text-muted-foreground">{note.text}</p>
                                     </div>
                                 </div>
                             ))}
