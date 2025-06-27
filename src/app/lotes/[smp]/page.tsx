@@ -420,7 +420,7 @@ export default function LoteDetailPage() {
                     <CardTitle>Datos de Tasación</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-muted-foreground">Los datos de tasación y valoración se mostrarán aquí.</p>
+                    <p className="text-sm text-muted-foreground">Los datos de tasación y valoración se mostrarán aquí.</p>
                 </CardContent>
             </Card>
         </div>
