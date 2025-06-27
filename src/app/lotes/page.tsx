@@ -371,38 +371,44 @@ export default function LotesPage() {
   const minArea = useMemo(() => Math.min(...allAreas), [allAreas]);
   const maxArea = useMemo(() => Math.max(...allAreas), [allAreas]);
 
-  const getAreaFilterFromParams = useCallback(() => {
+  const [minFilter, maxFilter] = useMemo(() => {
     const min = searchParams.get('minArea');
     const max = searchParams.get('maxArea');
     return [
       min ? Number(min) : minArea,
       max ? Number(max) : maxArea
-    ] as [number, number];
+    ];
   }, [searchParams, minArea, maxArea]);
-  
-  const [areaInput, setAreaInput] = useState<[string, string]>(['', '']);
+
+  const [areaInput, setAreaInput] = useState<[string, string]>([String(minFilter), String(maxFilter)]);
+  const [sliderValue, setSliderValue] = useState<[number, number]>([minFilter, maxFilter]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
   const uniqueNeighborhoods = useMemo(() => [...new Set(listings.map(l => l.neighborhood))], []);
   
   useEffect(() => {
-    const [min, max] = getAreaFilterFromParams();
-    setAreaInput([String(min), String(max)]);
-  }, [searchParams, getAreaFilterFromParams]);
+    setAreaInput([String(minFilter), String(maxFilter)]);
+    setSliderValue([minFilter, maxFilter]);
+  }, [minFilter, maxFilter]);
 
-  const updateURLParams = (key: string, value: string | null) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (value === null || value === 'todos') {
-      params.delete(key);
-    } else {
-      params.set(key, value);
-    }
-    router.push(`${pathname}?${params.toString()}`, { scroll: false });
-    setCurrentPage(1);
-  };
+  const createQueryString = useCallback(
+    (paramsToUpdate: Record<string, string | null>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      for (const [key, value] of Object.entries(paramsToUpdate)) {
+        if (value === null || value === 'todos') {
+          params.delete(key);
+        } else {
+          params.set(key, value);
+        }
+      }
+      return params.toString();
+    },
+    [searchParams]
+  );
   
   const handleFilterChange = (name: string, value: string) => {
-    updateURLParams(name, value);
+    router.push(`${pathname}?${createQueryString({ [name]: value })}`, { scroll: false });
+    setCurrentPage(1);
   };
 
   const handleAreaInputChange = (index: 0 | 1, value: string) => {
@@ -417,41 +423,41 @@ export default function LotesPage() {
 
     if (isNaN(newMin) || newMin < minArea) newMin = minArea;
     if (isNaN(newMax) || newMax > maxArea) newMax = maxArea;
-
     if (newMin > maxArea) newMin = maxArea;
     if (newMax < minArea) newMax = minArea;
-    
     if (newMin > newMax) {
       [newMin, newMax] = [newMax, newMin];
     }
     
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('minArea', String(newMin));
-    params.set('maxArea', String(newMax));
-    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    if (newMin !== minFilter || newMax !== maxFilter) {
+      router.push(`${pathname}?${createQueryString({ minArea: String(newMin), maxArea: String(newMax) })}`, { scroll: false });
+      setCurrentPage(1);
+    } else {
+      setAreaInput([String(minFilter), String(maxFilter)]);
+    }
+  };
+  
+  const handleSliderVisualChange = (newRange: [number, number]) => {
+    setSliderValue(newRange);
+  };
+  
+  const handleSliderFilterCommit = (newRange: [number, number]) => {
+     router.push(`${pathname}?${createQueryString({ minArea: String(newRange[0]), maxArea: String(newRange[1]) })}`, { scroll: false });
     setCurrentPage(1);
   };
 
-  const handleAreaSliderChange = (newRange: [number, number]) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('minArea', String(newRange[0]));
-    params.set('maxArea', String(newRange[1]));
-    router.push(`${pathname}?${params.toString()}`, { scroll: false });
-    setCurrentPage(1);
-  };
 
   const filteredListings = useMemo(() => {
     const agentFilter = searchParams.get('agent');
     const neighborhoodFilter = searchParams.get('neighborhood');
-    const [min, max] = getAreaFilterFromParams();
 
     return listings.filter(listing => {
       const agentMatch = !agentFilter || listing.agent.name === agentFilter;
       const neighborhoodMatch = !neighborhoodFilter || listing.neighborhood === neighborhoodFilter;
-      const areaMatch = listing.area >= min && listing.area <= max;
+      const areaMatch = listing.area >= minFilter && listing.area <= maxFilter;
       return agentMatch && neighborhoodMatch && areaMatch;
     });
-  }, [searchParams, getAreaFilterFromParams]);
+  }, [searchParams, minFilter, maxFilter]);
 
   const totalPages = Math.ceil(filteredListings.length / itemsPerPage);
   const currentListings = filteredListings.slice(
@@ -477,8 +483,6 @@ export default function LotesPage() {
     title = `Lotes en ${neighborhoodFilter}`;
   }
   
-  const [min, max] = getAreaFilterFromParams();
-
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 lg:grid-cols-[280px_1fr]">
       <div className="hidden lg:block">
@@ -551,7 +555,7 @@ export default function LotesPage() {
               </Select>
             </div>
             <div className="space-y-4">
-              <Label>M² Estimados: {min} - {max}m²</Label>
+              <Label>M² Estimados: {minFilter} - {maxFilter}m²</Label>
               <div className="flex gap-2">
                  <Input
                   type="number"
@@ -573,8 +577,9 @@ export default function LotesPage() {
                 />
               </div>
               <Slider 
-                value={[min, max]}
-                onValueChange={handleAreaSliderChange}
+                value={sliderValue}
+                onValueChange={handleSliderVisualChange}
+                onValueCommit={handleSliderFilterCommit}
                 min={minArea}
                 max={maxArea}
                 step={10}
