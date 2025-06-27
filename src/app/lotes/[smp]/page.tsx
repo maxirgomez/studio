@@ -6,6 +6,7 @@ import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useParams } from 'next/navigation'
+import { format } from "date-fns"
 
 import {
   Card,
@@ -18,7 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, MapPin, Scan, Ruler, Edit, Download, Upload, Library, FileText, User, Home, Mailbox, Building, Phone, Smartphone, Mail, Info, XCircle, Scaling, Percent, CreditCard, DollarSign } from "lucide-react"
+import { ArrowLeft, MapPin, Scan, Ruler, Edit, Download, Upload, Library, FileText, User, Home, Mailbox, Building, Phone, Smartphone, Mail, Info, XCircle, Scaling, Percent, CreditCard, DollarSign, MessageSquare } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -32,6 +33,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
+import { Textarea } from "@/components/ui/textarea"
+import { Separator } from "@/components/ui/separator"
 
 // Data duplicated for now. Ideally, this would be in a shared file.
 const listings = [
@@ -41,7 +44,7 @@ const listings = [
     smp: "017-027-020A",
     area: 110,
     status: "Tomar Acción",
-    agent: { name: "Ariel Naem", initials: "AN" },
+    agent: { name: "Ariel Naem", initials: "AN", avatarUrl: "https://placehold.co/100x100.png", aiHint: "man with glasses" },
     imageUrl: null,
     origen: "Tor",
     codigoUrbanistico: "U.S.A.M.",
@@ -54,7 +57,7 @@ const listings = [
     smp: "017-059-048D",
     area: 162,
     status: "Tasación",
-    agent: { name: "Santiago Liscovsky", initials: "SL" },
+    agent: { name: "Santiago Liscovsky", initials: "SL", avatarUrl: "https://placehold.co/100x100.png", aiHint: "man professional" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "modern apartment building",
     origen: "Baigun Realty",
@@ -68,7 +71,7 @@ const listings = [
     smp: "017-027-006",
     area: 185,
     status: "Evolucionando",
-    agent: { name: "Iair Baredes", initials: "IB" },
+    agent: { name: "Iair Baredes", initials: "IB", avatarUrl: "https://placehold.co/100x100.png", aiHint: "man happy" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "storefront supermarket",
     origen: "Producción",
@@ -82,7 +85,7 @@ const listings = [
     smp: "031-036-034",
     area: 174,
     status: "Disponible",
-    agent: { name: "Martín Beorlegui", initials: "MB" },
+    agent: { name: "Martín Beorlegui", initials: "MB", avatarUrl: "https://placehold.co/100x100.png", aiHint: "man portrait" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "industrial warehouse",
     origen: "Tor",
@@ -96,7 +99,7 @@ const listings = [
     smp: "017-026-022",
     area: 210,
     status: "Descartado",
-    agent: { name: "Ariel Naem", initials: "AN" },
+    agent: { name: "Ariel Naem", initials: "AN", avatarUrl: "https://placehold.co/100x100.png", aiHint: "man with glasses" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "old city building",
     origen: "Baigun Realty",
@@ -110,7 +113,7 @@ const listings = [
     smp: "031-053-037",
     area: 150,
     status: "No vende",
-    agent: { name: "Matías Poczter", initials: "MP" },
+    agent: { name: "Matías Poczter", initials: "MP", avatarUrl: "https://placehold.co/100x100.png", aiHint: "person smiling" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "yellow historic house",
     origen: "Producción",
@@ -124,7 +127,7 @@ const listings = [
     smp: "031-055-029",
     area: 195,
     status: "Reservado",
-    agent: { name: "Matias Chirom", initials: "MC" },
+    agent: { name: "Matias Chirom", initials: "MC", avatarUrl: "https://placehold.co/100x100.png", aiHint: "man office" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "suburban brick house",
     origen: "Tor",
@@ -138,7 +141,7 @@ const listings = [
     smp: "031-114-032",
     area: 95,
     status: "Vendido",
-    agent: { name: "Maria Bailo Newton", initials: "MN" },
+    agent: { name: "Maria Bailo Newton", initials: "MN", avatarUrl: "https://placehold.co/100x100.png", aiHint: "woman professional" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "red modern house",
     origen: "Baigun Realty",
@@ -152,7 +155,7 @@ const listings = [
     smp: "017-027-021A",
     area: 120,
     status: "Tomar Acción",
-    agent: { name: "Roxana Rajich", initials: "RR" },
+    agent: { name: "Roxana Rajich", initials: "RR", avatarUrl: "https://placehold.co/100x100.png", aiHint: "woman smiling" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "modern house",
     origen: "Producción",
@@ -166,7 +169,7 @@ const listings = [
     smp: "017-059-049D",
     area: 170,
     status: "Tasación",
-    agent: { name: "Santiago Liscovsky", initials: "SL" },
+    agent: { name: "Santiago Liscovsky", initials: "SL", avatarUrl: "https://placehold.co/100x100.png", aiHint: "man professional" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "luxury apartment",
     origen: "Tor",
@@ -201,6 +204,49 @@ export default function LoteDetailPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { toast } = useToast();
+  
+  const [notes, setNotes] = useState([
+    {
+      text: "Se contactó al propietario, mostró interés en vender pero no está apurado.",
+      user: "Ariel Naem",
+      avatarUrl: "https://placehold.co/100x100.png",
+      aiHint: "man with glasses",
+      initials: "AN",
+      timestamp: new Date('2024-07-20T10:30:00'),
+    },
+    {
+      text: "Llamada de seguimiento. El propietario pidió que lo contactemos en 2 semanas.",
+      user: "Ariel Naem",
+      avatarUrl: "https://placehold.co/100x100.png",
+      aiHint: "man with glasses",
+      initials: "AN",
+      timestamp: new Date('2024-07-22T15:00:00'),
+    },
+  ]);
+  const [newNote, setNewNote] = useState("");
+
+  const handleAddNote = () => {
+      if (newNote.trim() === "" || !listing) return;
+      
+      const currentUser = listing.agent;
+
+      setNotes([
+        {
+          text: newNote,
+          user: currentUser.name,
+          avatarUrl: currentUser.avatarUrl,
+          aiHint: currentUser.aiHint,
+          initials: currentUser.initials,
+          timestamp: new Date(),
+        },
+        ...notes
+      ]);
+      setNewNote("");
+      toast({
+        title: "Nota Agregada",
+        description: "Tu nota ha sido guardada en el seguimiento del lote.",
+      })
+  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -298,7 +344,7 @@ export default function LoteDetailPage() {
                     </div>
                      <div className="flex items-center pt-2">
                         <Avatar className="h-10 w-10 mr-4">
-                             <AvatarImage src={`https://placehold.co/100x100.png`} data-ai-hint="person" />
+                             <AvatarImage src={listing.agent.avatarUrl} data-ai-hint={listing.agent.aiHint} />
                             <AvatarFallback>{listing.agent.initials}</AvatarFallback>
                         </Avatar>
                         <div className="space-y-1">
@@ -543,6 +589,52 @@ export default function LoteDetailPage() {
                   </div>
                 </div>
               </CardContent>
+            </Card>
+            
+            <Card>
+                <CardHeader>
+                    <CardTitle>Seguimiento del Lote</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-6">
+                        <div className="flex gap-4">
+                            <Avatar>
+                                <AvatarImage src={listing.agent.avatarUrl} data-ai-hint={listing.agent.aiHint} />
+                                <AvatarFallback>{listing.agent.initials}</AvatarFallback>
+                            </Avatar>
+                            <div className="w-full space-y-2">
+                                <Textarea
+                                    placeholder="Escribe una nueva nota de seguimiento..."
+                                    value={newNote}
+                                    onChange={(e) => setNewNote(e.target.value)}
+                                />
+                                <Button onClick={handleAddNote} disabled={!newNote.trim()}>
+                                    <MessageSquare className="mr-2 h-4 w-4" /> Agregar Nota
+                                </Button>
+                            </div>
+                        </div>
+                        <Separator />
+                        <div className="space-y-4">
+                            {notes.map((note, index) => (
+                                <div key={index} className="flex gap-4">
+                                    <Avatar>
+                                        <AvatarImage src={note.avatarUrl} data-ai-hint={note.aiHint} />
+                                        <AvatarFallback>{note.initials}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1">
+                                        <div className="flex items-center justify-between">
+                                            <p className="font-medium">{note.user}</p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {format(note.timestamp, "dd/MM/yyyy HH:mm")}
+                                            </p>
+                                        </div>
+                                        <p className="text-muted-foreground">{note.text}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </CardContent>
             </Card>
         </div>
       </div>
