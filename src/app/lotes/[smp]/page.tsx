@@ -621,12 +621,12 @@ export default function LoteDetailPage() {
                                     </Avatar>
                                     <div className="flex-1">
                                         <div className="flex items-center justify-between">
-                                            <p className="text-sm font-medium">{note.user}</p>
-                                            <p className="text-xs text-muted-foreground">
+                                            <p className="text-base font-medium">{note.user}</p>
+                                            <p className="text-sm text-muted-foreground">
                                                 {format(note.timestamp, "dd/MM/yyyy HH:mm")}
                                             </p>
                                         </div>
-                                        <p className="text-sm text-muted-foreground">{note.text}</p>
+                                        <p className="text-base text-muted-foreground">{note.text}</p>
                                     </div>
                                 </div>
                             ))}
@@ -639,3 +639,5 @@ export default function LoteDetailPage() {
     </div>
   );
 }
+
+    
