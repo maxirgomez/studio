@@ -265,7 +265,7 @@ export default function LoteDetailPage() {
         </div>
       </div>
       
-      <div className="grid gap-8 md:grid-cols-3">
+      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
         {/* Left Column */}
         <div className="space-y-6 lg:col-span-1">
             <Card>
@@ -398,7 +398,7 @@ export default function LoteDetailPage() {
                         <span className="ml-auto text-muted-foreground">{listing.neighborhood}</span>
                       </div>
                        <div className="flex items-center">
-                        <Cpu className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <Building className="h-5 w-5 mr-3 text-muted-foreground" />
                         <span className="font-medium">CPU:</span>
                         <span className="ml-auto text-muted-foreground">{listing.cpu}</span>
                       </div>
