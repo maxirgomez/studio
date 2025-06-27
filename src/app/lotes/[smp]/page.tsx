@@ -18,7 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, MapPin, Scan, Ruler, Edit, Download, Upload } from "lucide-react"
+import { ArrowLeft, MapPin, Scan, Ruler, Edit, Download, Upload, Library, Cpu, FileText } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -44,6 +44,9 @@ const listings = [
     agent: { name: "Ariel Naem", initials: "AN" },
     imageUrl: null,
     origen: "Tor",
+    codigoUrbanistico: "U.S.A.M.",
+    cpu: "R2b1",
+    partida: "123456-7",
   },
   {
     address: "Juramento 1196",
@@ -55,6 +58,9 @@ const listings = [
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "modern apartment building",
     origen: "Baigun Realty",
+    codigoUrbanistico: "C.M.",
+    cpu: "R1a",
+    partida: "234567-8",
   },
   {
     address: "Rivadavia 1298",
@@ -66,6 +72,9 @@ const listings = [
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "storefront supermarket",
     origen: "Producción",
+    codigoUrbanistico: "U.S.A.A.",
+    cpu: "C3II",
+    partida: "345678-9",
   },
   {
     address: "Corrientes 1341",
@@ -77,6 +86,9 @@ const listings = [
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "industrial warehouse",
     origen: "Tor",
+    codigoUrbanistico: "C.M.",
+    cpu: "C1",
+    partida: "456789-0",
   },
   {
     address: "Scalabrini Ortiz 1494",
@@ -88,6 +100,9 @@ const listings = [
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "old city building",
     origen: "Baigun Realty",
+    codigoUrbanistico: "A.E.",
+    cpu: "R1b",
+    partida: "567890-1",
   },
   {
     address: "Quintana 1577",
@@ -99,6 +114,9 @@ const listings = [
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "yellow historic house",
     origen: "Producción",
+    codigoUrbanistico: "A.P.H.",
+    cpu: "APH1",
+    partida: "678901-2",
   },
   {
     address: "Defensa 1684",
@@ -110,6 +128,9 @@ const listings = [
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "suburban brick house",
     origen: "Tor",
+    codigoUrbanistico: "U.S.A.B.2",
+    cpu: "R2bII",
+    partida: "789012-3",
   },
   {
     address: "Login Exitoso",
@@ -121,6 +142,9 @@ const listings = [
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "red modern house",
     origen: "Baigun Realty",
+    codigoUrbanistico: "C.M.",
+    cpu: "C3I",
+    partida: "890123-4",
   },
   {
     address: "Another Listing 1",
@@ -132,6 +156,9 @@ const listings = [
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "modern house",
     origen: "Producción",
+    codigoUrbanistico: "U.S.A.M.",
+    cpu: "R2b1",
+    partida: "901234-5",
   },
   {
     address: "Another Listing 2",
@@ -143,6 +170,9 @@ const listings = [
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "luxury apartment",
     origen: "Tor",
+    codigoUrbanistico: "C.M.",
+    cpu: "R1a",
+    partida: "012345-6",
   },
 ];
 
@@ -214,7 +244,7 @@ export default function LoteDetailPage() {
         <p className="text-muted-foreground mt-2">
           El lote con SMP "{params.smp}" no pudo ser encontrado.
         </p>
-        <Link href="/lotes" className="mt-6">
+        <Link href="/lotes">
           <Button>Volver a Lotes</Button>
         </Link>
       </div>
@@ -344,9 +374,9 @@ export default function LoteDetailPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                       <div className="flex items-center">
-                        <MapPin className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Dirección:</span>
-                        <span className="ml-auto text-muted-foreground">{listing.address}</span>
+                        <Scan className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <span className="font-medium">SMP:</span>
+                        <span className="ml-auto text-muted-foreground">{listing.smp}</span>
                       </div>
                        <div className="flex items-center">
                         <MapPin className="h-5 w-5 mr-3 text-muted-foreground" />
@@ -354,14 +384,24 @@ export default function LoteDetailPage() {
                         <span className="ml-auto text-muted-foreground">{listing.neighborhood}</span>
                       </div>
                       <div className="flex items-center">
-                        <Scan className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">SMP:</span>
-                        <span className="ml-auto text-muted-foreground">{listing.smp}</span>
+                        <Library className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <span className="font-medium">Código Urbanístico:</span>
+                        <span className="ml-auto text-muted-foreground">{listing.codigoUrbanistico}</span>
+                      </div>
+                       <div className="flex items-center">
+                        <Cpu className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <span className="font-medium">CPU:</span>
+                        <span className="ml-auto text-muted-foreground">{listing.cpu}</span>
                       </div>
                       <div className="flex items-center">
                         <Ruler className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Superficie:</span>
+                        <span className="font-medium">M2 Estimados:</span>
                         <span className="ml-auto text-muted-foreground">{listing.area} m²</span>
+                      </div>
+                      <div className="flex items-center">
+                        <FileText className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <span className="font-medium">Partida:</span>
+                        <span className="ml-auto text-muted-foreground">{listing.partida}</span>
                       </div>
                 </CardContent>
             </Card>

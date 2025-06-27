@@ -204,6 +204,9 @@ const listings = [
     agent: { name: "Ariel Naem", initials: "AN" },
     imageUrl: null,
     origen: "Tor",
+    codigoUrbanistico: "U.S.A.M.",
+    cpu: "R2b1",
+    partida: "123456-7",
   },
   {
     address: "Juramento 1196",
@@ -215,6 +218,9 @@ const listings = [
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "modern apartment building",
     origen: "Baigun Realty",
+    codigoUrbanistico: "C.M.",
+    cpu: "R1a",
+    partida: "234567-8",
   },
   {
     address: "Rivadavia 1298",
@@ -226,6 +232,9 @@ const listings = [
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "storefront supermarket",
     origen: "Producción",
+    codigoUrbanistico: "U.S.A.A.",
+    cpu: "C3II",
+    partida: "345678-9",
   },
   {
     address: "Corrientes 1341",
@@ -237,6 +246,9 @@ const listings = [
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "industrial warehouse",
     origen: "Tor",
+    codigoUrbanistico: "C.M.",
+    cpu: "C1",
+    partida: "456789-0",
   },
   {
     address: "Scalabrini Ortiz 1494",
@@ -248,6 +260,9 @@ const listings = [
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "old city building",
     origen: "Baigun Realty",
+    codigoUrbanistico: "A.E.",
+    cpu: "R1b",
+    partida: "567890-1",
   },
   {
     address: "Quintana 1577",
@@ -259,6 +274,9 @@ const listings = [
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "yellow historic house",
     origen: "Producción",
+    codigoUrbanistico: "A.P.H.",
+    cpu: "APH1",
+    partida: "678901-2",
   },
   {
     address: "Defensa 1684",
@@ -270,6 +288,9 @@ const listings = [
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "suburban brick house",
     origen: "Tor",
+    codigoUrbanistico: "U.S.A.B.2",
+    cpu: "R2bII",
+    partida: "789012-3",
   },
   {
     address: "Login Exitoso",
@@ -281,6 +302,9 @@ const listings = [
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "red modern house",
     origen: "Baigun Realty",
+    codigoUrbanistico: "C.M.",
+    cpu: "C3I",
+    partida: "890123-4",
   },
   {
     address: "Another Listing 1",
@@ -292,6 +316,9 @@ const listings = [
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "modern house",
     origen: "Producción",
+    codigoUrbanistico: "U.S.A.M.",
+    cpu: "R2b1",
+    partida: "901234-5",
   },
   {
     address: "Another Listing 2",
@@ -303,6 +330,9 @@ const listings = [
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "luxury apartment",
     origen: "Tor",
+    codigoUrbanistico: "C.M.",
+    cpu: "R1a",
+    partida: "012345-6",
   },
 ];
 
