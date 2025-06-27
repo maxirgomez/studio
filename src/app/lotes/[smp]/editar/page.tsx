@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { useToast } from "@/hooks/use-toast"
-import { ArrowLeft, MapPin, Scan, Ruler, Building, FileText, User, Home, Mailbox, Phone, Smartphone, Mail, Info, XCircle, Scaling, Percent, CreditCard, DollarSign } from "lucide-react"
+import { ArrowLeft, MapPin, Scan, Ruler, Building, FileText, User, Home, Mailbox, Phone, Smartphone, Mail, Info, XCircle, Scaling, Percent, CreditCard, DollarSign, Library } from "lucide-react"
 
 // Mock data (ideally, fetch this based on SMP)
 const listings = [
