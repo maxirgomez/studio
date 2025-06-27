@@ -232,8 +232,8 @@ export default function LoteDetailPage() {
         {
           text: newNote,
           user: currentUser.name,
-          avatarUrl: currentUser.avatarUrl,
-          aiHint: currentUser.aiHint,
+          avatarUrl: "https://placehold.co/100x100.png", // This should be dynamic based on current user
+          aiHint: "person", // This should be dynamic
           initials: currentUser.initials,
           timestamp: new Date(),
         },
@@ -309,7 +309,9 @@ export default function LoteDetailPage() {
                 <p className="text-muted-foreground">{listing.neighborhood}</p>
             </div>
         </div>
-        <Button><Edit className="mr-2 h-4 w-4"/> Editar lote</Button>
+        <Link href={`/lotes/${listing.smp}/editar`}>
+            <Button><Edit className="mr-2 h-4 w-4"/> Editar lote</Button>
+        </Link>
       </div>
       
       <div className="grid gap-8 lg:grid-cols-3">
@@ -599,7 +601,7 @@ export default function LoteDetailPage() {
                     <div className="space-y-6">
                         <div className="flex gap-4">
                             <Avatar>
-                                <AvatarImage src={listing.agent.avatarUrl} data-ai-hint={listing.agent.aiHint} />
+                                <AvatarImage src="https://placehold.co/100x100.png" data-ai-hint="person" />
                                 <AvatarFallback>{listing.agent.initials}</AvatarFallback>
                             </Avatar>
                             <div className="w-full space-y-2">
