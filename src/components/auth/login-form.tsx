@@ -9,6 +9,7 @@ import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
   onAuthStateChanged,
+  type UserCredential,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
@@ -76,10 +77,11 @@ export function LoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
+      const userCredential: UserCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      const user = userCredential.user;
       toast({
         title: "Login exitoso",
-        description: "Bienvenido de nuevo!",
+        description: `¡Bienvenido de nuevo, ${user.displayName || user.email}!`,
       });
       router.push("/lotes");
     } catch (error: any) {
