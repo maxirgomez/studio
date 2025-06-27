@@ -411,7 +411,7 @@ export default function LoteDetailPage() {
                     <CardTitle>Información del propietario</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-muted-foreground">Los detalles del propietario se mostrarán aquí.</p>
+                    <p className="text-sm text-muted-foreground">Los detalles del propietario se mostrarán aquí.</p>
                 </CardContent>
             </Card>
 
