@@ -3,7 +3,7 @@
 
 import Image from "next/image";
 import * as React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from "next/link";
 import {
@@ -376,22 +376,36 @@ export default function LotesPage() {
   const allAreas = listings.map(l => l.area);
   const minArea = Math.min(...allAreas);
   const maxArea = Math.max(...allAreas);
+  
   const [areaRange, setAreaRange] = useState<[number, number]>([minArea, maxArea]);
 
-  const handleAreaRangeChange = (newRange: [number, number]) => {
-    const [newMin, newMax] = newRange;
-    if (newMin > newMax) {
-      return;
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams);
+    const min = params.get('minArea');
+    const max = params.get('maxArea');
+    const initialMin = min ? Number(min) : minArea;
+    const initialMax = max ? Number(max) : maxArea;
+    setAreaRange([initialMin, initialMax]);
+  }, [searchParams, minArea, maxArea]);
+
+
+  const handleFilterChange = (name: string, value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value && value !== 'todos') {
+      params.set(name, value);
+    } else {
+      params.delete(name);
     }
-    if (newMin < minArea) {
-      setAreaRange([minArea, newMax]);
-      return;
-    }
-    if (newMax > maxArea) {
-      setAreaRange([newMin, maxArea]);
-      return;
-    }
-    setAreaRange(newRange);
+    router.replace(`${pathname}?${params.toString()}`);
+    setCurrentPage(1);
+  }
+
+  const handleAreaFilterChange = (newRange: [number, number]) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('minArea', String(newRange[0]));
+    params.set('maxArea', String(newRange[1]));
+    router.replace(`${pathname}?${params.toString()}`);
+    setCurrentPage(1);
   };
 
   const filteredListings = listings.filter(listing => {
@@ -412,17 +426,6 @@ export default function LotesPage() {
       setCurrentPage(page);
     }
   };
-  
-  const handleFilterChange = (name: string, value: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (value && value !== 'todos') {
-      params.set(name, value);
-    } else {
-      params.delete(name);
-    }
-    router.replace(`${pathname}?${params.toString()}`);
-    setCurrentPage(1);
-  }
 
   let title = "Lotes";
   if (agentFilter) {
@@ -514,25 +517,19 @@ export default function LotesPage() {
                   value={areaRange[0]}
                   min={minArea}
                   max={areaRange[1]}
-                  onChange={(e) => {
-                      const newMin = Number(e.target.value) || 0;
-                      handleAreaRangeChange([newMin, areaRange[1]])
-                  }} 
+                  onChange={(e) => handleAreaFilterChange([Number(e.target.value) || minArea, areaRange[1]])} 
                 />
                 <Input 
                   type="number"
                   value={areaRange[1]}
                   min={areaRange[0]}
                   max={maxArea}
-                  onChange={(e) => {
-                      const newMax = Number(e.target.value) || 0;
-                      handleAreaRangeChange([areaRange[0], newMax])
-                  }}
+                  onChange={(e) => handleAreaFilterChange([areaRange[0], Number(e.target.value) || maxArea])}
                 />
               </div>
               <Slider 
                 value={areaRange}
-                onValueChange={(value) => handleAreaRangeChange(value as [number, number])}
+                onValueChange={(value) => handleAreaFilterChange(value as [number, number])}
                 min={minArea}
                 max={maxArea}
                 step={10}
@@ -598,3 +595,5 @@ export default function LotesPage() {
     </div>
   );
 }
+
+    
