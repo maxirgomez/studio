@@ -297,16 +297,19 @@ export default function LoteDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/lotes">
-            <Button variant="outline" size="icon">
-                <ArrowLeft className="h-4 w-4" />
-            </Button>
-        </Link>
-        <div>
-            <h1 className="text-3xl font-bold tracking-tight">{listing.address}</h1>
-            <p className="text-muted-foreground">{listing.neighborhood}</p>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+            <Link href="/lotes">
+                <Button variant="outline" size="icon">
+                    <ArrowLeft className="h-4 w-4" />
+                </Button>
+            </Link>
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight">{listing.address}</h1>
+                <p className="text-muted-foreground">{listing.neighborhood}</p>
+            </div>
         </div>
+        <Button><Edit className="mr-2 h-4 w-4"/> Editar lote</Button>
       </div>
       
       <div className="grid gap-8 lg:grid-cols-3">
@@ -356,7 +359,7 @@ export default function LoteDetailPage() {
             <div className="flex flex-col gap-2">
                 <Dialog open={isEditDialogOpen} onOpenChange={onDialogClose}>
                     <DialogTrigger asChild>
-                        <Button><Edit className="mr-2 h-4 w-4"/> Editar foto</Button>
+                        <Button variant="outline"><Edit className="mr-2 h-4 w-4"/> Editar foto</Button>
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
@@ -393,8 +396,7 @@ export default function LoteDetailPage() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-                <Button><Edit className="mr-2 h-4 w-4"/> Editar lote</Button>
-                <Button><Download className="mr-2 h-4 w-4"/> Descargar Ficha PDF</Button>
+                <Button variant="secondary"><Download className="mr-2 h-4 w-4"/> Descargar Ficha PDF</Button>
             </div>
 
             <Card>
@@ -470,12 +472,12 @@ export default function LoteDetailPage() {
                       </div>
                       <div className="flex items-center">
                           <Home className="h-5 w-5 mr-3 text-muted-foreground" />
-                          <span className="font-medium">Dirección Contacto:</span>
+                          <span className="font-medium">Direccion Contacto:</span>
                           <span className="ml-auto text-muted-foreground">Calle Falsa 123</span>
                       </div>
                       <div className="flex items-center">
                           <Mailbox className="h-5 w-5 mr-3 text-muted-foreground" />
-                          <span className="font-medium">Código Postal:</span>
+                          <span className="font-medium">Codigo Postal:</span>
                           <span className="ml-auto text-muted-foreground">C1425</span>
                       </div>
                       <div className="flex items-center">
@@ -485,7 +487,7 @@ export default function LoteDetailPage() {
                       </div>
                       <div className="flex items-center">
                           <Home className="h-5 w-5 mr-3 text-muted-foreground" />
-                          <span className="font-medium">Dirección Alternativa:</span>
+                          <span className="font-medium">Direccion Alternativa:</span>
                           <span className="ml-auto text-muted-foreground">Av. Siempreviva 742</span>
                       </div>
                       <div className="flex items-center">
@@ -621,8 +623,8 @@ export default function LoteDetailPage() {
                                     </Avatar>
                                     <div className="flex-1">
                                         <div className="flex items-center justify-between">
-                                            <p className="text-base font-medium">{note.user}</p>
-                                            <p className="text-sm text-muted-foreground">
+                                            <p className="text-sm font-medium">{note.user}</p>
+                                            <p className="text-xs text-muted-foreground">
                                                 {format(note.timestamp, "dd/MM/yyyy HH:mm")}
                                             </p>
                                         </div>
