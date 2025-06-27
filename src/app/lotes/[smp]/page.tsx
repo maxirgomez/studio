@@ -356,7 +356,7 @@ export default function LoteDetailPage() {
             <div className="flex flex-col gap-2">
                 <Dialog open={isEditDialogOpen} onOpenChange={onDialogClose}>
                     <DialogTrigger asChild>
-                        <Button variant="outline"><Edit className="mr-2 h-4 w-4"/> Editar foto</Button>
+                        <Button><Edit className="mr-2 h-4 w-4"/> Editar foto</Button>
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
@@ -393,8 +393,8 @@ export default function LoteDetailPage() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-                <Button variant="secondary"><Edit className="mr-2 h-4 w-4"/> Editar lote</Button>
-                <Button variant="outline"><Download className="mr-2 h-4 w-4"/> Descargar Ficha PDF</Button>
+                <Button><Edit className="mr-2 h-4 w-4"/> Editar lote</Button>
+                <Button><Download className="mr-2 h-4 w-4"/> Descargar Ficha PDF</Button>
             </div>
 
             <Card>
@@ -639,5 +639,7 @@ export default function LoteDetailPage() {
     </div>
   );
 }
+
+    
 
     
