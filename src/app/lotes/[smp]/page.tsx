@@ -265,9 +265,9 @@ export default function LoteDetailPage() {
         </div>
       </div>
       
-      <div className="grid gap-8 md:grid-cols-3">
+      <div className="grid gap-8 md:grid-cols-2">
         {/* Left Column */}
-        <div className="md:col-span-1 space-y-6">
+        <div className="space-y-6">
             <Card>
                 <CardContent className="p-0">
                 {currentImageUrl ? (
@@ -367,12 +367,12 @@ export default function LoteDetailPage() {
         </div>
 
         {/* Right Column */}
-        <div className="md:col-span-2 space-y-6">
+        <div className="space-y-6">
             <Card>
                 <CardHeader>
                     <CardTitle>Información Urbanística y Catastral</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 text-sm">
                       <div className="flex items-center">
                         <Scan className="h-5 w-5 mr-3 text-muted-foreground" />
                         <span className="font-medium">SMP:</span>
