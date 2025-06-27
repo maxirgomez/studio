@@ -378,6 +378,22 @@ export default function LotesPage() {
   const maxArea = Math.max(...allAreas);
   const [areaRange, setAreaRange] = useState<[number, number]>([minArea, maxArea]);
 
+  const handleAreaRangeChange = (newRange: [number, number]) => {
+    const [newMin, newMax] = newRange;
+    if (newMin > newMax) {
+      return;
+    }
+    if (newMin < minArea) {
+      setAreaRange([minArea, newMax]);
+      return;
+    }
+    if (newMax > maxArea) {
+      setAreaRange([newMin, maxArea]);
+      return;
+    }
+    setAreaRange(newRange);
+  };
+
   const filteredListings = listings.filter(listing => {
     const agentMatch = !agentFilter || listing.agent.name === agentFilter;
     const neighborhoodMatch = !neighborhoodFilter || listing.neighborhood === neighborhoodFilter;
@@ -499,10 +515,8 @@ export default function LotesPage() {
                   min={minArea}
                   max={areaRange[1]}
                   onChange={(e) => {
-                      const newMin = Number(e.target.value);
-                      if (newMin <= areaRange[1]) {
-                          setAreaRange([newMin, areaRange[1]]);
-                      }
+                      const newMin = Number(e.target.value) || 0;
+                      handleAreaRangeChange([newMin, areaRange[1]])
                   }} 
                 />
                 <Input 
@@ -511,16 +525,14 @@ export default function LotesPage() {
                   min={areaRange[0]}
                   max={maxArea}
                   onChange={(e) => {
-                      const newMax = Number(e.target.value);
-                      if (newMax >= areaRange[0]) {
-                          setAreaRange([areaRange[0], newMax]);
-                      }
+                      const newMax = Number(e.target.value) || 0;
+                      handleAreaRangeChange([areaRange[0], newMax])
                   }}
                 />
               </div>
               <Slider 
                 value={areaRange}
-                onValueChange={(value) => setAreaRange(value as [number, number])}
+                onValueChange={(value) => handleAreaRangeChange(value as [number, number])}
                 min={minArea}
                 max={maxArea}
                 step={10}
