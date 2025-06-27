@@ -3,7 +3,7 @@
 
 import Image from "next/image";
 import * as React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from "next/link";
 import {
@@ -366,60 +366,97 @@ export default function LotesPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const agentFilter = searchParams.get('agent');
-  const neighborhoodFilter = searchParams.get('neighborhood');
-  
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
-  
-  const uniqueNeighborhoods = [...new Set(listings.map(l => l.neighborhood))];
-  const allAreas = listings.map(l => l.area);
-  const minArea = Math.min(...allAreas);
-  const maxArea = Math.max(...allAreas);
-  
-  const [areaRange, setAreaRange] = useState<[number, number]>([minArea, maxArea]);
 
-  useEffect(() => {
-    const params = new URLSearchParams(searchParams);
-    const min = params.get('minArea');
-    const max = params.get('maxArea');
-    const initialMin = min ? Number(min) : minArea;
-    const initialMax = max ? Number(max) : maxArea;
-    setAreaRange([initialMin, initialMax]);
+  const allAreas = useMemo(() => listings.map(l => l.area), []);
+  const minArea = useMemo(() => Math.min(...allAreas), [allAreas]);
+  const maxArea = useMemo(() => Math.max(...allAreas), [allAreas]);
+
+  const getAreaFilterFromParams = React.useCallback(() => {
+    const min = searchParams.get('minArea');
+    const max = searchParams.get('maxArea');
+    return [
+      min ? Number(min) : minArea,
+      max ? Number(max) : maxArea
+    ] as [number, number];
   }, [searchParams, minArea, maxArea]);
 
+  const [areaFilter, setAreaFilter] = useState<[number, number]>(getAreaFilterFromParams());
+  const [areaInput, setAreaInput] = useState<[string, string]>(['', '']);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+  const uniqueNeighborhoods = useMemo(() => [...new Set(listings.map(l => l.neighborhood))], []);
 
-  const handleFilterChange = (name: string, value: string) => {
+  useEffect(() => {
+    const [min, max] = getAreaFilterFromParams();
+    setAreaFilter([min, max]);
+    setAreaInput([String(min), String(max)]);
+  }, [searchParams, getAreaFilterFromParams]);
+
+  const updateURLParams = (key: string, value: string | null) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (value && value !== 'todos') {
-      params.set(name, value);
+    if (value === null || value === 'todos') {
+      params.delete(key);
     } else {
-      params.delete(name);
+      params.set(key, value);
     }
-    router.replace(`${pathname}?${params.toString()}`);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     setCurrentPage(1);
-  }
+  };
+  
+  const handleFilterChange = (name: string, value: string) => {
+    updateURLParams(name, value);
+  };
 
-  const handleAreaFilterChange = (newRange: [number, number]) => {
+  const handleAreaInputChange = (index: 0 | 1, value: string) => {
+    const newInputs = [...areaInput] as [string, string];
+    newInputs[index] = value;
+    setAreaInput(newInputs);
+  };
+
+  const handleAreaInputBlur = () => {
+    let newMin = Number(areaInput[0]);
+    let newMax = Number(areaInput[1]);
+
+    if (isNaN(newMin) || newMin < minArea || newMin > maxArea) newMin = minArea;
+    if (isNaN(newMax) || newMax > maxArea || newMax < minArea) newMax = maxArea;
+
+    if (newMin > newMax) {
+      [newMin, newMax] = [newMax, newMin];
+    }
+    
     const params = new URLSearchParams(searchParams.toString());
-    params.set('minArea', String(newRange[0]));
-    params.set('maxArea', String(newRange[1]));
-    router.replace(`${pathname}?${params.toString()}`);
+    params.set('minArea', String(newMin));
+    params.set('maxArea', String(newMax));
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     setCurrentPage(1);
   };
 
-  const filteredListings = listings.filter(listing => {
-    const agentMatch = !agentFilter || listing.agent.name === agentFilter;
-    const neighborhoodMatch = !neighborhoodFilter || listing.neighborhood === neighborhoodFilter;
-    const areaMatch = listing.area >= areaRange[0] && listing.area <= areaRange[1];
-    return agentMatch && neighborhoodMatch && areaMatch;
-  });
+  const handleAreaSliderChange = (newRange: [number, number]) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('minArea', String(newRange[0]));
+    params.set('maxArea', String(newRange[1]));
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    setCurrentPage(1);
+  };
+
+  const filteredListings = useMemo(() => {
+    const agentFilter = searchParams.get('agent');
+    const neighborhoodFilter = searchParams.get('neighborhood');
+    const [min, max] = areaFilter;
+
+    return listings.filter(listing => {
+      const agentMatch = !agentFilter || listing.agent.name === agentFilter;
+      const neighborhoodMatch = !neighborhoodFilter || listing.neighborhood === neighborhoodFilter;
+      const areaMatch = listing.area >= min && listing.area <= max;
+      return agentMatch && neighborhoodMatch && areaMatch;
+    });
+  }, [searchParams, areaFilter]);
 
   const totalPages = Math.ceil(filteredListings.length / itemsPerPage);
-
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentListings = filteredListings.slice(startIndex, endIndex);
+  const currentListings = filteredListings.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
@@ -427,6 +464,8 @@ export default function LotesPage() {
     }
   };
 
+  const agentFilter = searchParams.get('agent');
+  const neighborhoodFilter = searchParams.get('neighborhood');
   let title = "Lotes";
   if (agentFilter) {
     title = `Lotes de ${agentFilter}`;
@@ -436,7 +475,6 @@ export default function LotesPage() {
   } else if (neighborhoodFilter) {
     title = `Lotes en ${neighborhoodFilter}`;
   }
-
 
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 lg:grid-cols-[280px_1fr]">
@@ -479,7 +517,7 @@ export default function LotesPage() {
             </div>
             <div className="space-y-2">
               <Label>Barrio</Label>
-              <Select onValueChange={(value) => handleFilterChange('neighborhood', value)} defaultValue={neighborhoodFilter || 'todos'}>
+              <Select onValueChange={(value) => handleFilterChange('neighborhood', value)} defaultValue={searchParams.get('neighborhood') || 'todos'}>
                 <SelectTrigger>
                   <SelectValue placeholder="Barrios" />
                 </SelectTrigger>
@@ -495,7 +533,7 @@ export default function LotesPage() {
             </div>
             <div className="space-y-2">
               <Label>Agente</Label>
-              <Select onValueChange={(value) => handleFilterChange('agent', value)} defaultValue={agentFilter || 'todos'}>
+              <Select onValueChange={(value) => handleFilterChange('agent', value)} defaultValue={searchParams.get('agent') || 'todos'}>
                 <SelectTrigger>
                   <SelectValue placeholder="Agentes" />
                 </SelectTrigger>
@@ -510,26 +548,30 @@ export default function LotesPage() {
               </Select>
             </div>
             <div className="space-y-4">
-              <Label>M² Estimados: {areaRange[0]} - {areaRange[1]}m²</Label>
+              <Label>M² Estimados: {areaFilter[0]} - {areaFilter[1]}m²</Label>
               <div className="flex gap-2">
-                <Input 
+                 <Input
                   type="number"
-                  value={areaRange[0]}
+                  placeholder="Min"
+                  value={areaInput[0]}
                   min={minArea}
-                  max={areaRange[1]}
-                  onChange={(e) => handleAreaFilterChange([Number(e.target.value) || minArea, areaRange[1]])} 
-                />
-                <Input 
-                  type="number"
-                  value={areaRange[1]}
-                  min={areaRange[0]}
                   max={maxArea}
-                  onChange={(e) => handleAreaFilterChange([areaRange[0], Number(e.target.value) || maxArea])}
+                  onChange={(e) => handleAreaInputChange(0, e.target.value)}
+                  onBlur={handleAreaInputBlur}
+                />
+                <Input
+                  type="number"
+                  placeholder="Max"
+                  value={areaInput[1]}
+                  min={minArea}
+                  max={maxArea}
+                  onChange={(e) => handleAreaInputChange(1, e.target.value)}
+                  onBlur={handleAreaInputBlur}
                 />
               </div>
               <Slider 
-                value={areaRange}
-                onValueChange={(value) => handleAreaFilterChange(value as [number, number])}
+                value={areaFilter}
+                onValueChange={handleAreaSliderChange}
                 min={minArea}
                 max={maxArea}
                 step={10}
@@ -595,5 +637,3 @@ export default function LotesPage() {
     </div>
   );
 }
-
-    
