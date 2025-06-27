@@ -85,11 +85,15 @@ export function LoginForm() {
       });
       router.push("/lotes");
     } catch (error: any) {
-      console.error("Login failed", error);
-      let description = "Por favor, comprueba tus credenciales e inténtalo de nuevo.";
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        description = "Email o contraseña incorrectos.";
+      console.error("Login failed:", error);
+      let description = "Ha ocurrido un error inesperado. Por favor, inténtelo de nuevo.";
+      
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        description = "El correo electrónico o la contraseña son incorrectos.";
+      } else if (error.code === 'auth/invalid-email') {
+        description = "El formato del correo electrónico no es válido.";
       }
+
       toast({
         title: "Error de inicio de sesión",
         description: description,
