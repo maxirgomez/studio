@@ -18,7 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, MapPin, Scan, Ruler, Edit, Download, Upload, Library, Cpu, FileText, User, Home, Mailbox, Building, Phone, Smartphone, Mail, Info, XCircle } from "lucide-react"
+import { ArrowLeft, MapPin, Scan, Ruler, Edit, Download, Upload, Library, FileText, User, Home, Mailbox, Building, Phone, Smartphone, Mail, Info, XCircle, Scaling, Percent, CreditCard, DollarSign } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -497,12 +497,52 @@ export default function LoteDetailPage() {
             </Card>
 
             <Card>
-                <CardHeader>
-                    <CardTitle>Datos de Tasación</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm">
-                    <p className="text-muted-foreground">Los datos de tasación y valoración se mostrarán aquí.</p>
-                </CardContent>
+              <CardHeader>
+                <CardTitle>Datos de Tasación</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center">
+                      <Scaling className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium">Incidencia UVA:</span>
+                      <span className="ml-auto text-muted-foreground">1.25</span>
+                    </div>
+                    <div className="flex items-center">
+                      <FileText className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium">FOT:</span>
+                      <span className="ml-auto text-muted-foreground">3.0</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Percent className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium">Alícuota:</span>
+                      <span className="ml-auto text-muted-foreground">8.25%</span>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center">
+                      <Ruler className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium">M2 Vendibles:</span>
+                      <span className="ml-auto text-muted-foreground">555 m²</span>
+                    </div>
+                    <div className="flex items-center">
+                      <DollarSign className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium">Valor de Venta (USD):</span>
+                      <span className="ml-auto text-muted-foreground">$ 1,200,000</span>
+                    </div>
+                    <div className="flex items-center">
+                      <DollarSign className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium">Incidencia Tasada (USD/m2):</span>
+                      <span className="ml-auto text-muted-foreground">$ 2,162</span>
+                    </div>
+                    <div className="flex items-center">
+                      <CreditCard className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium">Forma de Pago:</span>
+                      <span className="ml-auto text-muted-foreground">A convenir</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
             </Card>
         </div>
       </div>
