@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -40,7 +41,7 @@ const listings = [
     smp: "017-027-020A",
     area: 110,
     status: "Tomar Acción",
-    agent: { name: "Roxana Rajich", initials: "RR" },
+    agent: { name: "Ariel Naem", initials: "AN" },
     imageUrl: null,
   },
   {

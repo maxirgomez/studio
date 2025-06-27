@@ -47,7 +47,7 @@ const users = [
   {
     role: "Architect",
     name: "Maria Bailo Newton",
-    username: "@mariabailo",
+    username: "mbailo",
     email: "maria.bailo@baigunrealty.com",
     avatarUrl: "https://placehold.co/100x100.png",
     aiHint: "woman professional",
@@ -56,7 +56,7 @@ const users = [
   {
     role: "Asesor",
     name: "Roxana Rajich",
-    username: "@roxanarajich",
+    username: "rrajich",
     email: "roxana.rajich@baigunrealty.com",
     avatarUrl: "https://placehold.co/100x100.png",
     aiHint: "woman smiling",
@@ -65,7 +65,7 @@ const users = [
   {
     role: "Asesor",
     name: "Santiago Liscovsky",
-    username: "@santiagoliscovsky",
+    username: "sliscovsky",
     email: "santiago.liscovsky@baigunrealty.com",
     avatarUrl: "https://placehold.co/100x100.png",
     aiHint: "man professional",
@@ -74,7 +74,7 @@ const users = [
   {
     role: "Asesor",
     name: "Martín Beorlegui",
-    username: "@martinbeorlegui",
+    username: "mbeorlegui",
     email: "martin.beorlegui@baigunrealty.com",
     avatarUrl: "https://placehold.co/100x100.png",
     aiHint: "man portrait",
@@ -83,7 +83,7 @@ const users = [
   {
     role: "Asesor",
     name: "Iair Baredes",
-    username: "@iairbaredes",
+    username: "ibaredes",
     email: "iair.baredes@baigunrealty.com",
     avatarUrl: "https://placehold.co/100x100.png",
     aiHint: "man happy",
@@ -92,7 +92,7 @@ const users = [
   {
     role: "Asesor",
     name: "Ariel Naem",
-    username: "@arielnaem",
+    username: "anaem",
     email: "Ariel.naem@baigunrealty.com",
     avatarUrl: "https://placehold.co/100x100.png",
     aiHint: "man with glasses",
@@ -101,7 +101,7 @@ const users = [
   {
     role: "Administrador",
     name: "Matías Poczter",
-    username: "@matiaspoczter",
+    username: "mpoczter",
     email: "Matias.poczter@baigunrealty.com",
     avatarUrl: "https://placehold.co/100x100.png",
     aiHint: "person smiling",
@@ -110,7 +110,7 @@ const users = [
   {
     role: "Administrador",
     name: "Matias Chirom",
-    username: "@matiaschirom",
+    username: "mchirom",
     email: "Matias.chirom@baigunrealty.com",
     avatarUrl: "https://placehold.co/100x100.png",
     aiHint: "man office",
