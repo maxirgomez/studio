@@ -393,7 +393,7 @@ export default function LoteDetailPage() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-                <Button><Edit className="mr-2 h-4 w-4"/> Editar lote</Button>
+                <Button variant="secondary"><Edit className="mr-2 h-4 w-4"/> Editar lote</Button>
                 <Button variant="outline"><Download className="mr-2 h-4 w-4"/> Descargar Ficha PDF</Button>
             </div>
 
