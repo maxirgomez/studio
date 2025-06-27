@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Target, Briefcase, TrendingUp, CheckCircle, Pencil, Trash2, XCircle, Clock, DollarSign } from "lucide-react"
+import { Target, Briefcase, TrendingUp, CheckCircle, Pencil, Trash2, XCircle, Clock, DollarSign, Plus } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -210,8 +210,11 @@ const users = [
 type UserType = (typeof users)[0];
 
 const profileFormSchema = z.object({
-  name: z.string().min(2, {
+  firstName: z.string().min(2, {
     message: "El nombre debe tener al menos 2 caracteres.",
+  }),
+  lastName: z.string().min(2, {
+    message: "El apellido debe tener al menos 2 caracteres.",
   }),
   email: z.string().email({
     message: "Por favor, introduce una dirección de correo electrónico válida.",
@@ -221,14 +224,39 @@ const profileFormSchema = z.object({
   }),
 });
 
+const createUserFormSchema = z.object({
+  firstName: z.string().min(2, {
+    message: "El nombre debe tener al menos 2 caracteres.",
+  }),
+  lastName: z.string().min(2, {
+    message: "El apellido debe tener al menos 2 caracteres.",
+  }),
+  username: z.string().min(3, {
+    message: "El nombre de usuario debe tener al menos 3 caracteres.",
+  }),
+  email: z.string().email({
+    message: "Por favor, introduce una dirección de correo electrónico válida.",
+  }),
+  role: z.string({
+    required_error: "Por favor, selecciona un rol.",
+  }),
+});
+
+
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
+type CreateUserFormValues = z.infer<typeof createUserFormSchema>;
 
 function EditUserForm({ user, onFormSubmit }: { user: UserType, onFormSubmit: () => void }) {
   const { toast } = useToast();
+  const nameParts = user.name.split(" ");
+  const lastName = nameParts.pop() || "";
+  const firstName = nameParts.join(" ");
+
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      name: user.name,
+      firstName: firstName,
+      lastName: lastName,
       email: user.email,
       role: user.role,
     },
@@ -238,7 +266,7 @@ function EditUserForm({ user, onFormSubmit }: { user: UserType, onFormSubmit: ()
   function onSubmit(data: ProfileFormValues) {
     toast({
       title: "Perfil Actualizado",
-      description: `Los datos de ${data.name} han sido guardados.`,
+      description: `Los datos de ${data.firstName} ${data.lastName} han sido guardados.`,
     });
     onFormSubmit();
   }
@@ -246,19 +274,34 @@ function EditUserForm({ user, onFormSubmit }: { user: UserType, onFormSubmit: ()
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nombre y Apellido</FormLabel>
-              <FormControl>
-                <Input placeholder="Nombre completo" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="firstName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nombre</FormLabel>
+                <FormControl>
+                  <Input placeholder="Nombre" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="lastName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Apellido</FormLabel>
+                <FormControl>
+                  <Input placeholder="Apellido" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         <FormField
           control={form.control}
           name="email"
@@ -306,6 +349,121 @@ function EditUserForm({ user, onFormSubmit }: { user: UserType, onFormSubmit: ()
     </Form>
   )
 }
+
+function CreateUserForm({ onFormSubmit }: { onFormSubmit: () => void }) {
+  const { toast } = useToast();
+  const form = useForm<CreateUserFormValues>({
+    resolver: zodResolver(createUserFormSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      username: "",
+      email: "",
+    },
+    mode: "onChange",
+  });
+
+  function onSubmit(data: CreateUserFormValues) {
+    // Logic to create user in Firebase Auth and Firestore would go here.
+    toast({
+      title: "Usuario Creado",
+      description: `El usuario ${data.firstName} ${data.lastName} ha sido creado exitosamente.`,
+    });
+    onFormSubmit();
+  }
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="firstName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nombre</FormLabel>
+                <FormControl>
+                  <Input placeholder="Nombre" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="lastName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Apellido</FormLabel>
+                <FormControl>
+                  <Input placeholder="Apellido" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <FormField
+          control={form.control}
+          name="username"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Nombre de Usuario</FormLabel>
+              <FormControl>
+                <Input placeholder="nombredeusuario" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input type="email" placeholder="email@ejemplo.com" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="role"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Rol</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar un rol" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="Administrador">Administrador</SelectItem>
+                  <SelectItem value="Architect">Architect</SelectItem>
+                  <SelectItem value="Asesor">Asesor</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="secondary">
+              Cancelar
+            </Button>
+          </DialogClose>
+          <Button type="submit">Crear Usuario</Button>
+        </DialogFooter>
+      </form>
+    </Form>
+  );
+}
+
 
 const UserCard = ({ user }: { user: UserType }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -383,6 +541,7 @@ const UserCard = ({ user }: { user: UserType }) => {
 
 
 export default function UsersPage() {
+   const [isCreateUserDialogOpen, setIsCreateUserDialogOpen] = useState(false);
    const groupedUsers = users.reduce((acc, user) => {
     (acc[user.role] = acc[user.role] || []).push(user);
     return acc;
@@ -399,9 +558,28 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Usuarios</h1>
-        <p className="text-muted-foreground">Administra los usuarios de tu organización.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Usuarios</h1>
+          <p className="text-muted-foreground">Administra los usuarios de tu organización.</p>
+        </div>
+        <Dialog open={isCreateUserDialogOpen} onOpenChange={setIsCreateUserDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Crear Usuario
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Crear Nuevo Usuario</DialogTitle>
+              <DialogDescription>
+                Completa los datos para crear un nuevo usuario en el sistema.
+              </DialogDescription>
+            </DialogHeader>
+            <CreateUserForm onFormSubmit={() => setIsCreateUserDialogOpen(false)} />
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Accordion type="multiple" defaultValue={sortedRoles} className="w-full space-y-4">
