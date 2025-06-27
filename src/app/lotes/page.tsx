@@ -52,6 +52,16 @@ const users = [
     avatarUrl: "https://placehold.co/100x100.png",
     aiHint: "woman professional",
     initials: "MN",
+    lots: {
+      tomarAccion: 5,
+      tasacion: 2,
+      evolucionando: 8,
+      disponible: 10,
+      descartado: 1,
+      noVende: 3,
+      reservado: 0,
+      vendido: 4,
+    },
   },
   {
     role: "Asesor",
@@ -61,6 +71,16 @@ const users = [
     avatarUrl: "https://placehold.co/100x100.png",
     aiHint: "woman smiling",
     initials: "RR",
+    lots: {
+      tomarAccion: 12,
+      tasacion: 8,
+      evolucionando: 15,
+      disponible: 5,
+      descartado: 2,
+      noVende: 1,
+      reservado: 3,
+      vendido: 7,
+    },
   },
   {
     role: "Asesor",
@@ -70,6 +90,16 @@ const users = [
     avatarUrl: "https://placehold.co/100x100.png",
     aiHint: "man professional",
     initials: "SL",
+    lots: {
+      tomarAccion: 3,
+      tasacion: 5,
+      evolucionando: 7,
+      disponible: 12,
+      descartado: 0,
+      noVende: 4,
+      reservado: 2,
+      vendido: 9,
+    },
   },
   {
     role: "Asesor",
@@ -79,6 +109,16 @@ const users = [
     avatarUrl: "https://placehold.co/100x100.png",
     aiHint: "man portrait",
     initials: "MB",
+    lots: {
+      tomarAccion: 8,
+      tasacion: 4,
+      evolucionando: 10,
+      disponible: 8,
+      descartado: 3,
+      noVende: 2,
+      reservado: 1,
+      vendido: 6,
+    },
   },
   {
     role: "Asesor",
@@ -88,6 +128,16 @@ const users = [
     avatarUrl: "https://placehold.co/100x100.png",
     aiHint: "man happy",
     initials: "IB",
+    lots: {
+      tomarAccion: 7,
+      tasacion: 6,
+      evolucionando: 9,
+      disponible: 11,
+      descartado: 1,
+      noVende: 1,
+      reservado: 4,
+      vendido: 5,
+    },
   },
   {
     role: "Asesor",
@@ -97,6 +147,16 @@ const users = [
     avatarUrl: "https://placehold.co/100x100.png",
     aiHint: "man with glasses",
     initials: "AN",
+    lots: {
+      tomarAccion: 9,
+      tasacion: 3,
+      evolucionando: 12,
+      disponible: 7,
+      descartado: 4,
+      noVende: 0,
+      reservado: 2,
+      vendido: 8,
+    },
   },
   {
     role: "Administrador",
@@ -106,6 +166,16 @@ const users = [
     avatarUrl: "https://placehold.co/100x100.png",
     aiHint: "person smiling",
     initials: "MP",
+    lots: {
+      tomarAccion: 2,
+      tasacion: 1,
+      evolucionando: 5,
+      disponible: 15,
+      descartado: 0,
+      noVende: 0,
+      reservado: 5,
+      vendido: 20,
+    },
   },
   {
     role: "Administrador",
@@ -115,6 +185,16 @@ const users = [
     avatarUrl: "https://placehold.co/100x100.png",
     aiHint: "man office",
     initials: "MC",
+    lots: {
+      tomarAccion: 4,
+      tasacion: 3,
+      evolucionando: 6,
+      disponible: 18,
+      descartado: 1,
+      noVende: 2,
+      reservado: 3,
+      vendido: 15,
+    },
   },
 ];
 
@@ -293,11 +373,16 @@ export default function LotesPage() {
   const itemsPerPage = 8;
   
   const uniqueNeighborhoods = [...new Set(listings.map(l => l.neighborhood))];
+  const allAreas = listings.map(l => l.area);
+  const minArea = Math.min(...allAreas);
+  const maxArea = Math.max(...allAreas);
+  const [areaRange, setAreaRange] = useState<[number, number]>([minArea, maxArea]);
 
   const filteredListings = listings.filter(listing => {
     const agentMatch = !agentFilter || listing.agent.name === agentFilter;
     const neighborhoodMatch = !neighborhoodFilter || listing.neighborhood === neighborhoodFilter;
-    return agentMatch && neighborhoodMatch;
+    const areaMatch = listing.area >= areaRange[0] && listing.area <= areaRange[1];
+    return agentMatch && neighborhoodMatch && areaMatch;
   });
 
   const totalPages = Math.ceil(filteredListings.length / itemsPerPage);
@@ -406,12 +491,36 @@ export default function LotesPage() {
               </Select>
             </div>
             <div className="space-y-4">
-              <Label>M² Estimados:</Label>
+              <Label>M² Estimados: {areaRange[0]} - {areaRange[1]}m²</Label>
               <div className="flex gap-2">
-                <Input placeholder="Min." />
-                <Input placeholder="Máx." />
+                <Input 
+                  type="number"
+                  value={areaRange[0]}
+                  onChange={(e) => {
+                      const newMin = Number(e.target.value);
+                      if (newMin <= areaRange[1]) {
+                          setAreaRange([newMin, areaRange[1]]);
+                      }
+                  }} 
+                />
+                <Input 
+                  type="number"
+                  value={areaRange[1]}
+                  onChange={(e) => {
+                      const newMax = Number(e.target.value);
+                      if (newMax >= areaRange[0]) {
+                          setAreaRange([areaRange[0], newMax]);
+                      }
+                  }}
+                />
               </div>
-              <Slider defaultValue={[0]} max={1000} step={10} />
+              <Slider 
+                value={areaRange}
+                onValueChange={(value) => setAreaRange(value as [number, number])}
+                min={minArea}
+                max={maxArea}
+                step={10}
+              />
             </div>
           </CardContent>
         </Card>
