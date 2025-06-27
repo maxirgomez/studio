@@ -496,6 +496,8 @@ export default function LotesPage() {
                 <Input 
                   type="number"
                   value={areaRange[0]}
+                  min={minArea}
+                  max={areaRange[1]}
                   onChange={(e) => {
                       const newMin = Number(e.target.value);
                       if (newMin <= areaRange[1]) {
@@ -506,6 +508,8 @@ export default function LotesPage() {
                 <Input 
                   type="number"
                   value={areaRange[1]}
+                  min={areaRange[0]}
+                  max={maxArea}
                   onChange={(e) => {
                       const newMax = Number(e.target.value);
                       if (newMax >= areaRange[0]) {
