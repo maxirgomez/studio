@@ -201,6 +201,7 @@ const listings = [
     status: "Tomar Acción",
     agent: { name: "Ariel Naem", initials: "AN" },
     imageUrl: null,
+    origen: "Tor",
   },
   {
     address: "Juramento 1196",
@@ -210,7 +211,8 @@ const listings = [
     status: "Tasación",
     agent: { name: "Santiago Liscovsky", initials: "SL" },
     imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "modern apartment building"
+    aiHint: "modern apartment building",
+    origen: "Baigun Realty",
   },
   {
     address: "Rivadavia 1298",
@@ -220,7 +222,8 @@ const listings = [
     status: "Evolucionando",
     agent: { name: "Iair Baredes", initials: "IB" },
     imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "storefront supermarket"
+    aiHint: "storefront supermarket",
+    origen: "Producción",
   },
   {
     address: "Corrientes 1341",
@@ -230,7 +233,8 @@ const listings = [
     status: "Disponible",
     agent: { name: "Martín Beorlegui", initials: "MB" },
     imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "industrial warehouse"
+    aiHint: "industrial warehouse",
+    origen: "Tor",
   },
   {
     address: "Scalabrini Ortiz 1494",
@@ -240,7 +244,8 @@ const listings = [
     status: "Descartado",
     agent: { name: "Ariel Naem", initials: "AN" },
     imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "old city building"
+    aiHint: "old city building",
+    origen: "Baigun Realty",
   },
   {
     address: "Quintana 1577",
@@ -250,7 +255,8 @@ const listings = [
     status: "No vende",
     agent: { name: "Matías Poczter", initials: "MP" },
     imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "yellow historic house"
+    aiHint: "yellow historic house",
+    origen: "Producción",
   },
   {
     address: "Defensa 1684",
@@ -260,7 +266,8 @@ const listings = [
     status: "Reservado",
     agent: { name: "Matias Chirom", initials: "MC" },
     imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "suburban brick house"
+    aiHint: "suburban brick house",
+    origen: "Tor",
   },
   {
     address: "Login Exitoso",
@@ -270,7 +277,8 @@ const listings = [
     status: "Vendido",
     agent: { name: "Maria Bailo Newton", initials: "MN" },
     imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "red modern house"
+    aiHint: "red modern house",
+    origen: "Baigun Realty",
   },
   {
     address: "Another Listing 1",
@@ -280,7 +288,8 @@ const listings = [
     status: "Tomar Acción",
     agent: { name: "Roxana Rajich", initials: "RR" },
     imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "modern house"
+    aiHint: "modern house",
+    origen: "Producción",
   },
   {
     address: "Another Listing 2",
@@ -290,7 +299,8 @@ const listings = [
     status: "Tasación",
     agent: { name: "Santiago Liscovsky", initials: "SL" },
     imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "luxury apartment"
+    aiHint: "luxury apartment",
+    origen: "Tor",
   },
 ];
 
@@ -367,6 +377,8 @@ export default function LotesPage() {
 
   const agentFilter = searchParams.get('agent') || null;
   const neighborhoodFilter = searchParams.get('neighborhood') || null;
+  const statusFilter = searchParams.get('status') || null;
+  const origenFilter = searchParams.get('origen') || null;
   const minAreaFilter = searchParams.get('minArea') ? Number(searchParams.get('minArea')) : minArea;
   const maxAreaFilter = searchParams.get('maxArea') ? Number(searchParams.get('maxArea')) : maxArea;
 
@@ -374,6 +386,8 @@ export default function LotesPage() {
   const [sliderValue, setSliderValue] = useState<[number, number]>([minAreaFilter, maxAreaFilter]);
   
   const uniqueNeighborhoods = useMemo(() => [...new Set(listings.map(l => l.neighborhood))], []);
+  const uniqueStatuses = useMemo(() => [...new Set(listings.map(l => l.status))], []);
+  const uniqueOrigens = useMemo(() => [...new Set(listings.map(l => l.origen))], []);
   
   useEffect(() => {
     const minFromUrl = searchParams.get('minArea');
@@ -439,6 +453,7 @@ export default function LotesPage() {
   
   const handleSliderVisualChange = (newRange: [number, number]) => {
     setSliderValue(newRange);
+    setAreaInput([String(newRange[0]), String(newRange[1])])
   };
   
   const handleSliderFilterCommit = (newRange: [number, number]) => {
@@ -451,13 +466,17 @@ export default function LotesPage() {
       const agentMatch = !agentFilter || listing.agent.name === agentFilter;
       const neighborhoodMatch = !neighborhoodFilter || listing.neighborhood === neighborhoodFilter;
       const areaMatch = listing.area >= minAreaFilter && listing.area <= maxAreaFilter;
-      return agentMatch && neighborhoodMatch && areaMatch;
+      const statusMatch = !statusFilter || listing.status === statusFilter;
+      const origenMatch = !origenFilter || listing.origen === origenFilter;
+      return agentMatch && neighborhoodMatch && areaMatch && statusMatch && origenMatch;
     });
-  }, [agentFilter, neighborhoodFilter, minAreaFilter, maxAreaFilter]);
+  }, [agentFilter, neighborhoodFilter, minAreaFilter, maxAreaFilter, statusFilter, origenFilter]);
 
   const activeFilters: { type: string; value: string; key: string }[] = [];
   if (agentFilter) activeFilters.push({ type: 'Agente', value: agentFilter, key: 'agent' });
   if (neighborhoodFilter) activeFilters.push({ type: 'Barrio', value: neighborhoodFilter, key: 'neighborhood' });
+  if (origenFilter) activeFilters.push({ type: 'Origen', value: origenFilter, key: 'origen' });
+  if (statusFilter) activeFilters.push({ type: 'Estado', value: statusFilter, key: 'status' });
   if (searchParams.has('minArea') || searchParams.has('maxArea')) {
       activeFilters.push({
           type: 'M²',
@@ -477,32 +496,33 @@ export default function LotesPage() {
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <Label>Origen</Label>
-              <Select>
+              <Select onValueChange={(value) => handleFilterChange('origen', value)} defaultValue={searchParams.get('origen') || 'todos'}>
                 <SelectTrigger>
                   <SelectValue placeholder="Origenes" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="tor">Tor</SelectItem>
-                  <SelectItem value="baigun-realty">Baigun Realty</SelectItem>
-                  <SelectItem value="produccion">Producción</SelectItem>
+                  <SelectItem value="todos">Todos los Origenes</SelectItem>
+                  {uniqueOrigens.map((origen) => (
+                    <SelectItem key={origen} value={origen}>
+                      {origen}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
               <Label>Estado</Label>
-              <Select>
+              <Select onValueChange={(value) => handleFilterChange('status', value)} defaultValue={searchParams.get('status') || 'todos'}>
                 <SelectTrigger>
                   <SelectValue placeholder="Estados" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="tomar-accion">Tomar acción</SelectItem>
-                  <SelectItem value="tasacion">Tasación</SelectItem>
-                  <SelectItem value="evolucionando">Evolucionando</SelectItem>
-                  <SelectItem value="disponible">Disponible</SelectItem>
-                  <SelectItem value="descartado">Descartado</SelectItem>
-                  <SelectItem value="no-vende">No vende</SelectItem>
-                  <SelectItem value="reservado">Reservado</SelectItem>
-                  <SelectItem value="vendido">Vendido</SelectItem>
+                  <SelectItem value="todos">Todos los Estados</SelectItem>
+                  {uniqueStatuses.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {status}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

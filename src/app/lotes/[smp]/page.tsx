@@ -43,6 +43,7 @@ const listings = [
     status: "Tomar Acción",
     agent: { name: "Ariel Naem", initials: "AN" },
     imageUrl: null,
+    origen: "Tor",
   },
   {
     address: "Juramento 1196",
@@ -52,7 +53,8 @@ const listings = [
     status: "Tasación",
     agent: { name: "Santiago Liscovsky", initials: "SL" },
     imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "modern apartment building"
+    aiHint: "modern apartment building",
+    origen: "Baigun Realty",
   },
   {
     address: "Rivadavia 1298",
@@ -62,7 +64,8 @@ const listings = [
     status: "Evolucionando",
     agent: { name: "Iair Baredes", initials: "IB" },
     imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "storefront supermarket"
+    aiHint: "storefront supermarket",
+    origen: "Producción",
   },
   {
     address: "Corrientes 1341",
@@ -72,7 +75,8 @@ const listings = [
     status: "Disponible",
     agent: { name: "Martín Beorlegui", initials: "MB" },
     imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "industrial warehouse"
+    aiHint: "industrial warehouse",
+    origen: "Tor",
   },
   {
     address: "Scalabrini Ortiz 1494",
@@ -82,7 +86,8 @@ const listings = [
     status: "Descartado",
     agent: { name: "Ariel Naem", initials: "AN" },
     imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "old city building"
+    aiHint: "old city building",
+    origen: "Baigun Realty",
   },
   {
     address: "Quintana 1577",
@@ -92,7 +97,8 @@ const listings = [
     status: "No vende",
     agent: { name: "Matías Poczter", initials: "MP" },
     imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "yellow historic house"
+    aiHint: "yellow historic house",
+    origen: "Producción",
   },
   {
     address: "Defensa 1684",
@@ -102,7 +108,8 @@ const listings = [
     status: "Reservado",
     agent: { name: "Matias Chirom", initials: "MC" },
     imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "suburban brick house"
+    aiHint: "suburban brick house",
+    origen: "Tor",
   },
   {
     address: "Login Exitoso",
@@ -112,7 +119,8 @@ const listings = [
     status: "Vendido",
     agent: { name: "Maria Bailo Newton", initials: "MN" },
     imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "red modern house"
+    aiHint: "red modern house",
+    origen: "Baigun Realty",
   },
   {
     address: "Another Listing 1",
@@ -122,7 +130,8 @@ const listings = [
     status: "Tomar Acción",
     agent: { name: "Roxana Rajich", initials: "RR" },
     imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "modern house"
+    aiHint: "modern house",
+    origen: "Producción",
   },
   {
     address: "Another Listing 2",
@@ -132,7 +141,8 @@ const listings = [
     status: "Tasación",
     agent: { name: "Santiago Liscovsky", initials: "SL" },
     imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "luxury apartment"
+    aiHint: "luxury apartment",
+    origen: "Tor",
   },
 ];
 
