@@ -410,77 +410,83 @@ export default function LoteDetailPage() {
                 <CardHeader>
                     <CardTitle>Información del propietario</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4 text-sm">
-                    <div className="flex items-center">
-                        <User className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Propietario:</span>
-                        <span className="ml-auto text-muted-foreground">Juan Pérez</span>
+                <CardContent className="text-sm">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                    <div className="space-y-4">
+                      <div className="flex items-center">
+                          <User className="h-5 w-5 mr-3 text-muted-foreground" />
+                          <span className="font-medium">Propietario:</span>
+                          <span className="ml-auto text-muted-foreground">Juan Pérez</span>
+                      </div>
+                      <div className="flex items-center">
+                          <Home className="h-5 w-5 mr-3 text-muted-foreground" />
+                          <span className="font-medium">Dirección:</span>
+                          <span className="ml-auto text-muted-foreground">Calle Falsa 123</span>
+                      </div>
+                      <div className="flex items-center">
+                          <Mailbox className="h-5 w-5 mr-3 text-muted-foreground" />
+                          <span className="font-medium">Código Postal:</span>
+                          <span className="ml-auto text-muted-foreground">C1425</span>
+                      </div>
+                      <div className="flex items-center">
+                          <Building className="h-5 w-5 mr-3 text-muted-foreground" />
+                          <span className="font-medium">Localidad:</span>
+                          <span className="ml-auto text-muted-foreground">Buenos Aires</span>
+                      </div>
+                      <div className="flex items-center">
+                          <Home className="h-5 w-5 mr-3 text-muted-foreground" />
+                          <span className="font-medium">Dirección Alt:</span>
+                          <span className="ml-auto text-muted-foreground">Av. Siempreviva 742</span>
+                      </div>
+                      <div className="flex items-center">
+                          <XCircle className="h-5 w-5 mr-3 text-muted-foreground" />
+                          <span className="font-medium">Fallecido:</span>
+                          <span className="ml-auto text-muted-foreground">No</span>
+                      </div>
+                       <div className="flex items-center">
+                          <Info className="h-5 w-5 mr-3 text-muted-foreground" />
+                          <span className="font-medium">Otros Datos:</span>
+                          <span className="ml-auto text-muted-foreground">Contactar por la mañana</span>
+                      </div>
                     </div>
-                    <div className="flex items-center">
-                        <Home className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Dirección de Contacto:</span>
-                        <span className="ml-auto text-muted-foreground">Calle Falsa 123</span>
+                    <div className="space-y-4">
+                      <div className="flex items-center">
+                          <Phone className="h-5 w-5 mr-3 text-muted-foreground" />
+                          <span className="font-medium">Teléfono 1:</span>
+                          <span className="ml-auto text-muted-foreground">(011) 4555-5555</span>
+                      </div>
+                      <div className="flex items-center">
+                          <Phone className="h-5 w-5 mr-3 text-muted-foreground" />
+                          <span className="font-medium">Teléfono 2:</span>
+                          <span className="ml-auto text-muted-foreground">(011) 4666-6666</span>
+                      </div>
+                      <div className="flex items-center">
+                          <Phone className="h-5 w-5 mr-3 text-muted-foreground" />
+                          <span className="font-medium">Teléfono 3:</span>
+                          <span className="ml-auto text-muted-foreground">-</span>
+                      </div>
+                      <div className="flex items-center">
+                          <Smartphone className="h-5 w-5 mr-3 text-muted-foreground" />
+                          <span className="font-medium">Celular 1:</span>
+                          <span className="ml-auto text-muted-foreground">(011) 15-1234-5678</span>
+                      </div>
+                      <div className="flex items-center">
+                          <Smartphone className="h-5 w-5 mr-3 text-muted-foreground" />
+                          <span className="font-medium">Celular 2:</span>
+                          <span className="ml-auto text-muted-foreground">-</span>
+                      </div>
+                      <div className="flex items-center">
+                          <Smartphone className="h-5 w-5 mr-3 text-muted-foreground" />
+                          <span className="font-medium">Celular 3:</span>
+                          <span className="ml-auto text-muted-foreground">-</span>
+                      </div>
+                      <div className="flex items-center">
+                          <Mail className="h-5 w-5 mr-3 text-muted-foreground" />
+                          <span className="font-medium">Email:</span>
+                          <span className="ml-auto text-muted-foreground truncate">juan.perez@example.com</span>
+                      </div>
                     </div>
-                    <div className="flex items-center">
-                        <Mailbox className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Código Postal:</span>
-                        <span className="ml-auto text-muted-foreground">C1425</span>
-                    </div>
-                    <div className="flex items-center">
-                        <Building className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Localidad:</span>
-                        <span className="ml-auto text-muted-foreground">Buenos Aires</span>
-                    </div>
-                    <div className="flex items-center">
-                        <Home className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Dirección Alternativa:</span>
-                        <span className="ml-auto text-muted-foreground">Av. Siempreviva 742</span>
-                    </div>
-                    <div className="flex items-center">
-                        <XCircle className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Fallecido:</span>
-                        <span className="ml-auto text-muted-foreground">No</span>
-                    </div>
-                    <div className="flex items-center">
-                        <Phone className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Teléfono 1:</span>
-                        <span className="ml-auto text-muted-foreground">(011) 4555-5555</span>
-                    </div>
-                    <div className="flex items-center">
-                        <Phone className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Teléfono 2:</span>
-                        <span className="ml-auto text-muted-foreground">(011) 4666-6666</span>
-                    </div>
-                    <div className="flex items-center">
-                        <Phone className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Teléfono 3:</span>
-                        <span className="ml-auto text-muted-foreground">-</span>
-                    </div>
-                    <div className="flex items-center">
-                        <Smartphone className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Celular 1:</span>
-                        <span className="ml-auto text-muted-foreground">(011) 15-1234-5678</span>
-                    </div>
-                    <div className="flex items-center">
-                        <Smartphone className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Celular 2:</span>
-                        <span className="ml-auto text-muted-foreground">-</span>
-                    </div>
-                    <div className="flex items-center">
-                        <Smartphone className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Celular 3:</span>
-                        <span className="ml-auto text-muted-foreground">-</span>
-                    </div>
-                    <div className="flex items-center">
-                        <Mail className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Correo Electrónico:</span>
-                        <span className="ml-auto text-muted-foreground">juan.perez@example.com</span>
-                    </div>
-                    <div className="flex items-center">
-                        <Info className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Otros Datos:</span>
-                        <span className="ml-auto text-muted-foreground">Contactar solo por la mañana.</span>
-                    </div>
+                  </div>
                 </CardContent>
             </Card>
 
@@ -497,3 +503,4 @@ export default function LoteDetailPage() {
     </div>
   );
 }
+
