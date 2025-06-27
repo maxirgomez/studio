@@ -265,7 +265,7 @@ export default function LoteDetailPage() {
         </div>
       </div>
       
-      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-8 md:grid-cols-3">
         {/* Left Column */}
         <div className="space-y-6 lg:col-span-1">
             <Card>
@@ -372,21 +372,30 @@ export default function LoteDetailPage() {
                 <CardHeader>
                     <CardTitle>Información Urbanística y Catastral</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4 text-sm">
+                <CardContent className="text-sm">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                    <div className="space-y-4">
                       <div className="flex items-center">
                         <Scan className="h-5 w-5 mr-3 text-muted-foreground" />
                         <span className="font-medium">SMP:</span>
                         <span className="ml-auto text-muted-foreground">{listing.smp}</span>
                       </div>
-                       <div className="flex items-center">
-                        <MapPin className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Barrio:</span>
-                        <span className="ml-auto text-muted-foreground">{listing.neighborhood}</span>
-                      </div>
                       <div className="flex items-center">
                         <Library className="h-5 w-5 mr-3 text-muted-foreground" />
                         <span className="font-medium">Código Urbanístico:</span>
                         <span className="ml-auto text-muted-foreground">{listing.codigoUrbanistico}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Ruler className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <span className="font-medium">M2 Estimados:</span>
+                        <span className="ml-auto text-muted-foreground">{listing.area} m²</span>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                       <div className="flex items-center">
+                        <MapPin className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <span className="font-medium">Barrio:</span>
+                        <span className="ml-auto text-muted-foreground">{listing.neighborhood}</span>
                       </div>
                        <div className="flex items-center">
                         <Cpu className="h-5 w-5 mr-3 text-muted-foreground" />
@@ -394,15 +403,12 @@ export default function LoteDetailPage() {
                         <span className="ml-auto text-muted-foreground">{listing.cpu}</span>
                       </div>
                       <div className="flex items-center">
-                        <Ruler className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">M2 Estimados:</span>
-                        <span className="ml-auto text-muted-foreground">{listing.area} m²</span>
-                      </div>
-                      <div className="flex items-center">
                         <FileText className="h-5 w-5 mr-3 text-muted-foreground" />
                         <span className="font-medium">Partida:</span>
                         <span className="ml-auto text-muted-foreground">{listing.partida}</span>
                       </div>
+                    </div>
+                  </div>
                 </CardContent>
             </Card>
 
@@ -420,7 +426,7 @@ export default function LoteDetailPage() {
                       </div>
                       <div className="flex items-center">
                           <Home className="h-5 w-5 mr-3 text-muted-foreground" />
-                          <span className="font-medium">Dirección:</span>
+                          <span className="font-medium">Dirección Contacto:</span>
                           <span className="ml-auto text-muted-foreground">Calle Falsa 123</span>
                       </div>
                       <div className="flex items-center">
@@ -435,7 +441,7 @@ export default function LoteDetailPage() {
                       </div>
                       <div className="flex items-center">
                           <Home className="h-5 w-5 mr-3 text-muted-foreground" />
-                          <span className="font-medium">Dirección Alt:</span>
+                          <span className="font-medium">Dirección Alternativa:</span>
                           <span className="ml-auto text-muted-foreground">Av. Siempreviva 742</span>
                       </div>
                       <div className="flex items-center">
@@ -446,7 +452,7 @@ export default function LoteDetailPage() {
                        <div className="flex items-center">
                           <Info className="h-5 w-5 mr-3 text-muted-foreground" />
                           <span className="font-medium">Otros Datos:</span>
-                          <span className="ml-auto text-muted-foreground">Contactar por la mañana</span>
+                          <span className="ml-auto text-muted-foreground">Contactar solo por la mañana.</span>
                       </div>
                     </div>
                     <div className="space-y-4">
@@ -482,7 +488,7 @@ export default function LoteDetailPage() {
                       </div>
                       <div className="flex items-center">
                           <Mail className="h-5 w-5 mr-3 text-muted-foreground" />
-                          <span className="font-medium">Email:</span>
+                          <span className="font-medium">Correo Electrónico:</span>
                           <span className="ml-auto text-muted-foreground truncate">juan.perez@example.com</span>
                       </div>
                     </div>
@@ -503,4 +509,3 @@ export default function LoteDetailPage() {
     </div>
   );
 }
-
