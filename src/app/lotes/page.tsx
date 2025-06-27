@@ -33,14 +33,8 @@ import {
   Ruler,
   Search,
   Plus,
+  X
 } from "lucide-react";
-import { 
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationPrevious,
-  PaginationNext 
-} from "@/components/ui/pagination";
 
 
 const users = [
@@ -371,25 +365,24 @@ export default function LotesPage() {
   const minArea = useMemo(() => Math.min(...allAreas), [allAreas]);
   const maxArea = useMemo(() => Math.max(...allAreas), [allAreas]);
 
-  const [minFilter, maxFilter] = useMemo(() => {
-    const min = searchParams.get('minArea');
-    const max = searchParams.get('maxArea');
-    return [
-      min ? Number(min) : minArea,
-      max ? Number(max) : maxArea
-    ];
-  }, [searchParams, minArea, maxArea]);
+  const agentFilter = searchParams.get('agent') || null;
+  const neighborhoodFilter = searchParams.get('neighborhood') || null;
+  const minAreaFilter = searchParams.get('minArea') ? Number(searchParams.get('minArea')) : minArea;
+  const maxAreaFilter = searchParams.get('maxArea') ? Number(searchParams.get('maxArea')) : maxArea;
 
-  const [areaInput, setAreaInput] = useState<[string, string]>([String(minFilter), String(maxFilter)]);
-  const [sliderValue, setSliderValue] = useState<[number, number]>([minFilter, maxFilter]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const [areaInput, setAreaInput] = useState<[string, string]>([String(minAreaFilter), String(maxAreaFilter)]);
+  const [sliderValue, setSliderValue] = useState<[number, number]>([minAreaFilter, maxAreaFilter]);
+  
   const uniqueNeighborhoods = useMemo(() => [...new Set(listings.map(l => l.neighborhood))], []);
   
   useEffect(() => {
-    setAreaInput([String(minFilter), String(maxFilter)]);
-    setSliderValue([minFilter, maxFilter]);
-  }, [minFilter, maxFilter]);
+    const minFromUrl = searchParams.get('minArea');
+    const maxFromUrl = searchParams.get('maxArea');
+    const newMin = minFromUrl ? Number(minFromUrl) : minArea;
+    const newMax = maxFromUrl ? Number(maxFromUrl) : maxArea;
+    setAreaInput([String(newMin), String(newMax)]);
+    setSliderValue([newMin, newMax]);
+  }, [searchParams, minArea, maxArea]);
 
   const createQueryString = useCallback(
     (paramsToUpdate: Record<string, string | null>) => {
@@ -408,7 +401,17 @@ export default function LotesPage() {
   
   const handleFilterChange = (name: string, value: string) => {
     router.push(`${pathname}?${createQueryString({ [name]: value })}`, { scroll: false });
-    setCurrentPage(1);
+  };
+  
+  const handleRemoveFilter = (key: string) => {
+    const newParams: Record<string, null> = {};
+    if (key === 'area') {
+      newParams.minArea = null;
+      newParams.maxArea = null;
+    } else {
+      newParams[key] = null;
+    }
+    router.push(`${pathname}?${createQueryString(newParams)}`, { scroll: false });
   };
 
   const handleAreaInputChange = (index: 0 | 1, value: string) => {
@@ -416,7 +419,7 @@ export default function LotesPage() {
     newInputs[index] = value;
     setAreaInput(newInputs);
   };
-
+  
   const handleAreaInputBlur = () => {
     let newMin = Number(areaInput[0]);
     let newMax = Number(areaInput[1]);
@@ -429,11 +432,8 @@ export default function LotesPage() {
       [newMin, newMax] = [newMax, newMin];
     }
     
-    if (newMin !== minFilter || newMax !== maxFilter) {
+    if (newMin !== minAreaFilter || newMax !== maxAreaFilter) {
       router.push(`${pathname}?${createQueryString({ minArea: String(newMin), maxArea: String(newMax) })}`, { scroll: false });
-      setCurrentPage(1);
-    } else {
-      setAreaInput([String(minFilter), String(maxFilter)]);
     }
   };
   
@@ -443,45 +443,29 @@ export default function LotesPage() {
   
   const handleSliderFilterCommit = (newRange: [number, number]) => {
      router.push(`${pathname}?${createQueryString({ minArea: String(newRange[0]), maxArea: String(newRange[1]) })}`, { scroll: false });
-    setCurrentPage(1);
   };
 
 
   const filteredListings = useMemo(() => {
-    const agentFilter = searchParams.get('agent');
-    const neighborhoodFilter = searchParams.get('neighborhood');
-
     return listings.filter(listing => {
       const agentMatch = !agentFilter || listing.agent.name === agentFilter;
       const neighborhoodMatch = !neighborhoodFilter || listing.neighborhood === neighborhoodFilter;
-      const areaMatch = listing.area >= minFilter && listing.area <= maxFilter;
+      const areaMatch = listing.area >= minAreaFilter && listing.area <= maxAreaFilter;
       return agentMatch && neighborhoodMatch && areaMatch;
     });
-  }, [searchParams, minFilter, maxFilter]);
+  }, [agentFilter, neighborhoodFilter, minAreaFilter, maxAreaFilter]);
 
-  const totalPages = Math.ceil(filteredListings.length / itemsPerPage);
-  const currentListings = filteredListings.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
-
-  const agentFilter = searchParams.get('agent');
-  const neighborhoodFilter = searchParams.get('neighborhood');
-  let title = "Lotes";
-  if (agentFilter) {
-    title = `Lotes de ${agentFilter}`;
-    if (neighborhoodFilter) {
-      title += ` en ${neighborhoodFilter}`;
-    }
-  } else if (neighborhoodFilter) {
-    title = `Lotes en ${neighborhoodFilter}`;
+  const activeFilters: { type: string; value: string; key: string }[] = [];
+  if (agentFilter) activeFilters.push({ type: 'Agente', value: agentFilter, key: 'agent' });
+  if (neighborhoodFilter) activeFilters.push({ type: 'Barrio', value: neighborhoodFilter, key: 'neighborhood' });
+  if (searchParams.has('minArea') || searchParams.has('maxArea')) {
+      activeFilters.push({
+          type: 'M²',
+          value: `${minAreaFilter} - ${maxAreaFilter}`,
+          key: 'area'
+      });
   }
+
   
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 lg:grid-cols-[280px_1fr]">
@@ -555,7 +539,7 @@ export default function LotesPage() {
               </Select>
             </div>
             <div className="space-y-4">
-              <Label>M² Estimados: {minFilter} - {maxFilter}m²</Label>
+              <Label>M² Estimados: {minAreaFilter} - {maxAreaFilter}m²</Label>
               <div className="flex gap-2">
                  <Input
                   type="number"
@@ -586,12 +570,29 @@ export default function LotesPage() {
               />
             </div>
           </CardContent>
+          <CardFooter className="flex flex-col items-start gap-2 pt-4 border-t">
+            <Label className="font-semibold">Filtros Activos:</Label>
+            {activeFilters.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                    {activeFilters.map(filter => (
+                        <Badge key={filter.key} variant="secondary" className="flex items-center gap-1.5 pl-2">
+                            <span>{filter.type}: {filter.value}</span>
+                            <button onClick={() => handleRemoveFilter(filter.key)} className="rounded-full p-0.5 text-muted-foreground hover:bg-background/50 hover:text-foreground">
+                                <X className="h-3 w-3" />
+                            </button>
+                        </Badge>
+                    ))}
+                </div>
+            ) : (
+                <p className="text-sm text-muted-foreground">Ningún filtro aplicado.</p>
+            )}
+          </CardFooter>
         </Card>
       </div>
 
       <div className="flex flex-col">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">{title}</h2>
+          <h2 className="text-2xl font-bold">Lotes</h2>
           <div className="flex items-center gap-4">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -604,42 +605,11 @@ export default function LotesPage() {
           </div>
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {currentListings.map((listing) => (
+          {filteredListings.map((listing) => (
             <Link href={`/lotes/${listing.smp}`} key={listing.smp} className="block">
               <ListingCard listing={listing} />
             </Link>
           ))}
-        </div>
-        <div className="mt-8 flex justify-center">
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handlePageChange(currentPage - 1);
-                    }}
-                    className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
-                  />
-                </PaginationItem>
-                 <PaginationItem>
-                    <span className="p-2 text-sm font-medium">
-                        Página {currentPage} de {totalPages}
-                    </span>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handlePageChange(currentPage + 1);
-                    }}
-                     className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
         </div>
       </div>
     </div>
