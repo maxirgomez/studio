@@ -15,12 +15,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -33,7 +34,8 @@ import {
   Ruler,
   Search,
   Plus,
-  X
+  X,
+  ChevronDown
 } from "lucide-react";
 
 
@@ -375,34 +377,31 @@ export default function LotesPage() {
   const minArea = useMemo(() => Math.min(...allAreas), [allAreas]);
   const maxArea = useMemo(() => Math.max(...allAreas), [allAreas]);
 
-  const agentFilter = searchParams.get('agent') || null;
-  const neighborhoodFilter = searchParams.get('neighborhood') || null;
-  const statusFilter = searchParams.get('status') || null;
-  const origenFilter = searchParams.get('origen') || null;
-  const minAreaFilter = searchParams.get('minArea') ? Number(searchParams.get('minArea')) : minArea;
-  const maxAreaFilter = searchParams.get('maxArea') ? Number(searchParams.get('maxArea')) : maxArea;
+  const agentFilters = useMemo(() => searchParams.get('agent')?.split(',') || [], [searchParams]);
+  const neighborhoodFilters = useMemo(() => searchParams.get('neighborhood')?.split(',') || [], [searchParams]);
+  const statusFilters = useMemo(() => searchParams.get('status')?.split(',') || [], [searchParams]);
+  const origenFilters = useMemo(() => searchParams.get('origen')?.split(',') || [], [searchParams]);
 
-  const [areaInput, setAreaInput] = useState<[string, string]>([String(minAreaFilter), String(maxAreaFilter)]);
-  const [sliderValue, setSliderValue] = useState<[number, number]>([minAreaFilter, maxAreaFilter]);
+  const minAreaFilter = useMemo(() => searchParams.get('minArea') ? Number(searchParams.get('minArea')) : minArea, [searchParams, minArea]);
+  const maxAreaFilter = useMemo(() => searchParams.get('maxArea') ? Number(searchParams.get('maxArea')) : maxArea, [searchParams, maxArea]);
+
+  const [areaInput, setAreaInput] = useState<[string, string]>(['', '']);
+  const [sliderValue, setSliderValue] = useState<[number, number]>([minArea, maxArea]);
   
   const uniqueNeighborhoods = useMemo(() => [...new Set(listings.map(l => l.neighborhood))], []);
   const uniqueStatuses = useMemo(() => [...new Set(listings.map(l => l.status))], []);
   const uniqueOrigens = useMemo(() => [...new Set(listings.map(l => l.origen))], []);
   
   useEffect(() => {
-    const minFromUrl = searchParams.get('minArea');
-    const maxFromUrl = searchParams.get('maxArea');
-    const newMin = minFromUrl ? Number(minFromUrl) : minArea;
-    const newMax = maxFromUrl ? Number(maxFromUrl) : maxArea;
-    setAreaInput([String(newMin), String(newMax)]);
-    setSliderValue([newMin, newMax]);
-  }, [searchParams, minArea, maxArea]);
-
+    setAreaInput([String(minAreaFilter), String(maxAreaFilter)]);
+    setSliderValue([minAreaFilter, maxAreaFilter]);
+  }, [minAreaFilter, maxAreaFilter]);
+  
   const createQueryString = useCallback(
     (paramsToUpdate: Record<string, string | null>) => {
       const params = new URLSearchParams(searchParams.toString());
       for (const [key, value] of Object.entries(paramsToUpdate)) {
-        if (value === null || value === 'todos') {
+        if (value === null || value === 'todos' || value === '') {
           params.delete(key);
         } else {
           params.set(key, value);
@@ -413,19 +412,23 @@ export default function LotesPage() {
     [searchParams]
   );
   
-  const handleFilterChange = (name: string, value: string) => {
-    router.push(`${pathname}?${createQueryString({ [name]: value })}`, { scroll: false });
+  const handleMultiSelectFilterChange = (key: string, value: string) => {
+    const currentValues = searchParams.get(key)?.split(',') || [];
+    const newValues = currentValues.includes(value)
+      ? currentValues.filter(v => v !== value)
+      : [...currentValues, value];
+    
+    router.push(`${pathname}?${createQueryString({ [key]: newValues.length > 0 ? newValues.join(',') : null })}`, { scroll: false });
   };
   
-  const handleRemoveFilter = (key: string) => {
-    const newParams: Record<string, null> = {};
+  const handleRemoveFilter = (key: string, valueToRemove: string) => {
     if (key === 'area') {
-      newParams.minArea = null;
-      newParams.maxArea = null;
+      router.push(`${pathname}?${createQueryString({ minArea: null, maxArea: null })}`, { scroll: false });
     } else {
-      newParams[key] = null;
+      const currentValues = searchParams.get(key)?.split(',') || [];
+      const newValues = currentValues.filter(v => v !== valueToRemove);
+      router.push(`${pathname}?${createQueryString({ [key]: newValues.length > 0 ? newValues.join(',') : null })}`, { scroll: false });
     }
-    router.push(`${pathname}?${createQueryString(newParams)}`, { scroll: false });
   };
 
   const handleAreaInputChange = (index: 0 | 1, value: string) => {
@@ -463,21 +466,21 @@ export default function LotesPage() {
 
   const filteredListings = useMemo(() => {
     return listings.filter(listing => {
-      const agentMatch = !agentFilter || listing.agent.name === agentFilter;
-      const neighborhoodMatch = !neighborhoodFilter || listing.neighborhood === neighborhoodFilter;
+      const agentMatch = agentFilters.length === 0 || agentFilters.includes(listing.agent.name);
+      const neighborhoodMatch = neighborhoodFilters.length === 0 || neighborhoodFilters.includes(listing.neighborhood);
       const areaMatch = listing.area >= minAreaFilter && listing.area <= maxAreaFilter;
-      const statusMatch = !statusFilter || listing.status === statusFilter;
-      const origenMatch = !origenFilter || listing.origen === origenFilter;
+      const statusMatch = statusFilters.length === 0 || statusFilters.includes(listing.status);
+      const origenMatch = origenFilters.length === 0 || origenFilters.includes(listing.origen);
       return agentMatch && neighborhoodMatch && areaMatch && statusMatch && origenMatch;
     });
-  }, [agentFilter, neighborhoodFilter, minAreaFilter, maxAreaFilter, statusFilter, origenFilter]);
+  }, [agentFilters, neighborhoodFilters, minAreaFilter, maxAreaFilter, statusFilters, origenFilters]);
 
   const activeFilters: { type: string; value: string; key: string }[] = [];
-  if (agentFilter) activeFilters.push({ type: 'Agente', value: agentFilter, key: 'agent' });
-  if (neighborhoodFilter) activeFilters.push({ type: 'Barrio', value: neighborhoodFilter, key: 'neighborhood' });
-  if (origenFilter) activeFilters.push({ type: 'Origen', value: origenFilter, key: 'origen' });
-  if (statusFilter) activeFilters.push({ type: 'Estado', value: statusFilter, key: 'status' });
-  if (searchParams.has('minArea') || searchParams.has('maxArea')) {
+  agentFilters.forEach(value => activeFilters.push({ type: 'Agente', value, key: 'agent' }));
+  neighborhoodFilters.forEach(value => activeFilters.push({ type: 'Barrio', value, key: 'neighborhood' }));
+  origenFilters.forEach(value => activeFilters.push({ type: 'Origen', value, key: 'origen' }));
+  statusFilters.forEach(value => activeFilters.push({ type: 'Estado', value, key: 'status' }));
+  if (minAreaFilter !== minArea || maxAreaFilter !== maxArea) {
       activeFilters.push({
           type: 'M²',
           value: `${minAreaFilter} - ${maxAreaFilter}`,
@@ -496,70 +499,102 @@ export default function LotesPage() {
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <Label>Origen</Label>
-              <Select onValueChange={(value) => handleFilterChange('origen', value)} defaultValue={searchParams.get('origen') || 'todos'}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Origenes" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos los Origenes</SelectItem>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    <span>{origenFilters.length > 0 ? `${origenFilters.length} seleccionados` : "Origenes"}</span>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-[250px]">
+                  <DropdownMenuLabel>Filtrar por Origen</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
                   {uniqueOrigens.map((origen) => (
-                    <SelectItem key={origen} value={origen}>
+                    <DropdownMenuCheckboxItem
+                      key={origen}
+                      checked={origenFilters.includes(origen)}
+                      onCheckedChange={() => handleMultiSelectFilterChange('origen', origen)}
+                    >
                       {origen}
-                    </SelectItem>
+                    </DropdownMenuCheckboxItem>
                   ))}
-                </SelectContent>
-              </Select>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <div className="space-y-2">
               <Label>Estado</Label>
-              <Select onValueChange={(value) => handleFilterChange('status', value)} defaultValue={searchParams.get('status') || 'todos'}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Estados" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos los Estados</SelectItem>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    <span>{statusFilters.length > 0 ? `${statusFilters.length} seleccionados` : "Estados"}</span>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-[250px]">
+                  <DropdownMenuLabel>Filtrar por Estado</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
                   {uniqueStatuses.map((status) => (
-                    <SelectItem key={status} value={status}>
+                    <DropdownMenuCheckboxItem
+                      key={status}
+                      checked={statusFilters.includes(status)}
+                      onCheckedChange={() => handleMultiSelectFilterChange('status', status)}
+                    >
                       {status}
-                    </SelectItem>
+                    </DropdownMenuCheckboxItem>
                   ))}
-                </SelectContent>
-              </Select>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <div className="space-y-2">
               <Label>Barrio</Label>
-              <Select onValueChange={(value) => handleFilterChange('neighborhood', value)} defaultValue={searchParams.get('neighborhood') || 'todos'}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Barrios" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos los Barrios</SelectItem>
+               <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    <span>{neighborhoodFilters.length > 0 ? `${neighborhoodFilters.length} seleccionados` : "Barrios"}</span>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-[250px]">
+                  <DropdownMenuLabel>Filtrar por Barrio</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
                   {uniqueNeighborhoods.map((neighborhood) => (
-                    <SelectItem key={neighborhood} value={neighborhood}>
+                    <DropdownMenuCheckboxItem
+                      key={neighborhood}
+                      checked={neighborhoodFilters.includes(neighborhood)}
+                      onCheckedChange={() => handleMultiSelectFilterChange('neighborhood', neighborhood)}
+                    >
                       {neighborhood}
-                    </SelectItem>
+                    </DropdownMenuCheckboxItem>
                   ))}
-                </SelectContent>
-              </Select>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <div className="space-y-2">
               <Label>Agente</Label>
-              <Select onValueChange={(value) => handleFilterChange('agent', value)} defaultValue={searchParams.get('agent') || 'todos'}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Agentes" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos los Agentes</SelectItem>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    <span>{agentFilters.length > 0 ? `${agentFilters.length} seleccionados` : "Agentes"}</span>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-[250px]">
+                  <DropdownMenuLabel>Filtrar por Agente</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
                   {users.map((user) => (
-                    <SelectItem key={user.email} value={user.name}>
+                    <DropdownMenuCheckboxItem
+                      key={user.email}
+                      checked={agentFilters.includes(user.name)}
+                      onCheckedChange={() => handleMultiSelectFilterChange('agent', user.name)}
+                    >
                       {user.name}
-                    </SelectItem>
+                    </DropdownMenuCheckboxItem>
                   ))}
-                </SelectContent>
-              </Select>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <div className="space-y-4">
-              <Label>M² Estimados: {minAreaFilter} - {maxAreaFilter}m²</Label>
+              <Label>M² Estimados: {sliderValue[0]} - {sliderValue[1]}m²</Label>
               <div className="flex gap-2">
                  <Input
                   type="number"
@@ -595,9 +630,9 @@ export default function LotesPage() {
             {activeFilters.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                     {activeFilters.map(filter => (
-                        <Badge key={filter.key} variant="secondary" className="flex items-center gap-1.5 pl-2">
+                        <Badge key={`${filter.key}-${filter.value}`} variant="secondary" className="flex items-center gap-1.5 pl-2">
                             <span>{filter.type}: {filter.value}</span>
-                            <button onClick={() => handleRemoveFilter(filter.key)} className="rounded-full p-0.5 text-muted-foreground hover:bg-background/50 hover:text-foreground">
+                            <button onClick={() => handleRemoveFilter(filter.key, filter.value)} className="rounded-full p-0.5 text-muted-foreground hover:bg-background/50 hover:text-foreground">
                                 <X className="h-3 w-3" />
                             </button>
                         </Badge>
@@ -624,7 +659,7 @@ export default function LotesPage() {
             </Button>
           </div>
         </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredListings.map((listing) => (
             <Link href={`/lotes/${listing.smp}`} key={listing.smp} className="block">
               <ListingCard listing={listing} />
