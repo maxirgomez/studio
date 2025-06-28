@@ -26,7 +26,7 @@ import { useEffect } from "react"
 
 const newLoteFormSchema = z.object({
   // Informacion del Lote
-  frente: z.string().min(1, "El frente es requerido."),
+  frente: z.string().min(1, "La calle es requerida."),
   numero: z.string().optional(),
   smp: z.string().min(1, "SMP es requerido."),
   agent: z.string().min(1, "El agente es requerido."),
@@ -35,8 +35,8 @@ const newLoteFormSchema = z.object({
   
   // Informacion Normativa
   codigoUrbanistico: z.string().optional(),
-  neighborhood: z.string(), // For display
-  area: z.number(), // M2 Estimados
+  neighborhood: z.string(), 
+  area: z.number(), 
   cpu: z.string().optional(),
   partida: z.string().optional(),
   incidenciaUVA: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
@@ -175,7 +175,7 @@ export default function NuevoLotePage() {
             </Link>
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Crear Nuevo Lote</h1>
-              <p className="text-muted-foreground">Comience ingresando el frente para autocompletar los datos.</p>
+              <p className="text-muted-foreground">Comience ingresando la calle para autocompletar los datos.</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -196,8 +196,8 @@ export default function NuevoLotePage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
                    <FormField control={form.control} name="frente" render={({ field }) => (
                     <FormItem className="lg:col-span-2">
-                      <FormLabel>Frente</FormLabel>
-                      <FormControl><Input placeholder="Ej: Av. Santa Fe o SMP" {...field} /></FormControl>
+                      <FormLabel>Calle</FormLabel>
+                      <FormControl><Input placeholder="Ej: Av. Santa Fe" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}/>
@@ -389,3 +389,5 @@ export default function NuevoLotePage() {
     </Form>
   )
 }
+
+    
