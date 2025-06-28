@@ -26,7 +26,8 @@ import { useEffect } from "react"
 
 const newLoteFormSchema = z.object({
   // Informacion del Lote
-  address: z.string().min(1, "La dirección o SMP es requerida."),
+  frente: z.string().min(1, "El frente es requerido."),
+  numero: z.string().optional(),
   smp: z.string().min(1, "SMP es requerido."),
   agent: z.string().min(1, "El agente es requerido."),
   status: z.string().min(1, "El estado es requerido."),
@@ -78,7 +79,8 @@ export default function NuevoLotePage() {
   const form = useForm<NewLoteFormValues>({
     resolver: zodResolver(newLoteFormSchema),
     defaultValues: {
-      address: "",
+      frente: "",
+      numero: "",
       smp: "",
       agent: "",
       status: "",
@@ -113,15 +115,20 @@ export default function NuevoLotePage() {
     mode: "onChange",
   });
 
-  const addressValue = form.watch("address");
+  const frenteValue = form.watch("frente");
+  const numeroValue = form.watch("numero");
 
   useEffect(() => {
-    const searchValue = addressValue.toLowerCase();
-    if (searchValue) {
+    const searchFrente = frenteValue.toLowerCase();
+    const searchNumero = numeroValue?.toLowerCase() || '';
+    const fullSearch = `${searchFrente} ${searchNumero}`.trim();
+    
+    if (searchFrente) {
       const foundListing = listings.find(l => 
-        l.address.toLowerCase().includes(searchValue) || 
-        l.smp.toLowerCase().includes(searchValue)
+        l.smp.toLowerCase() === searchFrente ||
+        l.address.toLowerCase().includes(fullSearch)
       );
+
       if (foundListing) {
         form.setValue("smp", foundListing.smp, { shouldValidate: true });
         form.setValue("neighborhood", foundListing.neighborhood, { shouldValidate: true });
@@ -132,9 +139,6 @@ export default function NuevoLotePage() {
         form.setValue("incidenciaUVA", foundListing.incidenciaUVA || 0, { shouldValidate: true });
         form.setValue("fot", foundListing.fot || 0, { shouldValidate: true });
         form.setValue("alicuota", foundListing.alicuota || 0, { shouldValidate: true });
-        if (searchValue !== foundListing.address.toLowerCase()) {
-            form.setValue("address", foundListing.address, { shouldValidate: true });
-        }
       } else {
         form.setValue("smp", "", { shouldValidate: false });
         form.setValue("neighborhood", "", { shouldValidate: false });
@@ -147,13 +151,14 @@ export default function NuevoLotePage() {
         form.setValue("alicuota", 0, { shouldValidate: false });
       }
     }
-  }, [addressValue, form]);
+  }, [frenteValue, numeroValue, form]);
 
   function onSubmit(data: NewLoteFormValues) {
     console.log(data);
+    const fullAddress = `${data.frente} ${data.numero || ''}`.trim();
     toast({
       title: "Lote Creado",
-      description: `El nuevo lote en ${data.address} ha sido creado exitosamente.`,
+      description: `El nuevo lote en ${fullAddress} ha sido creado exitosamente.`,
     });
     router.push(`/lotes`);
   }
@@ -170,7 +175,7 @@ export default function NuevoLotePage() {
             </Link>
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Crear Nuevo Lote</h1>
-              <p className="text-muted-foreground">Comience ingresando la dirección para autocompletar los datos.</p>
+              <p className="text-muted-foreground">Comience ingresando el frente para autocompletar los datos.</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -188,11 +193,18 @@ export default function NuevoLotePage() {
                 <CardDescription>Detalles principales y de gestión del lote.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                   <FormField control={form.control} name="address" render={({ field }) => (
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                   <FormField control={form.control} name="frente" render={({ field }) => (
+                    <FormItem className="lg:col-span-2">
+                      <FormLabel>Frente</FormLabel>
+                      <FormControl><Input placeholder="Ej: Av. Santa Fe o SMP" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}/>
+                  <FormField control={form.control} name="numero" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Dirección o SMP</FormLabel>
-                      <FormControl><Input placeholder="Ej: Av. Santa Fe 1060" {...field} /></FormControl>
+                      <FormLabel>Número</FormLabel>
+                      <FormControl><Input placeholder="Ej: 1060" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}/>
