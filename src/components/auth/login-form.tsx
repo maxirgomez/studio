@@ -146,7 +146,7 @@ export function LoginForm() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel className="font-bold">Email</FormLabel>
                     <FormControl>
                       <Input
                         type="email"
@@ -164,7 +164,7 @@ export function LoginForm() {
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex items-center">
-                      <FormLabel>Contraseña</FormLabel>
+                      <FormLabel className="font-bold">Contraseña</FormLabel>
                        <DialogTrigger asChild>
                          <Button variant="link" type="button" className="ml-auto inline-block px-0 text-sm">
                             ¿Olvidaste tu contraseña?
