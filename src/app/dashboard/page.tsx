@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { listings, users } from "@/lib/data"
+import { listings, users, getStatusStyles } from "@/lib/data"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
 import { DollarSign, Home, TrendingUp, Users, Activity } from "lucide-react"
 import { format, subMonths } from "date-fns"
@@ -43,6 +43,11 @@ const processDashboardData = (agentFilter: string, periodInMonths: number) => {
     ? listings
     : listings.filter(l => l.agent.name === agentFilter);
   
+  const lotsByStatus = filteredListings.reduce((acc, l) => {
+    acc[l.status] = (acc[l.status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
   const recentListings = filteredListings.filter(l => l.listingDate && new Date(l.listingDate) >= startDate);
   const recentSales = filteredListings.filter(l => l.saleDate && new Date(l.saleDate) >= startDate);
 
@@ -84,11 +89,12 @@ const processDashboardData = (agentFilter: string, periodInMonths: number) => {
 
   return { 
     totalRevenue, 
-    totalListings, 
+    totalListings,
     totalSales,
     salesChange,
     salesChartData,
-    latestSales 
+    latestSales,
+    lotsByStatus
   };
 };
 
@@ -109,8 +115,28 @@ export default function DashboardPage() {
     totalSales,
     salesChange,
     salesChartData,
-    latestSales 
+    latestSales,
+    lotsByStatus
   } = useMemo(() => processDashboardData(agentFilter, 12), [agentFilter]);
+  
+  const statusOrder = [
+    "Tomar Acción",
+    "Tasación",
+    "Evolucionando",
+    "Disponible",
+    "Reservado",
+    "Vendido",
+    "No vende",
+    "Descartado",
+  ];
+  
+  const sortedLotsByStatus = Object.entries(lotsByStatus).sort(([a], [b]) => {
+    const indexA = statusOrder.indexOf(a);
+    const indexB = statusOrder.indexOf(b);
+    if(indexA === -1) return 1;
+    if(indexB === -1) return -1;
+    return indexA - indexB;
+  });
 
   return (
     <div className="space-y-6">
@@ -132,6 +158,22 @@ export default function DashboardPage() {
             </SelectContent>
           </Select>
         </div>
+      </div>
+      
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+        {sortedLotsByStatus.map(([status, count]) => {
+          const styles = getStatusStyles(status);
+          return (
+            <Card key={status} style={{ backgroundColor: styles.backgroundColor, color: styles.color, borderColor: 'transparent' }}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{status}</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-2">
+                <div className="text-2xl font-bold">{count}</div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
