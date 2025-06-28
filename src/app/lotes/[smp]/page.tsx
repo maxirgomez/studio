@@ -2,11 +2,13 @@
 "use client"
 
 import * as React from "react"
-import { useState } from "react"
+import { useState, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useParams } from 'next/navigation'
 import { format } from "date-fns"
+import jsPDF from "jspdf"
+import html2canvas from "html2canvas"
 
 import {
   Card,
@@ -37,6 +39,75 @@ import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import { listings, getStatusStyles } from "@/lib/data";
 
+const PdfContent = React.forwardRef<
+  HTMLDivElement,
+  { listing: (typeof listings)[0]; imageUrl: string | null | undefined }
+>(({ listing, imageUrl }, ref) => {
+  const sectionTitleStyle: React.CSSProperties = { fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '8px', borderBottom: '1px solid #ddd', paddingBottom: '4px', color: '#2D3746' };
+  const fieldStyle: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '12px' };
+  const labelStyle: React.CSSProperties = { fontWeight: 'bold', color: '#555' };
+  const valueStyle: React.CSSProperties = { color: '#333', textAlign: 'right' };
+  const gridStyle: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 24px' };
+
+  return (
+    <div ref={ref} style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#333', padding: '40px', background: 'white', width: '210mm' }}>
+      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <h1 style={{ color: '#2D3746', fontSize: '24px', fontWeight: 'bold', margin: 0 }}>Ficha de Lote</h1>
+        <h2 style={{ fontSize: '18px', fontWeight: 'normal', margin: '4px 0' }}>{listing.address} - {listing.neighborhood}</h2>
+      </div>
+
+      {imageUrl && <img src={imageUrl} crossOrigin="anonymous" style={{ width: '100%', height: '250px', marginBottom: '20px', borderRadius: '4px', objectFit: 'cover' }} alt={listing.address} />}
+      
+      <div style={gridStyle}>
+        <div>
+          <h3 style={sectionTitleStyle}>Información Urbanística</h3>
+          <div style={fieldStyle}><span style={labelStyle}>SMP:</span> <span style={valueStyle}>{listing.smp}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Código Urbanístico:</span> <span style={valueStyle}>{listing.codigoUrbanistico}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>CPU:</span> <span style={valueStyle}>{listing.cpu}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Partida:</span> <span style={valueStyle}>{listing.partida}</span></div>
+        </div>
+        <div>
+          <h3 style={sectionTitleStyle}>Catastral</h3>
+          <div style={fieldStyle}><span style={labelStyle}>M² Estimados:</span> <span style={valueStyle}>{listing.area} m²</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Incidencia UVA:</span> <span style={valueStyle}>{listing.incidenciaUVA}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>FOT:</span> <span style={valueStyle}>{listing.fot}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Alícuota:</span> <span style={valueStyle}>{listing.alicuota}%</span></div>
+        </div>
+      </div>
+      
+      <h3 style={sectionTitleStyle}>Datos de Tasación</h3>
+      <div style={gridStyle}>
+        <div>
+          <div style={fieldStyle}><span style={labelStyle}>M2 Vendibles:</span> <span style={valueStyle}>{listing.m2Vendibles} m²</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Valor de Venta (USD):</span> <span style={valueStyle}>$ {listing.valorVentaUSD.toLocaleString('es-AR')}</span></div>
+        </div>
+        <div>
+          <div style={fieldStyle}><span style={labelStyle}>Incidencia Tasada (USD/m2):</span> <span style={valueStyle}>$ {listing.incidenciaTasadaUSD.toLocaleString('es-AR')}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Forma de Pago:</span> <span style={valueStyle}>{listing.formaDePago}</span></div>
+        </div>
+      </div>
+      {listing.saleDate && (
+        <div style={fieldStyle}><span style={labelStyle}>Fecha de Venta:</span> <span style={valueStyle}>{format(new Date(listing.saleDate), "dd/MM/yyyy")}</span></div>
+      )}
+
+      <h3 style={sectionTitleStyle}>Información del Propietario</h3>
+      <div style={gridStyle}>
+        <div>
+          <div style={fieldStyle}><span style={labelStyle}>Propietario:</span> <span style={valueStyle}>Juan Pérez</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Dirección:</span> <span style={valueStyle}>Calle Falsa 123, Buenos Aires</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Email:</span> <span style={valueStyle}>juan.perez@example.com</span></div>
+        </div>
+        <div>
+          <div style={fieldStyle}><span style={labelStyle}>Fallecido:</span> <span style={valueStyle}>No</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Teléfono:</span> <span style={valueStyle}>(011) 4555-5555</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Celular:</span> <span style={valueStyle}>(011) 15-1234-5678</span></div>
+        </div>
+      </div>
+    </div>
+  );
+});
+PdfContent.displayName = 'PdfContent';
+
 export default function LoteDetailPage() {
   const params = useParams<{ smp: string }>();
   const listing = listings.find((l) => l.smp === params.smp);
@@ -66,6 +137,8 @@ export default function LoteDetailPage() {
     },
   ]);
   const [newNote, setNewNote] = useState("");
+  const pdfContentRef = useRef<HTMLDivElement>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const handleAddNote = () => {
       if (newNote.trim() === "" || !listing) return;
@@ -124,6 +197,64 @@ export default function LoteDetailPage() {
     setIsEditDialogOpen(open);
   }
 
+  const handleGeneratePdf = async () => {
+    if (!pdfContentRef.current || !listing) return;
+
+    setIsGeneratingPdf(true);
+    toast({
+        title: "Generando PDF...",
+        description: "Por favor, espera un momento.",
+    });
+
+    try {
+        const canvas = await html2canvas(pdfContentRef.current, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff'
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        });
+
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const canvasAspectRatio = canvasWidth / canvasHeight;
+        
+        let renderHeight = pdfHeight - 20; // with margin
+        let renderWidth = renderHeight * canvasAspectRatio;
+
+        if (renderWidth > pdfWidth - 20) {
+            renderWidth = pdfWidth - 20;
+            renderHeight = renderWidth / canvasAspectRatio;
+        }
+
+        const xOffset = (pdfWidth - renderWidth) / 2;
+        const yOffset = 10;
+
+        pdf.addImage(imgData, 'PNG', xOffset, yOffset, renderWidth, renderHeight);
+        pdf.save(`ficha-lote-${listing.smp}.pdf`);
+        
+        toast({
+            title: "PDF Generado",
+            description: `La ficha del lote ${listing.address} se ha descargado.`,
+        });
+    } catch (error) {
+        console.error("Error al generar PDF:", error);
+        toast({
+            variant: "destructive",
+            title: "Error al generar PDF",
+            description: "No se pudo crear el archivo. Inténtalo de nuevo.",
+        });
+    } finally {
+        setIsGeneratingPdf(false);
+    }
+  };
 
   if (!listing) {
     return (
@@ -242,7 +373,10 @@ export default function LoteDetailPage() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-                <Button variant="secondary"><Download className="mr-2 h-4 w-4"/> Descargar Ficha PDF</Button>
+                <Button variant="secondary" onClick={handleGeneratePdf} disabled={isGeneratingPdf}>
+                  <Download className="mr-2 h-4 w-4"/> 
+                  {isGeneratingPdf ? "Generando..." : "Descargar Ficha PDF"}
+                </Button>
             </div>
 
             <Card>
@@ -489,6 +623,11 @@ export default function LoteDetailPage() {
                     </div>
                 </CardContent>
             </Card>
+        </div>
+      </div>
+      <div className="hidden">
+        <div ref={pdfContentRef}>
+          {listing && <PdfContent listing={listing} imageUrl={currentImageUrl} />}
         </div>
       </div>
     </div>
