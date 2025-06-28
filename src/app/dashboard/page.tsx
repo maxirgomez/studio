@@ -14,6 +14,14 @@ import {
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -21,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { listings, users, getStatusStyles } from "@/lib/data"
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegendContent, type ChartConfig } from "@/components/ui/chart"
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from "@/components/ui/chart"
 import { Activity, TrendingUp, X } from "lucide-react"
 import { subMonths } from "date-fns"
 import { cn } from "@/lib/utils"
@@ -66,7 +74,7 @@ const processDashboardData = (agentFilter: string, statusFilter: string) => {
     : agentFilteredListings;
 
   // 4. Calculate KPIs and chart data from fully filtered list
-  const totalLots = fullyFilteredListings.length;
+  const totalLots = listings.length;
 
   const recentSales = fullyFilteredListings.filter(l => l.saleDate && new Date(l.saleDate) >= subMonths(new Date(), 12));
   const totalSales = recentSales.length;
@@ -102,11 +110,12 @@ const processDashboardData = (agentFilter: string, statusFilter: string) => {
   );
 
   return { 
-    totalLots,
+    totalLots: fullyFilteredListings.length,
     totalSales,
     salesChange,
     lotsByStatus,
     lotsByNeighborhoodChartData,
+    filteredListings: fullyFilteredListings,
   };
 };
 
@@ -125,6 +134,7 @@ export default function DashboardPage() {
     salesChange,
     lotsByStatus,
     lotsByNeighborhoodChartData,
+    filteredListings
   } = useMemo(() => processDashboardData(agentFilter, statusFilter), [agentFilter, statusFilter]);
   
   const sortedLotsByStatus = Object.entries(lotsByStatus).sort(([a], [b]) => {
@@ -205,7 +215,7 @@ export default function DashboardPage() {
         ))}
       </div>
       
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-8">
         {sortedLotsByStatus.map(([status, count]) => {
           const styles = getStatusStyles(status);
           return (
@@ -230,7 +240,7 @@ export default function DashboardPage() {
         })}
       </div>
       
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de Lotes</CardTitle>
@@ -257,7 +267,7 @@ export default function DashboardPage() {
         </Card>
       </div>
       
-      <div className="grid gap-4">
+      <div className="grid gap-4 mt-4 grid-cols-1">
         <Card className="col-span-4">
           <CardHeader>
             <CardTitle>Lotes por Barrio</CardTitle>
@@ -297,6 +307,48 @@ export default function DashboardPage() {
               </ResponsiveContainer>
             </ChartContainer>
           </CardContent>
+        </Card>
+        <Card>
+            <CardHeader>
+                <CardTitle>Listado de Lotes</CardTitle>
+                <CardDescription>
+                    Una tabla detallada de los lotes según los filtros aplicados.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Dirección</TableHead>
+                            <TableHead>Barrio</TableHead>
+                            <TableHead className="text-right">M² Estimados</TableHead>
+                            <TableHead className="text-right">M² Calculados</TableHead>
+                            <TableHead className="text-right">Valor Venta (USD)</TableHead>
+                            <TableHead>Estado</TableHead>
+                            <TableHead>Agente</TableHead>
+                            <TableHead>Origen</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredListings.map((listing) => (
+                            <TableRow key={listing.smp}>
+                                <TableCell className="font-medium">{listing.address}</TableCell>
+                                <TableCell>{listing.neighborhood}</TableCell>
+                                <TableCell className="text-right">{listing.area}</TableCell>
+                                <TableCell className="text-right">{listing.area}</TableCell>
+                                <TableCell className="text-right">
+                                  {listing.valorVentaUSD.toLocaleString('es-AR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 })}
+                                </TableCell>
+                                <TableCell>
+                                    <Badge style={getStatusStyles(listing.status)}>{listing.status}</Badge>
+                                </TableCell>
+                                <TableCell>{listing.agent.name}</TableCell>
+                                <TableCell>{listing.origen}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
         </Card>
       </div>
     </div>
