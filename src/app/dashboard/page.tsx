@@ -81,22 +81,23 @@ const processDashboardData = (agentFilter: string, statusFilter: string, salesCh
 
   const totalLots = agentFilteredListings.length;
 
-  const lastMonthSales = agentFilteredListings.filter(l => {
-    if (!l.saleDate || l.status !== "Vendido") return false;
-    const saleDate = new Date(l.saleDate);
-    const lastMonth = subMonths(new Date(), 1);
-    return saleDate >= lastMonth;
-  }).length;
+  const salesListings = agentFilteredListings.filter(l => l.status === "Vendido" && l.saleDate);
   
-  const previousMonthSales = agentFilteredListings.filter(l => {
-    if (!l.saleDate || l.status !== "Vendido") return false;
-    const saleDate = new Date(l.saleDate);
-    const twoMonthsAgo = subMonths(new Date(), 2);
-    const lastMonth = subMonths(new Date(), 1);
-    return saleDate >= twoMonthsAgo && saleDate < lastMonth;
+  const today = new Date();
+  const currentQuarterStart = new Date(today.getFullYear(), Math.floor(today.getMonth() / 3) * 3, 1);
+  const previousQuarterStart = subMonths(currentQuarterStart, 3);
+  
+  const quarterlySales = salesListings.filter(l => {
+    const saleDate = new Date(l.saleDate!);
+    return saleDate >= currentQuarterStart && saleDate <= today;
   }).length;
 
-  const salesChange = previousMonthSales > 0 ? ((lastMonthSales - previousMonthSales) / previousMonthSales) * 100 : lastMonthSales > 0 ? 100 : 0;
+  const previousQuarterSales = salesListings.filter(l => {
+    const saleDate = new Date(l.saleDate!);
+    return saleDate >= previousQuarterStart && saleDate < currentQuarterStart;
+  }).length;
+
+  const quarterlySalesChange = previousQuarterSales > 0 ? ((quarterlySales - previousQuarterSales) / previousQuarterSales) * 100 : quarterlySales > 0 ? 100 : 0;
   
   const lotsByNeighborhoodChartData = Object.entries(
     fullyFilteredListings.reduce((acc, l) => {
@@ -120,8 +121,8 @@ const processDashboardData = (agentFilter: string, statusFilter: string, salesCh
   });
 
   const salesCutoffDate = subMonths(new Date(), monthsToShow);
-  agentFilteredListings.forEach(l => {
-    if (l.saleDate && l.status === 'Vendido') {
+  salesListings.forEach(l => {
+    if (l.saleDate) {
       const saleDate = new Date(l.saleDate);
       if (saleDate >= salesCutoffDate) {
         const monthIndex = differenceInMonths(new Date(), saleDate);
@@ -137,7 +138,8 @@ const processDashboardData = (agentFilter: string, statusFilter: string, salesCh
 
   return { 
     totalLots,
-    salesChange,
+    quarterlySales,
+    quarterlySalesChange,
     lotsByStatus,
     lotsByNeighborhoodChartData,
     filteredListings: fullyFilteredListings,
@@ -160,7 +162,8 @@ export default function DashboardPage() {
 
   const { 
     totalLots,
-    salesChange,
+    quarterlySales,
+    quarterlySalesChange,
     lotsByStatus,
     lotsByNeighborhoodChartData,
     filteredListings,
@@ -294,12 +297,14 @@ export default function DashboardPage() {
         </Card>
         <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Crecimiento de Ventas</CardTitle>
+            <CardTitle className="text-sm font-medium">Ventas del Trimestre</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-            <div className="text-2xl font-bold">{salesChange >= 0 ? '+' : ''}{salesChange.toFixed(1)}%</div>
-            <p className="text-xs text-muted-foreground">vs mes anterior</p>
+            <div className="text-2xl font-bold">{quarterlySales}</div>
+            <p className="text-xs text-muted-foreground">
+                {quarterlySalesChange >= 0 ? '+' : ''}{quarterlySalesChange.toFixed(1)}% vs trimestre anterior
+            </p>
             </CardContent>
         </Card>
       </div>
