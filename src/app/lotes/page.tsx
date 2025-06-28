@@ -388,10 +388,12 @@ export default function LotesPage() {
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="SMP o Dirección" className="pl-8" />
             </div>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Lote
-            </Button>
+            <Link href="/lotes/nuevo">
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Lote
+              </Button>
+            </Link>
           </div>
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
