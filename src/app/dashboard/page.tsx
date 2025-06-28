@@ -82,14 +82,14 @@ const processDashboardData = (agentFilter: string, statusFilter: string, salesCh
   const totalLots = agentFilteredListings.length;
 
   const lastMonthSales = agentFilteredListings.filter(l => {
-    if (!l.saleDate) return false;
+    if (!l.saleDate || l.status !== "Vendido") return false;
     const saleDate = new Date(l.saleDate);
     const lastMonth = subMonths(new Date(), 1);
     return saleDate >= lastMonth;
   }).length;
   
   const previousMonthSales = agentFilteredListings.filter(l => {
-    if (!l.saleDate) return false;
+    if (!l.saleDate || l.status !== "Vendido") return false;
     const saleDate = new Date(l.saleDate);
     const twoMonthsAgo = subMonths(new Date(), 2);
     const lastMonth = subMonths(new Date(), 1);
@@ -121,7 +121,7 @@ const processDashboardData = (agentFilter: string, statusFilter: string, salesCh
 
   const salesCutoffDate = subMonths(new Date(), monthsToShow);
   agentFilteredListings.forEach(l => {
-    if (l.saleDate) {
+    if (l.saleDate && l.status === 'Vendido') {
       const saleDate = new Date(l.saleDate);
       if (saleDate >= salesCutoffDate) {
         const monthIndex = differenceInMonths(new Date(), saleDate);
