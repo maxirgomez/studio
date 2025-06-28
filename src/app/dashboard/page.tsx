@@ -3,7 +3,7 @@
 
 import * as React from "react"
 import { useState, useMemo } from "react"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Legend } from "recharts"
 import {
   Card,
   CardContent,
@@ -20,8 +20,8 @@ import {
 } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { listings, users, getStatusStyles } from "@/lib/data"
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
-import { DollarSign, Home, TrendingUp, Users, Activity } from "lucide-react"
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegendContent, type ChartConfig } from "@/components/ui/chart"
+import { Activity, TrendingUp } from "lucide-react"
 import { format, subMonths } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -34,11 +34,29 @@ const formatPrice = (price: number) => {
   }).format(price);
 };
 
-// Data processing
-const processDashboardData = (agentFilter: string, periodInMonths: number) => {
-  const now = new Date();
-  const startDate = subMonths(now, periodInMonths);
+const statusOrder = [
+    "Tomar Acción",
+    "Tasación",
+    "Evolucionando",
+    "Disponible",
+    "Reservado",
+    "Vendido",
+    "No vende",
+    "Descartado",
+];
+  
+const chartConfig = statusOrder.reduce((acc, status) => {
+    const styles = getStatusStyles(status);
+    acc[status] = {
+        label: status,
+        color: styles.backgroundColor,
+    };
+    return acc;
+}, {} as ChartConfig);
 
+
+// Data processing
+const processDashboardData = (agentFilter: string) => {
   const filteredListings = agentFilter === 'todos'
     ? listings
     : listings.filter(l => l.agent.name === agentFilter);
@@ -49,62 +67,55 @@ const processDashboardData = (agentFilter: string, periodInMonths: number) => {
     acc[l.status] = (acc[l.status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
-
-  const recentSales = filteredListings.filter(l => l.saleDate && new Date(l.saleDate) >= startDate);
-
-  const totalRevenue = recentSales.reduce((acc, l) => acc + (l.valorVentaUSD || 0), 0);
+  
+  const recentSales = filteredListings.filter(l => l.saleDate && new Date(l.saleDate) >= subMonths(new Date(), 12));
   const totalSales = recentSales.length;
 
   const lastMonthSales = filteredListings.filter(l => {
     if (!l.saleDate) return false;
     const saleDate = new Date(l.saleDate);
-    const lastMonth = subMonths(now, 1);
+    const lastMonth = subMonths(new Date(), 1);
     return saleDate >= lastMonth;
   }).length;
   
   const previousMonthSales = filteredListings.filter(l => {
     if (!l.saleDate) return false;
     const saleDate = new Date(l.saleDate);
-    const twoMonthsAgo = subMonths(now, 2);
-    const lastMonth = subMonths(now, 1);
+    const twoMonthsAgo = subMonths(new Date(), 2);
+    const lastMonth = subMonths(new Date(), 1);
     return saleDate >= twoMonthsAgo && saleDate < lastMonth;
   }).length;
 
   const salesChange = previousMonthSales > 0 ? ((lastMonthSales - previousMonthSales) / previousMonthSales) * 100 : lastMonthSales > 0 ? 100 : 0;
 
-  const salesByMonth = recentSales.reduce((acc, listing) => {
-    if (listing.saleDate) {
-      const month = format(new Date(listing.saleDate), 'LLL', { locale: es });
-      acc[month] = (acc[month] || 0) + 1;
-    }
-    return acc;
-  }, {} as Record<string, number>);
-
-  const salesChartData = Object.entries(salesByMonth).map(([name, total]) => ({ name, total })).reverse();
-  
   const latestSales = filteredListings
     .filter(l => l.status === 'Vendido' && l.saleDate)
     .sort((a, b) => new Date(b.saleDate!).getTime() - new Date(a.saleDate!).getTime())
     .slice(0, 5);
+  
+  const lotsByNeighborhoodChartData = Object.values(
+    filteredListings.reduce((acc, l) => {
+      const neighborhood = l.neighborhood;
+      const status = l.status;
+      if (!acc[neighborhood]) {
+        acc[neighborhood] = { name: neighborhood };
+        statusOrder.forEach(s => { acc[neighborhood][s] = 0; });
+      }
+      acc[neighborhood][status] = (acc[neighborhood][status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, any>)
+  );
 
   return { 
-    totalRevenue, 
     totalSales,
     salesChange,
-    salesChartData,
     latestSales,
     lotsByStatus,
     totalLots,
+    lotsByNeighborhoodChartData,
   };
 };
 
-
-const chartConfig = {
-  total: {
-    label: "Ventas",
-    color: "hsl(var(--primary))",
-  },
-} satisfies ChartConfig
 
 export default function DashboardPage() {
   const [agentFilter, setAgentFilter] = useState('todos');
@@ -113,21 +124,10 @@ export default function DashboardPage() {
     totalLots,
     totalSales,
     salesChange,
-    salesChartData,
     latestSales,
-    lotsByStatus
-  } = useMemo(() => processDashboardData(agentFilter, 12), [agentFilter]);
-  
-  const statusOrder = [
-    "Tomar Acción",
-    "Tasación",
-    "Evolucionando",
-    "Disponible",
-    "Reservado",
-    "Vendido",
-    "No vende",
-    "Descartado",
-  ];
+    lotsByStatus,
+    lotsByNeighborhoodChartData,
+  } = useMemo(() => processDashboardData(agentFilter), [agentFilter]);
   
   const sortedLotsByStatus = Object.entries(lotsByStatus).sort(([a], [b]) => {
     const indexA = statusOrder.indexOf(a);
@@ -202,29 +202,42 @@ export default function DashboardPage() {
        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4">
           <CardHeader>
-            <CardTitle>Resumen de Ventas</CardTitle>
+            <CardTitle>Lotes por Barrio</CardTitle>
             <CardDescription>
-              Ventas totales en los últimos 12 meses.
+              Distribución de lotes por estado en cada barrio.
             </CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
-            <ChartContainer config={chartConfig} className="h-[350px]">
-              <BarChart data={salesChartData}>
-                <CartesianGrid vertical={false} />
-                <XAxis
-                  dataKey="name"
-                  tickLine={false}
-                  tickMargin={10}
-                  axisLine={false}
-                  tickFormatter={(value) => value.slice(0, 3)}
-                />
-                <YAxis />
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent indicator="dot" />}
-                />
-                <Bar dataKey="total" fill="var(--color-total)" radius={4} />
-              </BarChart>
+            <ChartContainer config={chartConfig} className="h-[350px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={lotsByNeighborhoodChartData} layout="vertical" margin={{ left: 10, right: 10 }}>
+                  <CartesianGrid horizontal={false} />
+                   <XAxis type="number" hide />
+                   <YAxis
+                    dataKey="name"
+                    type="category"
+                    tickLine={false}
+                    tickMargin={10}
+                    axisLine={false}
+                    width={100}
+                    tickFormatter={(value) => value.length > 12 ? `${value.substring(0,12)}...` : value}
+                  />
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent indicator="dot" />}
+                  />
+                  <Legend content={<ChartLegendContent />} />
+                  {statusOrder.map((status) => (
+                    <Bar
+                      key={status}
+                      dataKey={status}
+                      stackId="a"
+                      fill={getStatusStyles(status).backgroundColor}
+                      radius={[0, 4, 4, 0]}
+                    />
+                  ))}
+                </BarChart>
+              </ResponsiveContainer>
             </ChartContainer>
           </CardContent>
         </Card>
@@ -256,7 +269,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-
     </div>
   )
 }
