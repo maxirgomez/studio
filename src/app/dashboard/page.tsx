@@ -43,6 +43,8 @@ const processDashboardData = (agentFilter: string, periodInMonths: number) => {
     ? listings
     : listings.filter(l => l.agent.name === agentFilter);
   
+  const totalLots = filteredListings.length;
+
   const lotsByStatus = filteredListings.reduce((acc, l) => {
     acc[l.status] = (acc[l.status] || 0) + 1;
     return acc;
@@ -94,7 +96,8 @@ const processDashboardData = (agentFilter: string, periodInMonths: number) => {
     salesChange,
     salesChartData,
     latestSales,
-    lotsByStatus
+    lotsByStatus,
+    totalLots,
   };
 };
 
@@ -110,7 +113,7 @@ export default function DashboardPage() {
   const [agentFilter, setAgentFilter] = useState('todos');
 
   const { 
-    totalRevenue, 
+    totalLots,
     totalListings,
     totalSales,
     salesChange,
@@ -179,16 +182,16 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ingresos Totales (12m)</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total de Lotes</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatPrice(totalRevenue)}</div>
+            <div className="text-2xl font-bold">{totalLots}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Lotes Activos</CardTitle>
+            <CardTitle className="text-sm font-medium">Lotes Disponibles</CardTitle>
             <Home className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
