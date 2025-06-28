@@ -75,7 +75,7 @@ const processDashboardData = (agentFilter: string, statusFilter: string, salesCh
     return acc;
   }, {} as Record<string, number>);
 
-  const fullyFilteredListings = statusFilter
+  const filteredListings = statusFilter
     ? agentFilteredListings.filter(l => l.status === statusFilter)
     : agentFilteredListings;
 
@@ -99,7 +99,7 @@ const processDashboardData = (agentFilter: string, statusFilter: string, salesCh
   const salesChange = previousMonthSales > 0 ? ((lastMonthSales - previousMonthSales) / previousMonthSales) * 100 : lastMonthSales > 0 ? 100 : 0;
   
   const lotsByNeighborhoodChartData = Object.entries(
-    fullyFilteredListings.reduce((acc, l) => {
+    filteredListings.reduce((acc, l) => {
       acc[l.neighborhood] = (acc[l.neighborhood] || 0) + 1;
       return acc;
     }, {} as Record<string, number>)
