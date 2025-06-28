@@ -2,8 +2,9 @@
 "use client"
 
 import * as React from "react"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Legend } from "recharts"
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import {
   Card,
   CardContent,
@@ -11,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import {
   Select,
   SelectContent,
@@ -18,21 +20,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { listings, users, getStatusStyles } from "@/lib/data"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegendContent, type ChartConfig } from "@/components/ui/chart"
-import { Activity, TrendingUp, DollarSign } from "lucide-react"
-import { format, subMonths } from "date-fns"
-import { es } from "date-fns/locale"
+import { Activity, TrendingUp, X } from "lucide-react"
+import { subMonths } from "date-fns"
+import { cn } from "@/lib/utils"
 
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(price);
-};
 
 const statusOrder = [
     "Tomar Acción",
@@ -55,30 +48,37 @@ const chartConfig = statusOrder.reduce((acc, status) => {
 }, {} as ChartConfig);
 
 
-// Data processing
-const processDashboardData = (agentFilter: string) => {
-  const filteredListings = agentFilter === 'todos'
+const processDashboardData = (agentFilter: string, statusFilter: string) => {
+  // 1. Filter by agent first
+  const agentFilteredListings = agentFilter === 'todos'
     ? listings
     : listings.filter(l => l.agent.name === agentFilter);
   
-  const totalLots = filteredListings.length;
-
-  const lotsByStatus = filteredListings.reduce((acc, l) => {
+  // 2. Calculate status counts based on agent filter (for the cards)
+  const lotsByStatus = agentFilteredListings.reduce((acc, l) => {
     acc[l.status] = (acc[l.status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
-  
-  const recentSales = filteredListings.filter(l => l.saleDate && new Date(l.saleDate) >= subMonths(new Date(), 12));
+
+  // 3. Apply status filter
+  const fullyFilteredListings = statusFilter
+    ? agentFilteredListings.filter(l => l.status === statusFilter)
+    : agentFilteredListings;
+
+  // 4. Calculate KPIs and chart data from fully filtered list
+  const totalLots = fullyFilteredListings.length;
+
+  const recentSales = fullyFilteredListings.filter(l => l.saleDate && new Date(l.saleDate) >= subMonths(new Date(), 12));
   const totalSales = recentSales.length;
 
-  const lastMonthSales = filteredListings.filter(l => {
+  const lastMonthSales = fullyFilteredListings.filter(l => {
     if (!l.saleDate) return false;
     const saleDate = new Date(l.saleDate);
     const lastMonth = subMonths(new Date(), 1);
     return saleDate >= lastMonth;
   }).length;
   
-  const previousMonthSales = filteredListings.filter(l => {
+  const previousMonthSales = fullyFilteredListings.filter(l => {
     if (!l.saleDate) return false;
     const saleDate = new Date(l.saleDate);
     const twoMonthsAgo = subMonths(new Date(), 2);
@@ -89,7 +89,7 @@ const processDashboardData = (agentFilter: string) => {
   const salesChange = previousMonthSales > 0 ? ((lastMonthSales - previousMonthSales) / previousMonthSales) * 100 : lastMonthSales > 0 ? 100 : 0;
   
   const lotsByNeighborhoodChartData = Object.values(
-    filteredListings.reduce((acc, l) => {
+    fullyFilteredListings.reduce((acc, l) => {
       const neighborhood = l.neighborhood;
       const status = l.status;
       if (!acc[neighborhood]) {
@@ -102,17 +102,22 @@ const processDashboardData = (agentFilter: string) => {
   );
 
   return { 
+    totalLots,
     totalSales,
     salesChange,
     lotsByStatus,
-    totalLots,
     lotsByNeighborhoodChartData,
   };
 };
 
 
 export default function DashboardPage() {
-  const [agentFilter, setAgentFilter] = useState('todos');
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const agentFilter = searchParams.get('agent') || 'todos';
+  const statusFilter = searchParams.get('status') || '';
 
   const { 
     totalLots,
@@ -120,7 +125,7 @@ export default function DashboardPage() {
     salesChange,
     lotsByStatus,
     lotsByNeighborhoodChartData,
-  } = useMemo(() => processDashboardData(agentFilter), [agentFilter]);
+  } = useMemo(() => processDashboardData(agentFilter, statusFilter), [agentFilter, statusFilter]);
   
   const sortedLotsByStatus = Object.entries(lotsByStatus).sort(([a], [b]) => {
     const indexA = statusOrder.indexOf(a);
@@ -130,6 +135,42 @@ export default function DashboardPage() {
     return indexA - indexB;
   });
 
+  const createQueryString = useCallback(
+    (paramsToUpdate: Record<string, string | null>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      for (const [key, value] of Object.entries(paramsToUpdate)) {
+        if (value === null || value === '' || value === 'todos') {
+          params.delete(key);
+        } else {
+          params.set(key, value);
+        }
+      }
+      return params.toString();
+    },
+    [searchParams]
+  );
+  
+  const handleAgentFilterChange = (agent: string) => {
+    router.push(`${pathname}?${createQueryString({ agent, page: '1' })}`, { scroll: false });
+  };
+
+  const handleStatusFilterChange = (status: string) => {
+    const newStatus = statusFilter === status ? null : status;
+    router.push(`${pathname}?${createQueryString({ status: newStatus, page: '1' })}`, { scroll: false });
+  };
+  
+  const handleRemoveFilter = (key: string) => {
+    router.push(`${pathname}?${createQueryString({ [key]: null, page: '1' })}`, { scroll: false });
+  };
+
+  const activeFilters = [];
+  if (agentFilter !== 'todos') {
+    activeFilters.push({ type: 'Agente', value: agentFilter, key: 'agent' });
+  }
+  if (statusFilter) {
+    activeFilters.push({ type: 'Estado', value: statusFilter, key: 'status' });
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -138,7 +179,7 @@ export default function DashboardPage() {
           <p className="text-muted-foreground">Una vista general de la actividad de los lotes.</p>
         </div>
         <div className="w-full max-w-xs">
-          <Select value={agentFilter} onValueChange={setAgentFilter}>
+          <Select value={agentFilter} onValueChange={handleAgentFilterChange}>
             <SelectTrigger>
               <SelectValue placeholder="Filtrar por agente..." />
             </SelectTrigger>
@@ -151,19 +192,40 @@ export default function DashboardPage() {
           </Select>
         </div>
       </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {activeFilters.length > 0 && <span className="text-sm font-medium">Filtros Activos:</span>}
+        {activeFilters.map(filter => (
+          <Badge key={`${filter.key}-${filter.value}`} variant="secondary" className="flex items-center gap-1.5 pl-2">
+            <span>{filter.type}: {filter.value}</span>
+            <button onClick={() => handleRemoveFilter(filter.key)} className="rounded-full p-0.5 text-muted-foreground hover:bg-background/50 hover:text-foreground">
+              <X className="h-3 w-3" />
+            </button>
+          </Badge>
+        ))}
+      </div>
       
       <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         {sortedLotsByStatus.map(([status, count]) => {
           const styles = getStatusStyles(status);
           return (
-            <Card key={status} style={{ backgroundColor: styles.backgroundColor, color: styles.color, borderColor: 'transparent' }}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{status}</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-2">
-                <div className="text-2xl font-bold">{count}</div>
-              </CardContent>
-            </Card>
+            <button
+              key={status}
+              onClick={() => handleStatusFilterChange(status)}
+              className={cn(
+                "w-full text-left rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                statusFilter === status ? "ring-2 ring-primary ring-offset-background" : "ring-0"
+              )}
+            >
+              <Card style={{ backgroundColor: styles.backgroundColor, color: styles.color, borderColor: 'transparent' }} className="h-full">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">{status}</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-2">
+                  <div className="text-2xl font-bold">{count}</div>
+                </CardContent>
+              </Card>
+            </button>
           );
         })}
       </div>
@@ -176,6 +238,9 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalLots}</div>
+            <p className="text-xs text-muted-foreground">
+              {statusFilter ? `Lotes con estado "${statusFilter}"` : "Total de lotes según filtros"}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -193,7 +258,7 @@ export default function DashboardPage() {
       </div>
       
       <div className="grid gap-4">
-        <Card>
+        <Card className="col-span-4">
           <CardHeader>
             <CardTitle>Lotes por Barrio</CardTitle>
             <CardDescription>
