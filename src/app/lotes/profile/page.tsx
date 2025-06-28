@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Target, Briefcase, TrendingUp, CheckCircle, Pencil, Trash2, XCircle, Clock, DollarSign, Plus } from "lucide-react"
+import { Plus } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -51,7 +51,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { users } from "@/lib/data";
+import { users, getStatusStyles } from "@/lib/data";
+import { Badge } from "@/components/ui/badge";
 
 type UserType = (typeof users)[0];
 
@@ -313,6 +314,17 @@ function CreateUserForm({ onFormSubmit }: { onFormSubmit: () => void }) {
 
 const UserCard = ({ user }: { user: UserType }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const lotStatuses = [
+    { label: "Tomar Acción", count: user.lots.tomarAccion },
+    { label: "Tasación", count: user.lots.tasacion },
+    { label: "Evolucionando", count: user.lots.evolucionando },
+    { label: "Disponible", count: user.lots.disponible },
+    { label: "Reservado", count: user.lots.reservado },
+    { label: "Vendido", count: user.lots.vendido },
+    { label: "No vende", count: user.lots.noVende },
+    { label: "Descartado", count: user.lots.descartado },
+  ];
+
   return(
     <Card>
       <CardHeader className="flex flex-row items-center gap-4">
@@ -327,39 +339,12 @@ const UserCard = ({ user }: { user: UserType }) => {
       </CardHeader>
       <CardContent>
         <p className="text-sm font-medium mb-2 text-muted-foreground">Lotes asignados:</p>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <Target className="h-4 w-4" />
-            <span>Tomar Acción: {user.lots.tomarAccion}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Briefcase className="h-4 w-4" />
-            <span>Tasación: {user.lots.tasacion}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            <span>Evolucionando: {user.lots.evolucionando}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <CheckCircle className="h-4 w-4" />
-            <span>Disponible: {user.lots.disponible}</span>
-          </div>
-           <div className="flex items-center gap-2">
-            <Trash2 className="h-4 w-4" />
-            <span>Descartado: {user.lots.descartado}</span>
-          </div>
-           <div className="flex items-center gap-2">
-            <XCircle className="h-4 w-4" />
-            <span>No vende: {user.lots.noVende}</span>
-          </div>
-           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            <span>Reservado: {user.lots.reservado}</span>
-          </div>
-           <div className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
-            <span>Vendido: {user.lots.vendido}</span>
-          </div>
+        <div className="flex flex-wrap gap-2">
+            {lotStatuses.map((status) => (
+              <Badge key={status.label} style={getStatusStyles(status.label)}>
+                {status.label}: {status.count}
+              </Badge>
+            ))}
         </div>
       </CardContent>
       <CardFooter className="gap-2">
