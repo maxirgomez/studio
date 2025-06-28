@@ -3,7 +3,7 @@
 
 import * as React from "react"
 import { useState, useMemo } from "react"
-import { Bar, BarChart, CartesianGrid, XAxis, ResponsiveContainer } from "recharts"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts"
 import {
   Card,
   CardContent,
