@@ -285,7 +285,7 @@ export default function DashboardPage() {
       </div>
       
       <div className="grid gap-4 mt-4 grid-cols-1">
-        <Card className="col-span-4">
+        <Card className="col-span-1">
           <CardHeader>
             <CardTitle>Lotes por Barrio</CardTitle>
             <CardDescription>
@@ -293,19 +293,26 @@ export default function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
-            <ChartContainer config={chartConfig} className="h-[350px] w-full">
+            <ChartContainer config={chartConfig} className="h-[500px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={lotsByNeighborhoodChartData}>
-                  <CartesianGrid vertical={false} />
-                  <XAxis
+                <BarChart
+                  data={lotsByNeighborhoodChartData}
+                  layout="vertical"
+                  margin={{ left: 10, right: 10, top: 10, bottom: 10 }}
+                >
+                  <CartesianGrid horizontal={false} />
+                  <YAxis
                     dataKey="name"
                     type="category"
                     tickLine={false}
                     tickMargin={10}
                     axisLine={false}
-                    tickFormatter={(value) => value.length > 12 ? `${value.substring(0, 10)}...` : value}
+                    tickFormatter={(value) =>
+                      value.length > 15 ? `${value.substring(0, 12)}...` : value
+                    }
+                    width={100}
                   />
-                  <YAxis />
+                  <XAxis type="number" hide />
                   <ChartTooltip
                     cursor={false}
                     content={<ChartTooltipContent indicator="dot" />}
@@ -317,7 +324,8 @@ export default function DashboardPage() {
                       dataKey={status}
                       stackId="a"
                       fill={getStatusStyles(status).backgroundColor}
-                      radius={[4, 4, 0, 0]}
+                      radius={[0, 4, 4, 0]}
+                      barSize={20}
                     />
                   ))}
                 </BarChart>
