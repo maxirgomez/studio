@@ -129,6 +129,9 @@ export default function NuevoLotePage() {
         form.setValue("area", foundListing.area, { shouldValidate: true });
         form.setValue("codigoUrbanistico", foundListing.codigoUrbanistico || "", { shouldValidate: true });
         form.setValue("cpu", foundListing.cpu || "", { shouldValidate: true });
+        form.setValue("incidenciaUVA", foundListing.incidenciaUVA || 0, { shouldValidate: true });
+        form.setValue("fot", foundListing.fot || 0, { shouldValidate: true });
+        form.setValue("alicuota", foundListing.alicuota || 0, { shouldValidate: true });
         if (searchValue !== foundListing.address.toLowerCase()) {
             form.setValue("address", foundListing.address, { shouldValidate: true });
         }
@@ -139,6 +142,9 @@ export default function NuevoLotePage() {
         form.setValue("area", 0, { shouldValidate: false });
         form.setValue("codigoUrbanistico", "", { shouldValidate: false });
         form.setValue("cpu", "", { shouldValidate: false });
+        form.setValue("incidenciaUVA", 0, { shouldValidate: false });
+        form.setValue("fot", 0, { shouldValidate: false });
+        form.setValue("alicuota", 0, { shouldValidate: false });
       }
     }
   }, [addressValue, form]);
@@ -266,13 +272,13 @@ export default function NuevoLotePage() {
                                 <FormItem><FormLabel>Partida</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
                             )}/>
                             <FormField control={form.control} name="incidenciaUVA" render={({ field }) => (
-                                <FormItem><FormLabel>Incidencia UVA</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl></FormItem>
+                                <FormItem><FormLabel>Incidencia UVA</FormLabel><FormControl><Input type="number" step="0.01" {...field} readOnly /></FormControl></FormItem>
                             )}/>
                             <FormField control={form.control} name="fot" render={({ field }) => (
-                                <FormItem><FormLabel>FOT</FormLabel><FormControl><Input type="number" step="0.1" {...field} /></FormControl></FormItem>
+                                <FormItem><FormLabel>FOT</FormLabel><FormControl><Input type="number" step="0.1" {...field} readOnly /></FormControl></FormItem>
                             )}/>
                             <FormField control={form.control} name="alicuota" render={({ field }) => (
-                                <FormItem><FormLabel>Alícuota (%)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl></FormItem>
+                                <FormItem><FormLabel>Alícuota (%)</FormLabel><FormControl><Input type="number" step="0.01" {...field} readOnly /></FormControl></FormItem>
                             )}/>
                         </div>
                     </CardContent>

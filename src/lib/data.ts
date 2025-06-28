@@ -171,6 +171,9 @@ export const listings = [
     valorVentaUSD: 1300000,
     listingDate: new Date('2024-07-15'),
     saleDate: null,
+    incidenciaUVA: 1.25,
+    fot: 3.0,
+    alicuota: 8.25,
   },
   {
     address: "Juramento 1196",
@@ -188,6 +191,9 @@ export const listings = [
     valorVentaUSD: 2500000,
     listingDate: new Date('2024-07-01'),
     saleDate: null,
+    incidenciaUVA: 1.5,
+    fot: 3.5,
+    alicuota: 9.0,
   },
   {
     address: "Rivadavia 1298",
@@ -205,6 +211,9 @@ export const listings = [
     valorVentaUSD: 1800000,
     listingDate: new Date('2024-06-20'),
     saleDate: null,
+    incidenciaUVA: 1.1,
+    fot: 2.8,
+    alicuota: 7.5,
   },
   {
     address: "Corrientes 1341",
@@ -222,6 +231,9 @@ export const listings = [
     valorVentaUSD: 1750000,
     listingDate: new Date('2024-07-05'),
     saleDate: null,
+    incidenciaUVA: 1.0,
+    fot: 2.5,
+    alicuota: 7.0,
   },
   {
     address: "Scalabrini Ortiz 1494",
@@ -239,6 +251,9 @@ export const listings = [
     valorVentaUSD: 3200000,
     listingDate: new Date('2024-04-10'),
     saleDate: null,
+    incidenciaUVA: 2.0,
+    fot: 4.0,
+    alicuota: 10.0,
   },
   {
     address: "Quintana 1577",
@@ -256,6 +271,9 @@ export const listings = [
     valorVentaUSD: 1500000,
     listingDate: new Date('2024-03-22'),
     saleDate: null,
+    incidenciaUVA: 1.3,
+    fot: 2.2,
+    alicuota: 6.5,
   },
   {
     address: "Defensa 1684",
@@ -273,6 +291,9 @@ export const listings = [
     valorVentaUSD: 2100000,
     listingDate: new Date('2024-06-28'),
     saleDate: null,
+    incidenciaUVA: 1.4,
+    fot: 3.2,
+    alicuota: 8.0,
   },
   {
     address: "Av. Cordoba 1800",
@@ -290,6 +311,9 @@ export const listings = [
     valorVentaUSD: 950000,
     listingDate: new Date('2024-05-10'),
     saleDate: new Date('2024-07-25'),
+    incidenciaUVA: 1.0,
+    fot: 2.0,
+    alicuota: 5.0,
   },
   {
     address: "Honduras 4880",
@@ -307,6 +331,9 @@ export const listings = [
     valorVentaUSD: 1150000,
     listingDate: new Date('2024-02-05'),
     saleDate: new Date('2024-06-15'),
+    incidenciaUVA: 1.2,
+    fot: 2.5,
+    alicuota: 7.0,
   },
   {
     address: "Av. Cabildo 2040",
@@ -324,6 +351,9 @@ export const listings = [
     valorVentaUSD: 2800000,
     listingDate: new Date('2024-07-18'),
     saleDate: null,
+    incidenciaUVA: 1.6,
+    fot: 3.8,
+    alicuota: 9.5,
   },
    {
     address: "Av. Libertador 5500",
@@ -341,6 +371,9 @@ export const listings = [
     valorVentaUSD: 3500000,
     listingDate: new Date('2023-08-10'),
     saleDate: new Date('2023-09-05'),
+    incidenciaUVA: 2.2,
+    fot: 4.5,
+    alicuota: 11.0,
   },
   {
     address: "Mendoza 2300",
@@ -358,6 +391,9 @@ export const listings = [
     valorVentaUSD: 1800000,
     listingDate: new Date('2023-09-01'),
     saleDate: new Date('2023-10-15'),
+    incidenciaUVA: 1.3,
+    fot: 3.0,
+    alicuota: 8.0,
   },
   {
     address: "Av. Callao 1200",
@@ -375,6 +411,9 @@ export const listings = [
     valorVentaUSD: 4200000,
     listingDate: new Date('2023-10-02'),
     saleDate: new Date('2023-11-20'),
+    incidenciaUVA: 2.5,
+    fot: 5.0,
+    alicuota: 12.0,
   },
   {
     address: "Thames 1800",
@@ -392,6 +431,9 @@ export const listings = [
     valorVentaUSD: 1600000,
     listingDate: new Date('2023-11-05'),
     saleDate: new Date('2023-12-18'),
+    incidenciaUVA: 1.1,
+    fot: 2.7,
+    alicuota: 7.2,
   },
   {
     address: "Av. Pedro Goyena 800",
@@ -409,6 +451,9 @@ export const listings = [
     valorVentaUSD: 2300000,
     listingDate: new Date('2023-12-01'),
     saleDate: new Date('2024-01-22'),
+    incidenciaUVA: 1.6,
+    fot: 3.5,
+    alicuota: 8.8,
   },
   {
     address: "Manuela Pedraza 3100",
@@ -426,6 +471,9 @@ export const listings = [
     valorVentaUSD: 1950000,
     listingDate: new Date('2024-01-10'),
     saleDate: new Date('2024-02-28'),
+    incidenciaUVA: 1.4,
+    fot: 3.1,
+    alicuota: 7.9,
   },
   {
     address: "Virrey del Pino 2500",
@@ -443,6 +491,9 @@ export const listings = [
     valorVentaUSD: 2100000,
     listingDate: new Date('2024-02-05'),
     saleDate: new Date('2024-03-30'),
+    incidenciaUVA: 1.5,
+    fot: 3.3,
+    alicuota: 8.5,
   },
   {
     address: "Malabia 1700",
@@ -460,6 +511,9 @@ export const listings = [
     valorVentaUSD: 1400000,
     listingDate: new Date('2024-03-01'),
     saleDate: new Date('2024-04-20'),
+    incidenciaUVA: 1.2,
+    fot: 2.6,
+    alicuota: 7.1,
   },
   {
     address: "Av. de los Incas 3300",
@@ -477,6 +531,9 @@ export const listings = [
     valorVentaUSD: 1850000,
     listingDate: new Date('2024-04-02'),
     saleDate: new Date('2024-05-15'),
+    incidenciaUVA: 1.3,
+    fot: 2.9,
+    alicuota: 7.7,
   },
   {
     address: "Av. Monroe 5000",
@@ -494,6 +551,9 @@ export const listings = [
     valorVentaUSD: 2400000,
     listingDate: new Date('2024-05-01'),
     saleDate: new Date('2024-06-25'),
+    incidenciaUVA: 1.7,
+    fot: 3.6,
+    alicuota: 9.2,
   },
 ];
 
