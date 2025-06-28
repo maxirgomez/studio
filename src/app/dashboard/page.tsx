@@ -50,11 +50,9 @@ const processDashboardData = (agentFilter: string, periodInMonths: number) => {
     return acc;
   }, {} as Record<string, number>);
 
-  const recentListings = filteredListings.filter(l => l.listingDate && new Date(l.listingDate) >= startDate);
   const recentSales = filteredListings.filter(l => l.saleDate && new Date(l.saleDate) >= startDate);
 
   const totalRevenue = recentSales.reduce((acc, l) => acc + (l.valorVentaUSD || 0), 0);
-  const totalListings = filteredListings.filter(l => l.status === 'Disponible').length;
   const totalSales = recentSales.length;
 
   const lastMonthSales = filteredListings.filter(l => {
@@ -91,7 +89,6 @@ const processDashboardData = (agentFilter: string, periodInMonths: number) => {
 
   return { 
     totalRevenue, 
-    totalListings,
     totalSales,
     salesChange,
     salesChartData,
@@ -114,7 +111,6 @@ export default function DashboardPage() {
 
   const { 
     totalLots,
-    totalListings,
     totalSales,
     salesChange,
     salesChartData,
@@ -179,7 +175,7 @@ export default function DashboardPage() {
         })}
       </div>
       
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de Lotes</CardTitle>
@@ -187,15 +183,6 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalLots}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Lotes Disponibles</CardTitle>
-            <Home className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalListings}</div>
           </CardContent>
         </Card>
         <Card>
