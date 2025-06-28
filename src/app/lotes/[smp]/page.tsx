@@ -61,7 +61,7 @@ const PdfContent = React.forwardRef<
         <p style={{ fontSize: '16px', fontWeight: 'normal', margin: '4px 0', color: '#555' }}>{listing.neighborhood}</p>
       </div>
 
-      {imageUrl && <img src={imageUrl} crossOrigin="anonymous" style={{ width: '100%', height: '250px', marginBottom: '20px', borderRadius: '4px', objectFit: 'cover' }} alt={listing.address} />}
+      {imageUrl && <img src={imageUrl} crossOrigin="anonymous" style={{ width: '100%', height: 'auto', marginBottom: '20px', borderRadius: '4px' }} alt={listing.address} />}
       
       <h3 style={sectionTitleStyle}>Datos Principales</h3>
       <div style={gridStyle}>
@@ -248,12 +248,12 @@ export default function LoteDetailPage() {
         const canvasHeight = canvas.height;
         const canvasAspectRatio = canvasWidth / canvasHeight;
         
-        let renderHeight = pdfHeight - 20; // with margin
-        let renderWidth = renderHeight * canvasAspectRatio;
+        let renderWidth = pdfWidth - 20;
+        let renderHeight = renderWidth / canvasAspectRatio;
 
-        if (renderWidth > pdfWidth - 20) {
-            renderWidth = pdfWidth - 20;
-            renderHeight = renderWidth / canvasAspectRatio;
+        if (renderHeight > pdfHeight - 20) {
+            renderHeight = pdfHeight - 20;
+            renderWidth = renderHeight * canvasAspectRatio;
         }
 
         const xOffset = (pdfWidth - renderWidth) / 2;
