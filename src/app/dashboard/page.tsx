@@ -75,7 +75,7 @@ const processDashboardData = (agentFilter: string, statusFilter: string, salesCh
     return acc;
   }, {} as Record<string, number>);
 
-  const filteredListings = statusFilter
+  const fullyFilteredListings = statusFilter
     ? agentFilteredListings.filter(l => l.status === statusFilter)
     : agentFilteredListings;
 
@@ -99,7 +99,7 @@ const processDashboardData = (agentFilter: string, statusFilter: string, salesCh
   const salesChange = previousMonthSales > 0 ? ((lastMonthSales - previousMonthSales) / previousMonthSales) * 100 : lastMonthSales > 0 ? 100 : 0;
   
   const lotsByNeighborhoodChartData = Object.entries(
-    filteredListings.reduce((acc, l) => {
+    fullyFilteredListings.reduce((acc, l) => {
       acc[l.neighborhood] = (acc[l.neighborhood] || 0) + 1;
       return acc;
     }, {} as Record<string, number>)
@@ -121,14 +121,14 @@ const processDashboardData = (agentFilter: string, statusFilter: string, salesCh
 
   const salesCutoffDate = subMonths(new Date(), monthsToShow);
   agentFilteredListings.forEach(l => {
-    if (l.saleDate && l.valorVentaUSD) {
+    if (l.saleDate) {
       const saleDate = new Date(l.saleDate);
       if (saleDate >= salesCutoffDate) {
         const monthIndex = differenceInMonths(new Date(), saleDate);
         if (monthIndex < monthsToShow) {
           const chartIndex = salesByMonthChartData.length - 1 - monthIndex;
           if (chartIndex >= 0) {
-            salesByMonthChartData[chartIndex].total += l.valorVentaUSD;
+            salesByMonthChartData[chartIndex].total += 1;
           }
         }
       }
@@ -140,7 +140,7 @@ const processDashboardData = (agentFilter: string, statusFilter: string, salesCh
     salesChange,
     lotsByStatus,
     lotsByNeighborhoodChartData,
-    filteredListings,
+    filteredListings: fullyFilteredListings,
     salesByMonthChartData,
   };
 };
@@ -310,7 +310,7 @@ export default function DashboardPage() {
             <div className="grid gap-2">
               <CardTitle>Resumen de Ventas</CardTitle>
               <CardDescription>
-                Ventas totales en los últimos {salesChartRange === "12m" ? "12" : salesChartRange === "6m" ? "6" : "3"} meses.
+                Cantidad de lotes vendidos en los últimos {salesChartRange === "12m" ? "12" : salesChartRange === "6m" ? "6" : "3"} meses.
               </CardDescription>
             </div>
             <Select value={salesChartRange} onValueChange={(value) => setSalesChartRange(value as "12m" | "6m" | "3m")}>
@@ -339,16 +339,15 @@ export default function DashboardPage() {
                     tickMargin={8}
                   />
                   <YAxis
-                    tickFormatter={(value) => `$${(Number(value) / 1000000).toFixed(1)}M`}
                     tickLine={false}
                     axisLine={false}
                     tickMargin={8}
-                    width={80}
+                    tickFormatter={(value) => String(value)}
                   />
                   <ChartTooltip
                     cursor={false}
                     content={<ChartTooltipContent
-                        formatter={(value) => typeof value === 'number' ? value.toLocaleString('es-AR', { style: 'currency', currency: 'USD' }) : value}
+                        formatter={(value) => typeof value === 'number' ? `${value} lotes` : value}
                         indicator="dot"
                     />}
                   />
