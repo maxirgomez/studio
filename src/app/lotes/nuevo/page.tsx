@@ -199,7 +199,7 @@ export default function NuevoLotePage() {
                    <FormField control={form.control} name="smp" render={({ field }) => (
                     <FormItem>
                       <FormLabel>SMP</FormLabel>
-                      <FormControl><Input placeholder="Autocompletado" {...field} readOnly /></FormControl>
+                      <FormControl><Input {...field} readOnly /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}/>
