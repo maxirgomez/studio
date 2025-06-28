@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { useState, useMemo, useCallback } from "react"
+import { useState, useMemo, useCallback, useEffect } from "react"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, LineChart, Line, Tooltip } from "recharts"
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import {
@@ -30,8 +30,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { listings, users, getStatusStyles } from "@/lib/data"
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from "@/components/ui/chart"
-import { Activity, TrendingUp, X, DollarSign, ArrowUpNarrowWide } from "lucide-react"
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
+import { Activity, TrendingUp, X, ArrowUpNarrowWide } from "lucide-react"
 import { format, subMonths, differenceInMonths } from "date-fns"
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils"
@@ -44,6 +44,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 const statusOrder = [
@@ -152,6 +153,11 @@ export default function DashboardPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const agentFilter = searchParams.get('agent') || 'todos';
   const statusFilter = searchParams.get('status') || '';
@@ -301,10 +307,19 @@ export default function DashboardPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-            <div className="text-2xl font-bold">{quarterlySales}</div>
-            <p className="text-xs text-muted-foreground">
-                {quarterlySalesChange >= 0 ? '+' : ''}{quarterlySalesChange.toFixed(1)}% vs trimestre anterior
-            </p>
+            {isClient ? (
+                <>
+                    <div className="text-2xl font-bold">{quarterlySales}</div>
+                    <p className="text-xs text-muted-foreground">
+                        {quarterlySalesChange >= 0 ? '+' : ''}{quarterlySalesChange.toFixed(1)}% vs trimestre anterior
+                    </p>
+                </>
+            ) : (
+                <>
+                    <Skeleton className="h-8 w-24 mb-2" />
+                    <Skeleton className="h-4 w-48" />
+                </>
+            )}
             </CardContent>
         </Card>
       </div>
@@ -330,47 +345,53 @@ export default function DashboardPage() {
             </Select>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{ total: { label: "Total", color: "hsl(var(--primary))" } }} className="h-[250px] w-full">
-              <ResponsiveContainer>
-                <LineChart
-                  data={salesByMonthChartData}
-                  margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-                >
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey="name"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                  />
-                  <YAxis
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    tickFormatter={(value) => String(value)}
-                  />
-                  <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent
-                        formatter={(value) => typeof value === 'number' ? `${value} lotes` : value}
-                        indicator="dot"
-                    />}
-                  />
-                  <Line
-                    dataKey="total"
-                    type="monotone"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2}
-                    dot={{
-                      fill: "hsl(var(--primary))",
-                    }}
-                    activeDot={{
-                      r: 6,
-                    }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+            {isClient ? (
+                <ChartContainer config={{ total: { label: "Total", color: "hsl(var(--primary))" } }} className="h-[250px] w-full">
+                <ResponsiveContainer>
+                    <LineChart
+                    data={salesByMonthChartData}
+                    margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+                    >
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                        dataKey="name"
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={8}
+                    />
+                    <YAxis
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={8}
+                        tickFormatter={(value) => String(value)}
+                    />
+                    <ChartTooltip
+                        cursor={false}
+                        content={<ChartTooltipContent
+                            formatter={(value) => typeof value === 'number' ? `${value} lotes` : value}
+                            indicator="dot"
+                        />}
+                    />
+                    <Line
+                        dataKey="total"
+                        type="monotone"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth={2}
+                        dot={{
+                        fill: "hsl(var(--primary))",
+                        }}
+                        activeDot={{
+                        r: 6,
+                        }}
+                    />
+                    </LineChart>
+                </ResponsiveContainer>
+                </ChartContainer>
+            ) : (
+                <div className="h-[250px] w-full">
+                    <Skeleton className="h-full w-full" />
+                </div>
+            )}
           </CardContent>
         </Card>
         <Card className="col-span-1">
@@ -393,38 +414,44 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent className="pl-2">
-            <ChartContainer config={chartConfig} className="h-[500px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={lotsByNeighborhoodChartData}
-                  layout="vertical"
-                  margin={{ left: 10, right: 10, top: 10, bottom: 10 }}
-                >
-                  <CartesianGrid horizontal={false} />
-                  <YAxis
-                    dataKey="name"
-                    type="category"
-                    tickLine={false}
-                    tickMargin={10}
-                    axisLine={false}
-                    tickFormatter={(value) =>
-                      value.length > 15 ? `${value.substring(0, 12)}...` : value
-                    }
-                    width={100}
-                  />
-                  <XAxis type="number" dataKey="total" />
-                  <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent indicator="dot" />}
-                  />
-                  <Bar
-                    dataKey="total"
-                    fill="var(--color-total)"
-                    barSize={20}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+            {isClient ? (
+                <ChartContainer config={chartConfig} className="h-[500px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                    data={lotsByNeighborhoodChartData}
+                    layout="vertical"
+                    margin={{ left: 10, right: 10, top: 10, bottom: 10 }}
+                    >
+                    <CartesianGrid horizontal={false} />
+                    <YAxis
+                        dataKey="name"
+                        type="category"
+                        tickLine={false}
+                        tickMargin={10}
+                        axisLine={false}
+                        tickFormatter={(value) =>
+                        value.length > 15 ? `${value.substring(0, 12)}...` : value
+                        }
+                        width={100}
+                    />
+                    <XAxis type="number" dataKey="total" />
+                    <ChartTooltip
+                        cursor={false}
+                        content={<ChartTooltipContent indicator="dot" />}
+                    />
+                    <Bar
+                        dataKey="total"
+                        fill="var(--color-total)"
+                        barSize={20}
+                    />
+                    </BarChart>
+                </ResponsiveContainer>
+                </ChartContainer>
+            ) : (
+                <div className="h-[500px] w-full">
+                    <Skeleton className="h-full w-full" />
+                </div>
+            )}
           </CardContent>
         </Card>
         <Card>
