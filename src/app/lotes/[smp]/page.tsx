@@ -235,7 +235,7 @@ export default function LoteDetailPage() {
             backgroundColor: '#ffffff'
         });
 
-        const imgData = canvas.toDataURL('image/png');
+        const imgData = canvas.toDataURL('image/jpeg', 0.8);
         const pdf = new jsPDF({
             orientation: 'portrait',
             unit: 'mm',
@@ -259,7 +259,7 @@ export default function LoteDetailPage() {
         const xOffset = (pdfWidth - renderWidth) / 2;
         const yOffset = 10;
 
-        pdf.addImage(imgData, 'PNG', xOffset, yOffset, renderWidth, renderHeight);
+        pdf.addImage(imgData, 'JPEG', xOffset, yOffset, renderWidth, renderHeight);
         pdf.save(`ficha-lote-${listing.smp}.pdf`);
         
         toast({
