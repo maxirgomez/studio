@@ -352,9 +352,28 @@ export default function NuevoLotePage() {
                         )}/>
                      </div>
                      <div className="mt-4">
-                      <FormField control={form.control} name="formaDePago" render={({ field }) => (
-                        <FormItem><FormLabel>Forma de Pago</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
-                      )}/>
+                        <FormField
+                            control={form.control}
+                            name="formaDePago"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Forma de Pago</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Seleccionar forma de pago..." />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="Cash">Cash</SelectItem>
+                                            <SelectItem value="Canje">Canje</SelectItem>
+                                            <SelectItem value="Cash/Canje">Cash/Canje</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                     </div>
                   </CardContent>
                 </Card>
