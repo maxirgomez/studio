@@ -9,6 +9,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -33,6 +34,14 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLe
 import { Activity, TrendingUp, X } from "lucide-react"
 import { subMonths } from "date-fns"
 import { cn } from "@/lib/utils"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 
 const statusOrder = [
@@ -127,6 +136,8 @@ export default function DashboardPage() {
 
   const agentFilter = searchParams.get('agent') || 'todos';
   const statusFilter = searchParams.get('status') || '';
+  const currentPage = Number(searchParams.get('page')) || 1;
+  const listingsPerPage = Number(searchParams.get('pageSize')) || 10;
 
   const { 
     totalLots,
@@ -137,6 +148,12 @@ export default function DashboardPage() {
     filteredListings
   } = useMemo(() => processDashboardData(agentFilter, statusFilter), [agentFilter, statusFilter]);
   
+  const totalPages = Math.ceil(filteredListings.length / listingsPerPage);
+  const listingsOnPage = filteredListings.slice(
+    (currentPage - 1) * listingsPerPage,
+    currentPage * listingsPerPage
+  );
+  
   const sortedLotsByStatus = Object.entries(lotsByStatus).sort(([a], [b]) => {
     const indexA = statusOrder.indexOf(a);
     const indexB = statusOrder.indexOf(b);
@@ -146,13 +163,13 @@ export default function DashboardPage() {
   });
 
   const createQueryString = useCallback(
-    (paramsToUpdate: Record<string, string | null>) => {
+    (paramsToUpdate: Record<string, string | null | number>) => {
       const params = new URLSearchParams(searchParams.toString());
       for (const [key, value] of Object.entries(paramsToUpdate)) {
         if (value === null || value === '' || value === 'todos') {
           params.delete(key);
         } else {
-          params.set(key, value);
+          params.set(key, String(value));
         }
       }
       return params.toString();
@@ -161,16 +178,16 @@ export default function DashboardPage() {
   );
   
   const handleAgentFilterChange = (agent: string) => {
-    router.push(`${pathname}?${createQueryString({ agent, page: '1' })}`, { scroll: false });
+    router.push(`${pathname}?${createQueryString({ agent, page: 1 })}`, { scroll: false });
   };
 
   const handleStatusFilterChange = (status: string) => {
     const newStatus = statusFilter === status ? null : status;
-    router.push(`${pathname}?${createQueryString({ status: newStatus, page: '1' })}`, { scroll: false });
+    router.push(`${pathname}?${createQueryString({ status: newStatus, page: 1 })}`, { scroll: false });
   };
   
   const handleRemoveFilter = (key: string) => {
-    router.push(`${pathname}?${createQueryString({ [key]: null, page: '1' })}`, { scroll: false });
+    router.push(`${pathname}?${createQueryString({ [key]: null, page: 1 })}`, { scroll: false });
   };
 
   const activeFilters = [];
@@ -310,10 +327,33 @@ export default function DashboardPage() {
         </Card>
         <Card>
             <CardHeader>
-                <CardTitle>Listado de Lotes</CardTitle>
-                <CardDescription>
-                    Una tabla detallada de los lotes según los filtros aplicados.
-                </CardDescription>
+              <div className="flex justify-between items-center">
+                  <div>
+                      <CardTitle>Listado de Lotes</CardTitle>
+                      <CardDescription>
+                          Una tabla detallada de los lotes según los filtros aplicados.
+                      </CardDescription>
+                  </div>
+                  <div className="w-48">
+                      <Select
+                          value={String(listingsPerPage)}
+                          onValueChange={(value) => {
+                              router.push(`${pathname}?${createQueryString({ pageSize: value, page: 1 })}`, { scroll: false });
+                          }}
+                      >
+                          <SelectTrigger>
+                              <SelectValue placeholder="Resultados por página" />
+                          </SelectTrigger>
+                          <SelectContent>
+                              {[10, 20, 50, 100].map(size => (
+                                  <SelectItem key={size} value={String(size)}>
+                                      {size} por página
+                                  </SelectItem>
+                              ))}
+                          </SelectContent>
+                      </Select>
+                  </div>
+              </div>
             </CardHeader>
             <CardContent>
                 <Table>
@@ -330,7 +370,7 @@ export default function DashboardPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {filteredListings.map((listing) => (
+                        {listingsOnPage.map((listing) => (
                             <TableRow key={listing.smp}>
                                 <TableCell className="font-medium">{listing.address}</TableCell>
                                 <TableCell>{listing.neighborhood}</TableCell>
@@ -349,6 +389,39 @@ export default function DashboardPage() {
                     </TableBody>
                 </Table>
             </CardContent>
+            <CardFooter>
+              <div className="flex justify-between items-center w-full">
+                  <div className="text-xs text-muted-foreground">
+                      Mostrando {listingsOnPage.length} de {filteredListings.length} lotes.
+                  </div>
+                  {totalPages > 1 && (
+                      <Pagination>
+                          <PaginationContent>
+                              {currentPage > 1 && (
+                              <PaginationItem>
+                                  <PaginationPrevious href={`${pathname}?${createQueryString({ page: currentPage - 1 })}`} />
+                              </PaginationItem>
+                              )}
+                              {[...Array(totalPages)].map((_, i) => (
+                                  <PaginationItem key={i}>
+                                      <PaginationLink
+                                          href={`${pathname}?${createQueryString({ page: i + 1 })}`}
+                                          isActive={currentPage === i + 1}
+                                      >
+                                          {i + 1}
+                                      </PaginationLink>
+                                  </PaginationItem>
+                              ))}
+                              {currentPage < totalPages && (
+                              <PaginationItem>
+                                  <PaginationNext href={`${pathname}?${createQueryString({ page: currentPage + 1 })}`} />
+                              </PaginationItem>
+                              )}
+                          </PaginationContent>
+                      </Pagination>
+                  )}
+              </div>
+            </CardFooter>
         </Card>
       </div>
     </div>
