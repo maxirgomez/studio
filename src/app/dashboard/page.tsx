@@ -56,14 +56,12 @@ const statusOrder = [
     "Descartado",
 ];
   
-const chartConfig = statusOrder.reduce((acc, status) => {
-    const styles = getStatusStyles(status);
-    acc[status] = {
-        label: status,
-        color: styles.backgroundColor,
-    };
-    return acc;
-}, {} as ChartConfig);
+const chartConfig = {
+  total: {
+    label: "Lotes",
+    color: "hsl(var(--primary))",
+  },
+} satisfies ChartConfig;
 
 
 const processDashboardData = (agentFilter: string, statusFilter: string, salesChartRange: "12m" | "6m" | "3m") => {
@@ -103,18 +101,13 @@ const processDashboardData = (agentFilter: string, statusFilter: string, salesCh
 
   const salesChange = previousMonthSales > 0 ? ((lastMonthSales - previousMonthSales) / previousMonthSales) * 100 : lastMonthSales > 0 ? 100 : 0;
   
-  const lotsByNeighborhoodChartData = Object.values(
+  const lotsByNeighborhoodChartData = Object.entries(
     fullyFilteredListings.reduce((acc, l) => {
-      const neighborhood = l.neighborhood;
-      const status = l.status;
-      if (!acc[neighborhood]) {
-        acc[neighborhood] = { name: neighborhood };
-        statusOrder.forEach(s => { acc[neighborhood][s] = 0; });
-      }
-      acc[neighborhood][status] = (acc[neighborhood][status] || 0) + 1;
+      acc[l.neighborhood] = (acc[l.neighborhood] || 0) + 1;
       return acc;
-    }, {} as Record<string, any>)
-  );
+    }, {} as Record<string, number>)
+  ).map(([name, total]) => ({ name, total }));
+
 
   const monthsToShowMap: Record<typeof salesChartRange, number> = {
     '12m': 12, '6m': 6, '3m': 3,
@@ -396,9 +389,9 @@ export default function DashboardPage() {
         </Card>
         <Card className="col-span-1">
           <CardHeader>
-            <CardTitle>Lotes por Barrio</CardTitle>
+            <CardTitle>Total de Lotes por Barrio</CardTitle>
             <CardDescription>
-              Distribución de lotes por estado en cada barrio.
+              Cantidad total de lotes registrados en cada barrio.
             </CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
@@ -421,21 +414,16 @@ export default function DashboardPage() {
                     }
                     width={100}
                   />
-                  <XAxis type="number" hide />
+                  <XAxis type="number" dataKey="total" />
                   <ChartTooltip
                     cursor={false}
                     content={<ChartTooltipContent indicator="dot" />}
                   />
-                  <ChartLegend content={<ChartLegendContent />} />
-                  {statusOrder.map((status) => (
-                    <Bar
-                      key={status}
-                      dataKey={status}
-                      stackId="a"
-                      fill={getStatusStyles(status).backgroundColor}
-                      barSize={20}
-                    />
-                  ))}
+                  <Bar
+                    dataKey="total"
+                    fill="var(--color-total)"
+                    barSize={20}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </ChartContainer>
