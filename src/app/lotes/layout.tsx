@@ -6,6 +6,7 @@ import {
   PanelLeft,
   Users,
   MapPin,
+  LayoutDashboard,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -22,6 +23,7 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const navItems = [
+    { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { href: "/lotes", icon: Home, label: "Lotes" },
     { href: "/lotes/profile", icon: Users, label: "Usuarios" },
     { href: "/lotes/mapa", icon: MapPin, label: "Mapa" },
