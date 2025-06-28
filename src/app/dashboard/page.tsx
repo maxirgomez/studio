@@ -21,7 +21,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { listings, users, getStatusStyles } from "@/lib/data"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegendContent, type ChartConfig } from "@/components/ui/chart"
-import { Activity, TrendingUp } from "lucide-react"
+import { Activity, TrendingUp, DollarSign } from "lucide-react"
 import { format, subMonths } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -87,11 +87,6 @@ const processDashboardData = (agentFilter: string) => {
   }).length;
 
   const salesChange = previousMonthSales > 0 ? ((lastMonthSales - previousMonthSales) / previousMonthSales) * 100 : lastMonthSales > 0 ? 100 : 0;
-
-  const latestSales = filteredListings
-    .filter(l => l.status === 'Vendido' && l.saleDate)
-    .sort((a, b) => new Date(b.saleDate!).getTime() - new Date(a.saleDate!).getTime())
-    .slice(0, 5);
   
   const lotsByNeighborhoodChartData = Object.values(
     filteredListings.reduce((acc, l) => {
@@ -109,7 +104,6 @@ const processDashboardData = (agentFilter: string) => {
   return { 
     totalSales,
     salesChange,
-    latestSales,
     lotsByStatus,
     totalLots,
     lotsByNeighborhoodChartData,
@@ -124,7 +118,6 @@ export default function DashboardPage() {
     totalLots,
     totalSales,
     salesChange,
-    latestSales,
     lotsByStatus,
     lotsByNeighborhoodChartData,
   } = useMemo(() => processDashboardData(agentFilter), [agentFilter]);
@@ -199,8 +192,8 @@ export default function DashboardPage() {
         </Card>
       </div>
       
-       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
+      <div className="grid gap-4">
+        <Card>
           <CardHeader>
             <CardTitle>Lotes por Barrio</CardTitle>
             <CardDescription>
@@ -210,18 +203,17 @@ export default function DashboardPage() {
           <CardContent className="pl-2">
             <ChartContainer config={chartConfig} className="h-[350px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={lotsByNeighborhoodChartData} layout="vertical" margin={{ left: 10, right: 10 }}>
-                  <CartesianGrid horizontal={false} />
-                   <XAxis type="number" hide />
-                   <YAxis
+                <BarChart data={lotsByNeighborhoodChartData}>
+                  <CartesianGrid vertical={false} />
+                  <XAxis
                     dataKey="name"
                     type="category"
                     tickLine={false}
                     tickMargin={10}
                     axisLine={false}
-                    width={100}
-                    tickFormatter={(value) => value.length > 12 ? `${value.substring(0,12)}...` : value}
+                    tickFormatter={(value) => value.length > 12 ? `${value.substring(0, 10)}...` : value}
                   />
+                  <YAxis />
                   <ChartTooltip
                     cursor={false}
                     content={<ChartTooltipContent indicator="dot" />}
@@ -233,39 +225,12 @@ export default function DashboardPage() {
                       dataKey={status}
                       stackId="a"
                       fill={getStatusStyles(status).backgroundColor}
-                      radius={[0, 4, 4, 0]}
+                      radius={[4, 4, 0, 0]}
                     />
                   ))}
                 </BarChart>
               </ResponsiveContainer>
             </ChartContainer>
-          </CardContent>
-        </Card>
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>Ventas Recientes</CardTitle>
-            <CardDescription>
-              Se han realizado {totalSales} ventas en los últimos 12 meses.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-8">
-              {latestSales.map(sale => (
-                <div key={sale.smp} className="flex items-center">
-                  <Avatar className="h-9 w-9">
-                     <AvatarImage src={"https://placehold.co/100x100.png"} data-ai-hint={"person"} />
-                    <AvatarFallback>{sale.agent.initials}</AvatarFallback>
-                  </Avatar>
-                  <div className="ml-4 space-y-1">
-                    <p className="text-sm font-medium leading-none">{sale.address}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Vendido por {sale.agent.name}
-                    </p>
-                  </div>
-                  <div className="ml-auto font-medium">{formatPrice(sale.valorVentaUSD || 0)}</div>
-                </div>
-              ))}
-            </div>
           </CardContent>
         </Card>
       </div>
