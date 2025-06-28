@@ -324,7 +324,6 @@ export default function DashboardPage() {
                       dataKey={status}
                       stackId="a"
                       fill={getStatusStyles(status).backgroundColor}
-                      radius={[0, 4, 4, 0]}
                       barSize={20}
                     />
                   ))}
