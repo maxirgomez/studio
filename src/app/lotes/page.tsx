@@ -29,6 +29,14 @@ import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
   MapPin,
   Scan,
   Ruler,
@@ -406,6 +414,9 @@ export default function LotesPage() {
   const allAreas = useMemo(() => listings.map(l => l.area), []);
   const minArea = useMemo(() => Math.min(...allAreas), [allAreas]);
   const maxArea = useMemo(() => Math.max(...allAreas), [allAreas]);
+  
+  const currentPage = Number(searchParams.get('page')) || 1;
+  const listingsPerPage = 8;
 
   const agentFilters = useMemo(() => searchParams.get('agent')?.split(',') || [], [searchParams]);
   const neighborhoodFilters = useMemo(() => searchParams.get('neighborhood')?.split(',') || [], [searchParams]);
@@ -428,13 +439,13 @@ export default function LotesPage() {
   }, [minAreaFilter, maxAreaFilter]);
   
   const createQueryString = useCallback(
-    (paramsToUpdate: Record<string, string | null>) => {
+    (paramsToUpdate: Record<string, string | null | number>) => {
       const params = new URLSearchParams(searchParams.toString());
       for (const [key, value] of Object.entries(paramsToUpdate)) {
         if (value === null || value === 'todos' || value === '') {
           params.delete(key);
         } else {
-          params.set(key, value);
+          params.set(key, String(value));
         }
       }
       return params.toString();
@@ -448,16 +459,16 @@ export default function LotesPage() {
       ? currentValues.filter(v => v !== value)
       : [...currentValues, value];
     
-    router.push(`${pathname}?${createQueryString({ [key]: newValues.length > 0 ? newValues.join(',') : null })}`, { scroll: false });
+    router.push(`${pathname}?${createQueryString({ [key]: newValues.length > 0 ? newValues.join(',') : null, page: 1 })}`, { scroll: false });
   };
   
   const handleRemoveFilter = (key: string, valueToRemove: string) => {
     if (key === 'area') {
-      router.push(`${pathname}?${createQueryString({ minArea: null, maxArea: null })}`, { scroll: false });
+      router.push(`${pathname}?${createQueryString({ minArea: null, maxArea: null, page: 1 })}`, { scroll: false });
     } else {
       const currentValues = searchParams.get(key)?.split(',') || [];
       const newValues = currentValues.filter(v => v !== valueToRemove);
-      router.push(`${pathname}?${createQueryString({ [key]: newValues.length > 0 ? newValues.join(',') : null })}`, { scroll: false });
+      router.push(`${pathname}?${createQueryString({ [key]: newValues.length > 0 ? newValues.join(',') : null, page: 1 })}`, { scroll: false });
     }
   };
 
@@ -480,7 +491,7 @@ export default function LotesPage() {
     }
     
     if (newMin !== minAreaFilter || newMax !== maxAreaFilter) {
-      router.push(`${pathname}?${createQueryString({ minArea: String(newMin), maxArea: String(newMax) })}`, { scroll: false });
+      router.push(`${pathname}?${createQueryString({ minArea: String(newMin), maxArea: String(newMax), page: 1 })}`, { scroll: false });
     }
   };
   
@@ -490,9 +501,8 @@ export default function LotesPage() {
   };
   
   const handleSliderFilterCommit = (newRange: [number, number]) => {
-     router.push(`${pathname}?${createQueryString({ minArea: String(newRange[0]), maxArea: String(newRange[1]) })}`, { scroll: false });
+     router.push(`${pathname}?${createQueryString({ minArea: String(newRange[0]), maxArea: String(newRange[1]), page: 1 })}`, { scroll: false });
   };
-
 
   const filteredListings = useMemo(() => {
     return listings.filter(listing => {
@@ -504,6 +514,13 @@ export default function LotesPage() {
       return agentMatch && neighborhoodMatch && areaMatch && statusMatch && origenMatch;
     });
   }, [agentFilters, neighborhoodFilters, minAreaFilter, maxAreaFilter, statusFilters, origenFilters]);
+
+  const totalPages = Math.ceil(filteredListings.length / listingsPerPage);
+  const listingsOnPage = filteredListings.slice(
+    (currentPage - 1) * listingsPerPage,
+    currentPage * listingsPerPage
+  );
+
 
   const activeFilters: { type: string; value: string; key: string }[] = [];
   agentFilters.forEach(value => activeFilters.push({ type: 'Agente', value, key: 'agent' }));
@@ -689,14 +706,43 @@ export default function LotesPage() {
             </Button>
           </div>
         </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredListings.map((listing) => (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {listingsOnPage.map((listing) => (
             <Link href={`/lotes/${listing.smp}`} key={listing.smp} className="block">
               <ListingCard listing={listing} />
             </Link>
           ))}
         </div>
+        {totalPages > 1 && (
+            <div className="mt-8 flex justify-center">
+              <Pagination>
+                <PaginationContent>
+                  {currentPage > 1 && (
+                    <PaginationItem>
+                      <PaginationPrevious href={`${pathname}?${createQueryString({ page: currentPage - 1 })}`} />
+                    </PaginationItem>
+                  )}
+                  {[...Array(totalPages)].map((_, i) => (
+                    <PaginationItem key={i}>
+                      <PaginationLink 
+                        href={`${pathname}?${createQueryString({ page: i + 1 })}`}
+                        isActive={currentPage === i + 1}
+                      >
+                        {i + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  {currentPage < totalPages && (
+                    <PaginationItem>
+                      <PaginationNext href={`${pathname}?${createQueryString({ page: currentPage + 1 })}`} />
+                    </PaginationItem>
+                  )}
+                </PaginationContent>
+              </Pagination>
+            </div>
+        )}
       </div>
     </div>
   );
 }
+
