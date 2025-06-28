@@ -77,7 +77,7 @@ export function LoginForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const foundUser = users.find(user => user.username === values.username);
+    const foundUser = users.find(user => user.username.toLowerCase() === values.username.toLowerCase());
 
     if (!foundUser) {
       toast({
