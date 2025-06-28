@@ -282,6 +282,16 @@ export default function LoteDetailPage() {
                         <span className="font-medium">M2 Estimados:</span>
                         <span className="ml-auto text-muted-foreground">{listing.area} m²</span>
                       </div>
+                      <div className="flex items-center">
+                        <Scaling className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <span className="font-medium">Incidencia UVA:</span>
+                        <span className="ml-auto text-muted-foreground">{listing.incidenciaUVA}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <FileText className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <span className="font-medium">FOT:</span>
+                        <span className="ml-auto text-muted-foreground">{listing.fot}</span>
+                      </div>
                     </div>
                     <div className="space-y-4">
                        <div className="flex items-center">
@@ -298,6 +308,11 @@ export default function LoteDetailPage() {
                         <FileText className="h-5 w-5 mr-3 text-muted-foreground" />
                         <span className="font-medium">Partida:</span>
                         <span className="ml-auto text-muted-foreground">{listing.partida}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Percent className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <span className="font-medium">Alícuota:</span>
+                        <span className="ml-auto text-muted-foreground">{listing.alicuota}%</span>
                       </div>
                     </div>
                   </div>
@@ -396,41 +411,26 @@ export default function LoteDetailPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                   <div className="space-y-4">
                     <div className="flex items-center">
-                      <Scaling className="h-5 w-5 mr-3 text-muted-foreground" />
-                      <span className="font-medium">Incidencia UVA:</span>
-                      <span className="ml-auto text-muted-foreground">1.25</span>
-                    </div>
-                    <div className="flex items-center">
-                      <FileText className="h-5 w-5 mr-3 text-muted-foreground" />
-                      <span className="font-medium">FOT:</span>
-                      <span className="ml-auto text-muted-foreground">3.0</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Percent className="h-5 w-5 mr-3 text-muted-foreground" />
-                      <span className="font-medium">Alícuota:</span>
-                      <span className="ml-auto text-muted-foreground">8.25%</span>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="flex items-center">
                       <Ruler className="h-5 w-5 mr-3 text-muted-foreground" />
                       <span className="font-medium">M2 Vendibles:</span>
-                      <span className="ml-auto text-muted-foreground">555 m²</span>
+                      <span className="ml-auto text-muted-foreground">{listing.m2Vendibles} m²</span>
                     </div>
                     <div className="flex items-center">
                       <DollarSign className="h-5 w-5 mr-3 text-muted-foreground" />
                       <span className="font-medium">Valor de Venta (USD):</span>
-                      <span className="ml-auto text-muted-foreground">$ 1,200,000</span>
+                      <span className="ml-auto text-muted-foreground">$ {listing.valorVentaUSD.toLocaleString('es-AR')}</span>
                     </div>
-                    <div className="flex items-center">
-                      <DollarSign className="h-5 w-5 mr-3 text-muted-foreground" />
-                      <span className="font-medium">Incidencia Tasada (USD/m2):</span>
-                      <span className="ml-auto text-muted-foreground">$ 2,162</span>
-                    </div>
-                    <div className="flex items-center">
+                     <div className="flex items-center">
                       <CreditCard className="h-5 w-5 mr-3 text-muted-foreground" />
                       <span className="font-medium">Forma de Pago:</span>
-                      <span className="ml-auto text-muted-foreground">A convenir</span>
+                      <span className="ml-auto text-muted-foreground">{listing.formaDePago}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                     <div className="flex items-center">
+                      <DollarSign className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium">Incidencia Tasada (USD/m2):</span>
+                      <span className="ml-auto text-muted-foreground">$ {listing.incidenciaTasadaUSD.toLocaleString('es-AR')}</span>
                     </div>
                      <div className="flex items-center">
                       <Calendar className="h-5 w-5 mr-3 text-muted-foreground" />

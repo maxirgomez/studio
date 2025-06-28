@@ -174,6 +174,9 @@ export const listings = [
     incidenciaUVA: 1.25,
     fot: 3.0,
     alicuota: 8.25,
+    m2Vendibles: 555,
+    incidenciaTasadaUSD: 2162,
+    formaDePago: "Cash",
   },
   {
     address: "Juramento 1196",
@@ -194,6 +197,9 @@ export const listings = [
     incidenciaUVA: 1.5,
     fot: 3.5,
     alicuota: 9.0,
+    m2Vendibles: 800,
+    incidenciaTasadaUSD: 3125,
+    formaDePago: "Canje",
   },
   {
     address: "Rivadavia 1298",
@@ -214,6 +220,9 @@ export const listings = [
     incidenciaUVA: 1.1,
     fot: 2.8,
     alicuota: 7.5,
+    m2Vendibles: 600,
+    incidenciaTasadaUSD: 3000,
+    formaDePago: "Cash/Canje",
   },
   {
     address: "Corrientes 1341",
@@ -234,6 +243,9 @@ export const listings = [
     incidenciaUVA: 1.0,
     fot: 2.5,
     alicuota: 7.0,
+    m2Vendibles: 580,
+    incidenciaTasadaUSD: 3017,
+    formaDePago: "Cash",
   },
   {
     address: "Scalabrini Ortiz 1494",
@@ -254,6 +266,9 @@ export const listings = [
     incidenciaUVA: 2.0,
     fot: 4.0,
     alicuota: 10.0,
+    m2Vendibles: 1000,
+    incidenciaTasadaUSD: 3200,
+    formaDePago: "Canje",
   },
   {
     address: "Quintana 1577",
@@ -274,6 +289,9 @@ export const listings = [
     incidenciaUVA: 1.3,
     fot: 2.2,
     alicuota: 6.5,
+    m2Vendibles: 450,
+    incidenciaTasadaUSD: 3333,
+    formaDePago: "A convenir",
   },
   {
     address: "Defensa 1684",
@@ -294,6 +312,9 @@ export const listings = [
     incidenciaUVA: 1.4,
     fot: 3.2,
     alicuota: 8.0,
+    m2Vendibles: 700,
+    incidenciaTasadaUSD: 3000,
+    formaDePago: "Cash/Canje",
   },
   {
     address: "Av. Cordoba 1800",
@@ -314,6 +335,9 @@ export const listings = [
     incidenciaUVA: 1.0,
     fot: 2.0,
     alicuota: 5.0,
+    m2Vendibles: 300,
+    incidenciaTasadaUSD: 3166,
+    formaDePago: "Cash",
   },
   {
     address: "Honduras 4880",
@@ -334,6 +358,9 @@ export const listings = [
     incidenciaUVA: 1.2,
     fot: 2.5,
     alicuota: 7.0,
+    m2Vendibles: 400,
+    incidenciaTasadaUSD: 2875,
+    formaDePago: "Cash",
   },
   {
     address: "Av. Cabildo 2040",
@@ -354,6 +381,9 @@ export const listings = [
     incidenciaUVA: 1.6,
     fot: 3.8,
     alicuota: 9.5,
+    m2Vendibles: 850,
+    incidenciaTasadaUSD: 3294,
+    formaDePago: "A convenir",
   },
    {
     address: "Av. Libertador 5500",
@@ -374,6 +404,9 @@ export const listings = [
     incidenciaUVA: 2.2,
     fot: 4.5,
     alicuota: 11.0,
+    m2Vendibles: 1200,
+    incidenciaTasadaUSD: 2917,
+    formaDePago: "Cash",
   },
   {
     address: "Mendoza 2300",
@@ -394,6 +427,9 @@ export const listings = [
     incidenciaUVA: 1.3,
     fot: 3.0,
     alicuota: 8.0,
+    m2Vendibles: 650,
+    incidenciaTasadaUSD: 2769,
+    formaDePago: "Canje",
   },
   {
     address: "Av. Callao 1200",
@@ -414,6 +450,9 @@ export const listings = [
     incidenciaUVA: 2.5,
     fot: 5.0,
     alicuota: 12.0,
+    m2Vendibles: 1500,
+    incidenciaTasadaUSD: 2800,
+    formaDePago: "Cash/Canje",
   },
   {
     address: "Thames 1800",
@@ -434,6 +473,9 @@ export const listings = [
     incidenciaUVA: 1.1,
     fot: 2.7,
     alicuota: 7.2,
+    m2Vendibles: 480,
+    incidenciaTasadaUSD: 3333,
+    formaDePago: "Cash",
   },
   {
     address: "Av. Pedro Goyena 800",
@@ -454,6 +496,9 @@ export const listings = [
     incidenciaUVA: 1.6,
     fot: 3.5,
     alicuota: 8.8,
+    m2Vendibles: 900,
+    incidenciaTasadaUSD: 2555,
+    formaDePago: "Canje",
   },
   {
     address: "Manuela Pedraza 3100",
@@ -474,6 +519,9 @@ export const listings = [
     incidenciaUVA: 1.4,
     fot: 3.1,
     alicuota: 7.9,
+    m2Vendibles: 680,
+    incidenciaTasadaUSD: 2867,
+    formaDePago: "Cash",
   },
   {
     address: "Virrey del Pino 2500",
@@ -494,6 +542,9 @@ export const listings = [
     incidenciaUVA: 1.5,
     fot: 3.3,
     alicuota: 8.5,
+    m2Vendibles: 750,
+    incidenciaTasadaUSD: 2800,
+    formaDePago: "Cash",
   },
   {
     address: "Malabia 1700",
@@ -514,6 +565,9 @@ export const listings = [
     incidenciaUVA: 1.2,
     fot: 2.6,
     alicuota: 7.1,
+    m2Vendibles: 450,
+    incidenciaTasadaUSD: 3111,
+    formaDePago: "Canje",
   },
   {
     address: "Av. de los Incas 3300",
@@ -534,6 +588,9 @@ export const listings = [
     incidenciaUVA: 1.3,
     fot: 2.9,
     alicuota: 7.7,
+    m2Vendibles: 650,
+    incidenciaTasadaUSD: 2846,
+    formaDePago: "Cash/Canje",
   },
   {
     address: "Av. Monroe 5000",
@@ -554,6 +611,9 @@ export const listings = [
     incidenciaUVA: 1.7,
     fot: 3.6,
     alicuota: 9.2,
+    m2Vendibles: 950,
+    incidenciaTasadaUSD: 2526,
+    formaDePago: "Cash",
   },
 ];
 

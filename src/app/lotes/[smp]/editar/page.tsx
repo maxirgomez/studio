@@ -43,9 +43,6 @@ const editLoteFormSchema = z.object({
   celular3: z.string().optional(),
   email: z.string().email("Email inválido.").or(z.literal("")).optional(),
   
-  incidenciaUVA: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
-  fot: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
-  alicuota: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
   m2Vendibles: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
   valorVentaUSD: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
   incidenciaTasadaUSD: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
@@ -78,9 +75,6 @@ export default function LoteEditPage() {
       celular2: "-",
       celular3: "-",
       email: "juan.perez@example.com",
-      incidenciaUVA: 1.25,
-      fot: 3.0,
-      alicuota: 8.25,
       m2Vendibles: 555,
       valorVentaUSD: 1200000,
       incidenciaTasadaUSD: 2162,
@@ -172,6 +166,21 @@ export default function LoteEditPage() {
                   <span className="font-medium">Partida:</span>
                   <span className="ml-auto text-muted-foreground">{listing.partida}</span>
                 </div>
+                <div className="flex items-center">
+                  <Scaling className="h-5 w-5 mr-3 text-muted-foreground" />
+                  <span className="font-medium">Incidencia UVA:</span>
+                  <span className="ml-auto text-muted-foreground">{listing.incidenciaUVA}</span>
+                </div>
+                <div className="flex items-center">
+                  <FileText className="h-5 w-5 mr-3 text-muted-foreground" />
+                  <span className="font-medium">FOT:</span>
+                  <span className="ml-auto text-muted-foreground">{listing.fot}</span>
+                </div>
+                <div className="flex items-center">
+                  <Percent className="h-5 w-5 mr-3 text-muted-foreground" />
+                  <span className="font-medium">Alícuota:</span>
+                  <span className="ml-auto text-muted-foreground">{listing.alicuota}%</span>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -236,20 +245,11 @@ export default function LoteEditPage() {
               </CardHeader>
               <CardContent>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 pt-2">
-                    <FormField control={form.control} name="incidenciaUVA" render={({ field }) => (
-                      <FormItem><FormLabel>Incidencia UVA</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
                      <FormField control={form.control} name="m2Vendibles" render={({ field }) => (
                       <FormItem><FormLabel>M2 Vendibles</FormLabel><FormControl><Input type="number" step="1" {...field} /></FormControl><FormMessage /></FormItem>
                     )}/>
-                     <FormField control={form.control} name="fot" render={({ field }) => (
-                      <FormItem><FormLabel>FOT</FormLabel><FormControl><Input type="number" step="0.1" {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
                      <FormField control={form.control} name="valorVentaUSD" render={({ field }) => (
                       <FormItem><FormLabel>Valor de Venta (USD)</FormLabel><FormControl><Input type="number" step="1000" {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
-                     <FormField control={form.control} name="alicuota" render={({ field }) => (
-                      <FormItem><FormLabel>Alícuota (%)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
                     )}/>
                      <FormField control={form.control} name="incidenciaTasadaUSD" render={({ field }) => (
                       <FormItem><FormLabel>Incidencia Tasada (USD/m2)</FormLabel><FormControl><Input type="number" step="1" {...field} /></FormControl><FormMessage /></FormItem>
