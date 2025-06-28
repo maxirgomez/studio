@@ -71,7 +71,7 @@ const listings = [
     smp: "017-027-006",
     area: 185,
     status: "Evolucionando",
-    agent: { name: "Iair Baredes", initials: "IB", avatarUrl: "https://placehold.co/100x100.png", aiHint: "storefront supermarket" },
+    agent: { name: "Iair Baredes", initials: "IB", avatarUrl: "https://placehold.co/100x100.png", aiHint: "man happy" },
     origen: "Producción",
     codigoUrbanistico: "U.S.A.A.",
     cpu: "C3II",
@@ -83,7 +83,7 @@ const listings = [
     smp: "031-036-034",
     area: 174,
     status: "Disponible",
-    agent: { name: "Martín Beorlegui", initials: "MB", avatarUrl: "https://placehold.co/100x100.png", aiHint: "industrial warehouse" },
+    agent: { name: "Martín Beorlegui", initials: "MB", avatarUrl: "https://placehold.co/100x100.png", aiHint: "man portrait" },
     imageUrl: "https://placehold.co/600x400.png",
     aiHint: "industrial warehouse",
     origen: "Tor",
@@ -643,6 +643,8 @@ export default function LoteDetailPage() {
     </div>
   );
 }
+
+    
 
     
 
