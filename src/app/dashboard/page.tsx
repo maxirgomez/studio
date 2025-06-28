@@ -3,7 +3,7 @@
 
 import * as React from "react"
 import { useState, useMemo, useCallback } from "react"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Legend } from "recharts"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, LineChart, Line, Tooltip } from "recharts"
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import {
   Card,
@@ -31,8 +31,9 @@ import {
 } from "@/components/ui/select"
 import { listings, users, getStatusStyles } from "@/lib/data"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from "@/components/ui/chart"
-import { Activity, TrendingUp, X } from "lucide-react"
-import { subMonths } from "date-fns"
+import { Activity, TrendingUp, X, DollarSign, CreditCard } from "lucide-react"
+import { format, subMonths, differenceInMonths } from "date-fns"
+import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils"
 import {
   Pagination,
@@ -65,37 +66,34 @@ const chartConfig = statusOrder.reduce((acc, status) => {
 }, {} as ChartConfig);
 
 
-const processDashboardData = (agentFilter: string, statusFilter: string) => {
-  // 1. Filter by agent first
+const processDashboardData = (agentFilter: string, statusFilter: string, salesChartRange: "12m" | "6m" | "3m") => {
   const agentFilteredListings = agentFilter === 'todos'
     ? listings
     : listings.filter(l => l.agent.name === agentFilter);
   
-  // 2. Calculate status counts based on agent filter (for the cards)
   const lotsByStatus = agentFilteredListings.reduce((acc, l) => {
     acc[l.status] = (acc[l.status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  // 3. Apply status filter
   const fullyFilteredListings = statusFilter
     ? agentFilteredListings.filter(l => l.status === statusFilter)
     : agentFilteredListings;
 
-  // 4. Calculate KPIs and chart data from fully filtered list
-  const totalLots = listings.length;
+  const totalLots = agentFilteredListings.length;
 
-  const recentSales = fullyFilteredListings.filter(l => l.saleDate && new Date(l.saleDate) >= subMonths(new Date(), 12));
-  const totalSales = recentSales.length;
+  const salesInLast12m = agentFilteredListings.filter(l => l.saleDate && new Date(l.saleDate) >= subMonths(new Date(), 12));
+  const totalSalesValue = salesInLast12m.reduce((sum, l) => sum + l.valorVentaUSD, 0);
+  const totalSalesCount = salesInLast12m.length;
 
-  const lastMonthSales = fullyFilteredListings.filter(l => {
+  const lastMonthSales = agentFilteredListings.filter(l => {
     if (!l.saleDate) return false;
     const saleDate = new Date(l.saleDate);
     const lastMonth = subMonths(new Date(), 1);
     return saleDate >= lastMonth;
   }).length;
   
-  const previousMonthSales = fullyFilteredListings.filter(l => {
+  const previousMonthSales = agentFilteredListings.filter(l => {
     if (!l.saleDate) return false;
     const saleDate = new Date(l.saleDate);
     const twoMonthsAgo = subMonths(new Date(), 2);
@@ -118,13 +116,44 @@ const processDashboardData = (agentFilter: string, statusFilter: string) => {
     }, {} as Record<string, any>)
   );
 
+  const monthsToShowMap: Record<typeof salesChartRange, number> = {
+    '12m': 12, '6m': 6, '3m': 3,
+  };
+  const monthsToShow = monthsToShowMap[salesChartRange];
+  
+  const salesByMonthChartData = Array.from({ length: monthsToShow }).map((_, i) => {
+    const date = subMonths(new Date(), monthsToShow - 1 - i);
+    return {
+      name: format(date, 'MMM', { locale: es }),
+      total: 0,
+    };
+  });
+
+  const salesCutoffDate = subMonths(new Date(), monthsToShow);
+  agentFilteredListings.forEach(l => {
+    if (l.saleDate && l.valorVentaUSD) {
+      const saleDate = new Date(l.saleDate);
+      if (saleDate >= salesCutoffDate) {
+        const monthIndex = differenceInMonths(new Date(), saleDate);
+        if (monthIndex < monthsToShow) {
+          const chartIndex = salesByMonthChartData.length - 1 - monthIndex;
+          if (chartIndex >= 0) {
+            salesByMonthChartData[chartIndex].total += l.valorVentaUSD;
+          }
+        }
+      }
+    }
+  });
+
   return { 
-    totalLots: fullyFilteredListings.length,
-    totalSales,
+    totalLots,
+    totalSalesValue,
+    totalSalesCount,
     salesChange,
     lotsByStatus,
     lotsByNeighborhoodChartData,
     filteredListings: fullyFilteredListings,
+    salesByMonthChartData,
   };
 };
 
@@ -138,15 +167,18 @@ export default function DashboardPage() {
   const statusFilter = searchParams.get('status') || '';
   const currentPage = Number(searchParams.get('page')) || 1;
   const listingsPerPage = Number(searchParams.get('pageSize')) || 10;
+  const [salesChartRange, setSalesChartRange] = useState<"12m" | "6m" | "3m">("12m");
 
   const { 
     totalLots,
-    totalSales,
+    totalSalesValue,
+    totalSalesCount,
     salesChange,
     lotsByStatus,
     lotsByNeighborhoodChartData,
-    filteredListings
-  } = useMemo(() => processDashboardData(agentFilter, statusFilter), [agentFilter, statusFilter]);
+    filteredListings,
+    salesByMonthChartData
+  } = useMemo(() => processDashboardData(agentFilter, statusFilter, salesChartRange), [agentFilter, statusFilter, salesChartRange]);
   
   const totalPages = Math.ceil(filteredListings.length / listingsPerPage);
   const listingsOnPage = filteredListings.slice(
@@ -257,34 +289,111 @@ export default function DashboardPage() {
         })}
       </div>
       
-      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Lotes</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Ingresos Totales (12m)</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalLots}</div>
-            <p className="text-xs text-muted-foreground">
-              {statusFilter ? `Lotes con estado "${statusFilter}"` : "Total de lotes según filtros"}
-            </p>
+            <div className="text-2xl font-bold">{totalSalesValue.toLocaleString('es-AR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 })}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Ventas (12m)</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+{totalSales}</div>
-            <p className="text-xs text-muted-foreground">
-              {salesChange >= 0 ? '+' : ''}{salesChange.toFixed(1)}% vs mes anterior
-            </p>
+            <div className="text-2xl font-bold">+{totalSalesCount}</div>
           </CardContent>
+        </Card>
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Lotes</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+            <div className="text-2xl font-bold">{totalLots}</div>
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Crecimiento de Ventas</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+            <div className="text-2xl font-bold">{salesChange >= 0 ? '+' : ''}{salesChange.toFixed(1)}%</div>
+            <p className="text-xs text-muted-foreground">vs mes anterior</p>
+            </CardContent>
         </Card>
       </div>
       
       <div className="grid gap-4 mt-4 grid-cols-1">
+        <Card>
+          <CardHeader className="flex flex-row items-center">
+            <div className="grid gap-2">
+              <CardTitle>Resumen de Ventas</CardTitle>
+              <CardDescription>
+                Ventas totales en los últimos {salesChartRange === "12m" ? "12" : salesChartRange === "6m" ? "6" : "3"} meses.
+              </CardDescription>
+            </div>
+            <Select value={salesChartRange} onValueChange={(value) => setSalesChartRange(value as "12m" | "6m" | "3m")}>
+              <SelectTrigger className="ml-auto w-[160px]">
+                <SelectValue placeholder="Seleccionar rango" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="12m">Últimos 12 meses</SelectItem>
+                <SelectItem value="6m">Últimos 6 meses</SelectItem>
+                <SelectItem value="3m">Últimos 3 meses</SelectItem>
+              </SelectContent>
+            </Select>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={{ total: { label: "Total", color: "hsl(var(--primary))" } }} className="h-[250px] w-full">
+              <ResponsiveContainer>
+                <LineChart
+                  data={salesByMonthChartData}
+                  margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+                >
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                  />
+                  <YAxis
+                    tickFormatter={(value) => `$${(Number(value) / 1000000).toFixed(1)}M`}
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    width={80}
+                  />
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent
+                        formatter={(value) => typeof value === 'number' ? value.toLocaleString('es-AR', { style: 'currency', currency: 'USD' }) : value}
+                        indicator="dot"
+                    />}
+                  />
+                  <Line
+                    dataKey="total"
+                    type="monotone"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    dot={{
+                      fill: "hsl(var(--primary))",
+                    }}
+                    activeDot={{
+                      r: 6,
+                    }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
         <Card className="col-span-1">
           <CardHeader>
             <CardTitle>Lotes por Barrio</CardTitle>
@@ -317,7 +426,7 @@ export default function DashboardPage() {
                     cursor={false}
                     content={<ChartTooltipContent indicator="dot" />}
                   />
-                  <Legend content={<ChartLegendContent />} />
+                  <ChartLegend content={<ChartLegendContent />} />
                   {statusOrder.map((status) => (
                     <Bar
                       key={status}
