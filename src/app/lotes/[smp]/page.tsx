@@ -625,7 +625,7 @@ export default function LoteDetailPage() {
             </Card>
         </div>
       </div>
-      <div className="hidden">
+      <div className="absolute -left-[9999px] -top-[9999px]">
         <div ref={pdfContentRef}>
           {listing && <PdfContent listing={listing} imageUrl={currentImageUrl} />}
         </div>
@@ -633,3 +633,4 @@ export default function LoteDetailPage() {
     </div>
   );
 }
+
