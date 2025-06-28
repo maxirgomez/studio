@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select"
 import { listings, users, getStatusStyles } from "@/lib/data"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from "@/components/ui/chart"
-import { Activity, TrendingUp, X, DollarSign, CreditCard } from "lucide-react"
+import { Activity, TrendingUp, X, DollarSign, CreditCard, ArrowUpNarrowWide } from "lucide-react"
 import { format, subMonths, differenceInMonths } from "date-fns"
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils"
@@ -43,6 +43,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { Button } from "@/components/ui/button"
 
 
 const statusOrder = [
@@ -161,6 +162,7 @@ export default function DashboardPage() {
   const currentPage = Number(searchParams.get('page')) || 1;
   const listingsPerPage = Number(searchParams.get('pageSize')) || 10;
   const [salesChartRange, setSalesChartRange] = useState<"12m" | "6m" | "3m">("12m");
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   const { 
     totalLots,
@@ -171,7 +173,13 @@ export default function DashboardPage() {
     lotsByNeighborhoodChartData,
     filteredListings,
     salesByMonthChartData
-  } = useMemo(() => processDashboardData(agentFilter, statusFilter, salesChartRange), [agentFilter, statusFilter, salesChartRange]);
+  } = useMemo(() => {
+    const data = processDashboardData(agentFilter, statusFilter, salesChartRange);
+    const sortedChartData = [...data.lotsByNeighborhoodChartData].sort((a, b) => {
+        return sortOrder === 'asc' ? a.total - b.total : b.total - a.total;
+    });
+    return { ...data, lotsByNeighborhoodChartData: sortedChartData };
+  }, [agentFilter, statusFilter, salesChartRange, sortOrder]);
   
   const totalPages = Math.ceil(filteredListings.length / listingsPerPage);
   const listingsOnPage = filteredListings.slice(
@@ -389,10 +397,22 @@ export default function DashboardPage() {
         </Card>
         <Card className="col-span-1">
           <CardHeader>
-            <CardTitle>Total de Lotes por Barrio</CardTitle>
-            <CardDescription>
-              Cantidad total de lotes registrados en cada barrio.
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Total de Lotes por Barrio</CardTitle>
+                <CardDescription>
+                  Cantidad total de lotes registrados en cada barrio.
+                </CardDescription>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'))}
+                >
+                <ArrowUpNarrowWide className="h-4 w-4" />
+                <span className="sr-only">Cambiar orden</span>
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="pl-2">
             <ChartContainer config={chartConfig} className="h-[500px] w-full">
