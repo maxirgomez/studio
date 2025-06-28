@@ -51,30 +51,42 @@ const PdfContent = React.forwardRef<
 
   return (
     <div ref={ref} style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#333', padding: '40px', background: 'white', width: '210mm' }}>
-      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eee', paddingBottom: '10px', marginBottom: '20px' }}>
+        <img src="https://baigunrealty.com/wp-content/uploads/2024/01/logo-1.png" crossOrigin="anonymous" alt="Baigun Realty Logo" style={{ height: '40px' }} />
         <h1 style={{ color: '#2D3746', fontSize: '24px', fontWeight: 'bold', margin: 0 }}>Ficha de Lote</h1>
-        <h2 style={{ fontSize: '18px', fontWeight: 'normal', margin: '4px 0' }}>{listing.address} - {listing.neighborhood}</h2>
+      </div>
+
+      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: '4px 0' }}>{listing.address}</h2>
+        <p style={{ fontSize: '16px', fontWeight: 'normal', margin: '4px 0', color: '#555' }}>{listing.neighborhood}</p>
       </div>
 
       {imageUrl && <img src={imageUrl} crossOrigin="anonymous" style={{ width: '100%', height: '250px', marginBottom: '20px', borderRadius: '4px', objectFit: 'cover' }} alt={listing.address} />}
       
+      <h3 style={sectionTitleStyle}>Datos Principales</h3>
+      <div style={gridStyle}>
+        <div style={fieldStyle}><span style={labelStyle}>Estado:</span> <span style={valueStyle}>{listing.status}</span></div>
+        <div style={fieldStyle}><span style={labelStyle}>Agente:</span> <span style={valueStyle}>{listing.agent.name}</span></div>
+        <div style={fieldStyle}><span style={labelStyle}>Origen:</span> <span style={valueStyle}>{listing.origen}</span></div>
+        <div style={fieldStyle}><span style={labelStyle}>SMP:</span> <span style={valueStyle}>{listing.smp}</span></div>
+      </div>
+      
+      <h3 style={sectionTitleStyle}>Información Urbanística y Catastral</h3>
       <div style={gridStyle}>
         <div>
-          <h3 style={sectionTitleStyle}>Información Urbanística</h3>
-          <div style={fieldStyle}><span style={labelStyle}>SMP:</span> <span style={valueStyle}>{listing.smp}</span></div>
           <div style={fieldStyle}><span style={labelStyle}>Código Urbanístico:</span> <span style={valueStyle}>{listing.codigoUrbanistico}</span></div>
           <div style={fieldStyle}><span style={labelStyle}>CPU:</span> <span style={valueStyle}>{listing.cpu}</span></div>
-          <div style={fieldStyle}><span style={labelStyle}>Partida:</span> <span style={valueStyle}>{listing.partida}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>FOT:</span> <span style={valueStyle}>{listing.fot}</span></div>
         </div>
         <div>
-          <h3 style={sectionTitleStyle}>Catastral</h3>
           <div style={fieldStyle}><span style={labelStyle}>M² Estimados:</span> <span style={valueStyle}>{listing.area} m²</span></div>
           <div style={fieldStyle}><span style={labelStyle}>Incidencia UVA:</span> <span style={valueStyle}>{listing.incidenciaUVA}</span></div>
-          <div style={fieldStyle}><span style={labelStyle}>FOT:</span> <span style={valueStyle}>{listing.fot}</span></div>
           <div style={fieldStyle}><span style={labelStyle}>Alícuota:</span> <span style={valueStyle}>{listing.alicuota}%</span></div>
         </div>
       </div>
-      
+      <div style={{...fieldStyle, gridColumn: 'span 2'}}><span style={labelStyle}>Partida:</span> <span style={valueStyle}>{listing.partida}</span></div>
+
+
       <h3 style={sectionTitleStyle}>Datos de Tasación</h3>
       <div style={gridStyle}>
         <div>
@@ -94,15 +106,25 @@ const PdfContent = React.forwardRef<
       <div style={gridStyle}>
         <div>
           <div style={fieldStyle}><span style={labelStyle}>Propietario:</span> <span style={valueStyle}>Juan Pérez</span></div>
-          <div style={fieldStyle}><span style={labelStyle}>Dirección:</span> <span style={valueStyle}>Calle Falsa 123, Buenos Aires</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Dirección Contacto:</span> <span style={valueStyle}>Calle Falsa 123</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Localidad:</span> <span style={valueStyle}>Buenos Aires, C1425</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Dirección Alternativa:</span> <span style={valueStyle}>Av. Siempreviva 742</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Fallecido:</span> <span style={valueStyle}>No</span></div>
           <div style={fieldStyle}><span style={labelStyle}>Email:</span> <span style={valueStyle}>juan.perez@example.com</span></div>
         </div>
         <div>
-          <div style={fieldStyle}><span style={labelStyle}>Fallecido:</span> <span style={valueStyle}>No</span></div>
-          <div style={fieldStyle}><span style={labelStyle}>Teléfono:</span> <span style={valueStyle}>(011) 4555-5555</span></div>
-          <div style={fieldStyle}><span style={labelStyle}>Celular:</span> <span style={valueStyle}>(011) 15-1234-5678</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Teléfono 1:</span> <span style={valueStyle}>(011) 4555-5555</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Teléfono 2:</span> <span style={valueStyle}>(011) 4666-6666</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Teléfono 3:</span> <span style={valueStyle}>-</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Celular 1:</span> <span style={valueStyle}>(011) 15-1234-5678</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Celular 2:</span> <span style={valueStyle}>-</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Celular 3:</span> <span style={valueStyle}>-</span></div>
         </div>
       </div>
+      <div style={{ marginTop: '16px' }}>
+          <h3 style={sectionTitleStyle}>Otros Datos</h3>
+          <p style={{ fontSize: '12px', color: '#333' }}>Contactar solo por la mañana.</p>
+        </div>
     </div>
   );
 });
@@ -633,4 +655,3 @@ export default function LoteDetailPage() {
     </div>
   );
 }
-
