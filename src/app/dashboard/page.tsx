@@ -81,9 +81,6 @@ const processDashboardData = (agentFilter: string, statusFilter: string, salesCh
 
   const totalLots = agentFilteredListings.length;
 
-  const salesInLast12m = agentFilteredListings.filter(l => l.saleDate && new Date(l.saleDate) >= subMonths(new Date(), 12));
-  const totalSalesValue = salesInLast12m.reduce((sum, l) => sum + l.valorVentaUSD, 0);
-
   const lastMonthSales = agentFilteredListings.filter(l => {
     if (!l.saleDate) return false;
     const saleDate = new Date(l.saleDate);
@@ -140,11 +137,10 @@ const processDashboardData = (agentFilter: string, statusFilter: string, salesCh
 
   return { 
     totalLots,
-    totalSalesValue,
     salesChange,
     lotsByStatus,
     lotsByNeighborhoodChartData,
-    filteredListings: fullyFilteredListings,
+    filteredListings,
     salesByMonthChartData,
   };
 };
@@ -164,7 +160,6 @@ export default function DashboardPage() {
 
   const { 
     totalLots,
-    totalSalesValue,
     salesChange,
     lotsByStatus,
     lotsByNeighborhoodChartData,
@@ -287,16 +282,7 @@ export default function DashboardPage() {
         })}
       </div>
       
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ingresos Totales (12m)</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalSalesValue.toLocaleString('es-AR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 })}</div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 md:grid-cols-2">
         <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de Lotes</CardTitle>
