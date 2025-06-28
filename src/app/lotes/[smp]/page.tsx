@@ -52,7 +52,7 @@ const PdfContent = React.forwardRef<
   return (
     <div ref={ref} style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#333', padding: '40px', background: 'white', width: '210mm' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eee', paddingBottom: '10px', marginBottom: '20px' }}>
-        <img src="https://baigunrealty.com/wp-content/uploads/2024/01/logo-1.png" crossOrigin="anonymous" alt="Baigun Realty Logo" style={{ height: '40px' }} />
+        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#2D3746' }}>Baigun Realty</div>
         <h1 style={{ color: '#2D3746', fontSize: '24px', fontWeight: 'bold', margin: 0 }}>Ficha de Lote</h1>
       </div>
 
