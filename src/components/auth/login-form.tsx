@@ -42,10 +42,11 @@ import {
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
+import { users } from "@/lib/data";
 
 const formSchema = z.object({
-  email: z.string().email({
-    message: "Por favor, introduce una dirección de correo electrónico válida.",
+  username: z.string().min(1, {
+    message: "El nombre de usuario es requerido.",
   }),
   password: z.string().min(1, {
     message: "La contraseña no puede estar vacía.",
@@ -70,14 +71,25 @@ export function LoginForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: "",
+      username: "",
       password: "",
     },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    const foundUser = users.find(user => user.username === values.username);
+
+    if (!foundUser) {
+      toast({
+        title: "Error de inicio de sesión",
+        description: "El nombre de usuario o la contraseña son incorrectos.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      const userCredential: UserCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      const userCredential: UserCredential = await signInWithEmailAndPassword(auth, foundUser.email, values.password);
       const user = userCredential.user;
       toast({
         title: "Login exitoso",
@@ -89,7 +101,7 @@ export function LoginForm() {
       let description = "Ha ocurrido un error inesperado. Por favor, inténtelo de nuevo.";
       
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        description = "El correo electrónico o la contraseña son incorrectos.";
+        description = "El nombre de usuario o la contraseña son incorrectos.";
       } else if (error.code === 'auth/invalid-email') {
         description = "El formato del correo electrónico no es válido.";
       }
@@ -135,7 +147,7 @@ export function LoginForm() {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl text-center">Iniciar Sesión</CardTitle>
           <CardDescription className="text-center">
-            Introduce tu email y contraseña para acceder a tu cuenta
+            Introduce tu nombre de usuario y contraseña para acceder
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
@@ -143,14 +155,13 @@ export function LoginForm() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
-                name="email"
+                name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-bold">Email</FormLabel>
+                    <FormLabel className="font-bold">Nombre de Usuario</FormLabel>
                     <FormControl>
                       <Input
-                        type="email"
-                        placeholder="email@ejemplo.com"
+                        placeholder="nombredeusuario"
                         {...field}
                       />
                     </FormControl>

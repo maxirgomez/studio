@@ -35,163 +35,7 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
-
-// Data duplicated for now. Ideally, this would be in a shared file.
-const listings = [
-  {
-    address: "Av. Santa Fe 1060",
-    neighborhood: "Palermo",
-    smp: "017-027-020A",
-    area: 110,
-    status: "Tomar Acción",
-    agent: { name: "Ariel Naem", initials: "AN", avatarUrl: "https://placehold.co/100x100.png", aiHint: "man with glasses" },
-    imageUrl: null,
-    origen: "Tor",
-    codigoUrbanistico: "U.S.A.M.",
-    cpu: "R2b1",
-    partida: "123456-7",
-  },
-  {
-    address: "Juramento 1196",
-    neighborhood: "Belgrano",
-    smp: "017-059-048D",
-    area: 162,
-    status: "Tasación",
-    agent: { name: "Santiago Liscovsky", initials: "SL", avatarUrl: "https://placehold.co/100x100.png", aiHint: "man professional" },
-    imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "modern apartment building",
-    origen: "Baigun Realty",
-    codigoUrbanistico: "C.M.",
-    cpu: "R1a",
-    partida: "234567-8",
-  },
-  {
-    address: "Rivadavia 1298",
-    neighborhood: "Caballito",
-    smp: "017-027-006",
-    area: 185,
-    status: "Evolucionando",
-    agent: { name: "Iair Baredes", initials: "IB", avatarUrl: "https://placehold.co/100x100.png", aiHint: "man happy" },
-    origen: "Producción",
-    codigoUrbanistico: "U.S.A.A.",
-    cpu: "C3II",
-    partida: "345678-9",
-  },
-  {
-    address: "Corrientes 1341",
-    neighborhood: "Almagro",
-    smp: "031-036-034",
-    area: 174,
-    status: "Disponible",
-    agent: { name: "Martín Beorlegui", initials: "MB", avatarUrl: "https://placehold.co/100x100.png", aiHint: "man portrait" },
-    imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "industrial warehouse",
-    origen: "Tor",
-    codigoUrbanistico: "C.M.",
-    cpu: "C1",
-    partida: "456789-0",
-  },
-  {
-    address: "Scalabrini Ortiz 1494",
-    neighborhood: "Recoleta",
-    smp: "017-026-022",
-    area: 210,
-    status: "Descartado",
-    agent: { name: "Ariel Naem", initials: "AN", avatarUrl: "https://placehold.co/100x100.png", aiHint: "man with glasses" },
-    imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "old city building",
-    origen: "Baigun Realty",
-    codigoUrbanistico: "A.E.",
-    cpu: "R1b",
-    partida: "567890-1",
-  },
-  {
-    address: "Quintana 1577",
-    neighborhood: "San Telmo",
-    smp: "031-053-037",
-    area: 150,
-    status: "No vende",
-    agent: { name: "Matías Poczter", initials: "MP", avatarUrl: "https://placehold.co/100x100.png", aiHint: "person smiling" },
-    imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "yellow historic house",
-    origen: "Producción",
-    codigoUrbanistico: "A.P.H.",
-    cpu: "APH1",
-    partida: "678901-2",
-  },
-  {
-    address: "Defensa 1684",
-    neighborhood: "Villa Crespo",
-    smp: "031-055-029",
-    area: 195,
-    status: "Reservado",
-    agent: { name: "Matias Chirom", initials: "MC", avatarUrl: "https://placehold.co/100x100.png", aiHint: "man office" },
-    imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "suburban brick house",
-    origen: "Tor",
-    codigoUrbanistico: "U.S.A.B.2",
-    cpu: "R2bII",
-    partida: "789012-3",
-  },
-  {
-    address: "Login Exitoso",
-    neighborhood: "Bienvenido, Admin!",
-    smp: "031-114-032",
-    area: 95,
-    status: "Vendido",
-    agent: { name: "Maria Bailo Newton", initials: "MN", avatarUrl: "https://placehold.co/100x100.png", aiHint: "woman professional" },
-    imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "red modern house",
-    origen: "Baigun Realty",
-    codigoUrbanistico: "C.M.",
-    cpu: "C3I",
-    partida: "890123-4",
-  },
-  {
-    address: "Another Listing 1",
-    neighborhood: "Palermo",
-    smp: "017-027-021A",
-    area: 120,
-    status: "Tomar Acción",
-    agent: { name: "Roxana Rajich", initials: "RR", avatarUrl: "https://placehold.co/100x100.png", aiHint: "woman smiling" },
-    imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "modern house",
-    origen: "Producción",
-    codigoUrbanistico: "U.S.A.M.",
-    cpu: "R2b1",
-    partida: "901234-5",
-  },
-  {
-    address: "Another Listing 2",
-    neighborhood: "Belgrano",
-    smp: "017-059-049D",
-    area: 170,
-    status: "Tasación",
-    agent: { name: "Santiago Liscovsky", initials: "SL", avatarUrl: "https://placehold.co/100x100.png", aiHint: "man professional" },
-    imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "luxury apartment",
-    origen: "Tor",
-    codigoUrbanistico: "C.M.",
-    cpu: "R1a",
-    partida: "012345-6",
-  },
-];
-
-const getStatusStyles = (status: string): React.CSSProperties => {
-  const styles: { [key: string]: { backgroundColor: string; color: string } } = {
-    "Tomar Acción": { backgroundColor: "#669bbc", color: "#ffffff" },
-    "Tasación": { backgroundColor: "#dda15e", color: "#ffffff" },
-    "Evolucionando": { backgroundColor: "#219ebc", color: "#ffffff" },
-    "Disponible": { backgroundColor: "#ffb703", color: "#000000" },
-    "Descartado": { backgroundColor: "#0d1b2a", color: "#ffffff" },
-    "No vende": { backgroundColor: "#c1121f", color: "#ffffff" },
-    "Reservado": { backgroundColor: "#fb8500", color: "#ffffff" },
-    "Vendido": { backgroundColor: "#4f772d", color: "#ffffff" },
-  };
-
-  return styles[status] || {};
-};
-
+import { listings, getStatusStyles } from "@/lib/data";
 
 export default function LoteDetailPage() {
   const params = useParams<{ smp: string }>();
@@ -310,7 +154,7 @@ export default function LoteDetailPage() {
             </div>
         </div>
         <Link href={`/lotes/${listing.smp}/editar`}>
-            <Button><Edit className="mr-2 h-4 w-4"/> Editar lote</Button>
+            <Button variant="default"><Edit className="mr-2 h-4 w-4"/> Editar lote</Button>
         </Link>
       </div>
       
@@ -347,7 +191,7 @@ export default function LoteDetailPage() {
                     </div>
                      <div className="flex items-center pt-2">
                         <Avatar className="h-10 w-10 mr-4">
-                             <AvatarImage src={listing.agent.avatarUrl} data-ai-hint={listing.agent.aiHint} />
+                             <AvatarImage src={"https://placehold.co/100x100.png"} data-ai-hint={"person"} />
                             <AvatarFallback>{listing.agent.initials}</AvatarFallback>
                         </Avatar>
                         <div className="space-y-1">
@@ -361,7 +205,7 @@ export default function LoteDetailPage() {
             <div className="flex flex-col gap-2">
                 <Dialog open={isEditDialogOpen} onOpenChange={onDialogClose}>
                     <DialogTrigger asChild>
-                        <Button variant="outline"><Edit className="mr-2 h-4 w-4"/> Editar foto</Button>
+                        <Button variant="default"><Edit className="mr-2 h-4 w-4"/> Editar foto</Button>
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
@@ -643,9 +487,3 @@ export default function LoteDetailPage() {
     </div>
   );
 }
-
-    
-
-    
-
-    
