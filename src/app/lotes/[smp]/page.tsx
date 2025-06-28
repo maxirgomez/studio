@@ -19,7 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, MapPin, Scan, Ruler, Edit, Download, Upload, Library, FileText, User, Home, Mailbox, Building, Phone, Smartphone, Mail, Info, XCircle, Scaling, Percent, CreditCard, DollarSign, MessageSquare } from "lucide-react"
+import { ArrowLeft, MapPin, Scan, Ruler, Edit, Download, Upload, Library, FileText, User, Home, Mailbox, Building, Phone, Smartphone, Mail, Info, XCircle, Scaling, Percent, CreditCard, DollarSign, MessageSquare, Calendar } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -431,6 +431,13 @@ export default function LoteDetailPage() {
                       <CreditCard className="h-5 w-5 mr-3 text-muted-foreground" />
                       <span className="font-medium">Forma de Pago:</span>
                       <span className="ml-auto text-muted-foreground">A convenir</span>
+                    </div>
+                     <div className="flex items-center">
+                      <Calendar className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium">Fecha de Venta:</span>
+                      <span className="ml-auto text-muted-foreground">
+                        {listing.saleDate ? format(new Date(listing.saleDate), "dd/MM/yyyy") : "N/A"}
+                      </span>
                     </div>
                   </div>
                 </div>

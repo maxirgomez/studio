@@ -20,9 +20,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { useToast } from "@/hooks/use-toast"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Calendar as CalendarIcon } from "lucide-react"
 import { users, listings } from "@/lib/data"
 import { useEffect } from "react"
+import { cn } from "@/lib/utils"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
+
 
 const newLoteFormSchema = z.object({
   // Informacion del Lote
@@ -64,6 +70,7 @@ const newLoteFormSchema = z.object({
   valorVentaUSD: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
   incidenciaTasadaUSD: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
   formaDePago: z.string().min(1, "La forma de pago es requerida."),
+  fechaVenta: z.date().optional(),
 });
 
 
@@ -111,6 +118,7 @@ export default function NuevoLotePage() {
       valorVentaUSD: 0,
       incidenciaTasadaUSD: 0,
       formaDePago: "",
+      fechaVenta: undefined,
     },
     mode: "onChange",
   });
@@ -193,11 +201,11 @@ export default function NuevoLotePage() {
                 <CardDescription>Detalles principales y de gestión del lote.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                    <FormField control={form.control} name="frente" render={({ field }) => (
                     <FormItem className="lg:col-span-2">
                       <FormLabel>Calle</FormLabel>
-                      <FormControl><Input placeholder="Ej: Av. Santa Fe" {...field} /></FormControl>
+                      <FormControl><Input placeholder="Ej: Av. Santa Fe o SMP" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}/>
@@ -381,6 +389,47 @@ export default function NuevoLotePage() {
                             </FormItem>
                         )}
                     />
+                    <FormField
+                      control={form.control}
+                      name="fechaVenta"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col pt-2">
+                          <FormLabel>Fecha de Venta</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value ? (
+                                    format(field.value, "PPP", { locale: es })
+                                  ) : (
+                                    <span>Seleccionar fecha</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) =>
+                                  date > new Date() || date < new Date("1900-01-01")
+                                }
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                  </div>
               </CardContent>
             </Card>
@@ -389,5 +438,3 @@ export default function NuevoLotePage() {
     </Form>
   )
 }
-
-    
