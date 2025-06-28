@@ -63,45 +63,40 @@ export default function NuevoLotePage() {
   });
 
   const addressValue = form.watch("address");
-  const smpValue = form.watch("smp");
 
-  // Autocomplete SMP field from Address field
   useEffect(() => {
     if (addressValue) {
-      const foundListing = listings.find(l => l.address.toLowerCase() === addressValue.toLowerCase());
+      const foundListing = listings.find(l => 
+        l.address.toLowerCase() === addressValue.toLowerCase() || 
+        l.smp.toLowerCase() === addressValue.toLowerCase()
+      );
       if (foundListing) {
         form.setValue("smp", foundListing.smp, { shouldValidate: true });
-      } else {
-        // If address doesn't match, we assume user might be typing SMP in address field
-        // and let the next effect handle it. Or we could clear smp here too.
-        form.setValue("smp", addressValue, { shouldValidate: true });
-      }
-    }
-  }, [addressValue, form]);
-  
-  // Autocomplete other fields from SMP field
-  useEffect(() => {
-    if (smpValue) {
-      const foundListing = listings.find(l => l.smp.toLowerCase() === smpValue.toLowerCase());
-      if (foundListing) {
         form.setValue("neighborhood", foundListing.neighborhood, { shouldValidate: true });
         form.setValue("partida", foundListing.partida || "", { shouldValidate: true });
         form.setValue("area", foundListing.area, { shouldValidate: true });
         form.setValue("codigoUrbanistico", foundListing.codigoUrbanistico || "", { shouldValidate: true });
         form.setValue("cpu", foundListing.cpu || "", { shouldValidate: true });
-        if (addressValue !== foundListing.address) {
+        if (addressValue.toLowerCase() !== foundListing.address.toLowerCase()) {
             form.setValue("address", foundListing.address, { shouldValidate: true });
         }
       } else {
+        form.setValue("smp", "", { shouldValidate: true });
         form.setValue("neighborhood", "", { shouldValidate: false });
         form.setValue("partida", "", { shouldValidate: false });
         form.setValue("area", 0, { shouldValidate: false });
         form.setValue("codigoUrbanistico", "", { shouldValidate: false });
         form.setValue("cpu", "", { shouldValidate: false });
       }
+    } else {
+        form.setValue("smp", "", { shouldValidate: true });
+        form.setValue("neighborhood", "", { shouldValidate: false });
+        form.setValue("partida", "", { shouldValidate: false });
+        form.setValue("area", 0, { shouldValidate: false });
+        form.setValue("codigoUrbanistico", "", { shouldValidate: false });
+        form.setValue("cpu", "", { shouldValidate: false });
     }
-  }, [smpValue, form, addressValue]);
-
+  }, [addressValue, form]);
 
   function onSubmit(data: NewLoteFormValues) {
     console.log(data);
@@ -138,21 +133,21 @@ export default function NuevoLotePage() {
         <Card>
           <CardHeader>
             <CardTitle>Información Principal</CardTitle>
-            <CardDescription>Comience ingresando la dirección del lote. Los demás campos se autocompletarán.</CardDescription>
+            <CardDescription>Comience ingresando la dirección o SMP del lote. Los demás campos se autocompletarán.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 pt-2">
                <FormField control={form.control} name="address" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Dirección</FormLabel>
-                  <FormControl><Input placeholder="Ej: Av. Santa Fe 1060" {...field} /></FormControl>
+                  <FormLabel>Dirección o SMP</FormLabel>
+                  <FormControl><Input placeholder="Ej: Av. Santa Fe 1060 o 017-027-020A" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}/>
                <FormField control={form.control} name="smp" render={({ field }) => (
                 <FormItem>
                   <FormLabel>SMP (Sección-Manzana-Parcela)</FormLabel>
-                  <FormControl><Input placeholder="Se autocompleta con la dirección" {...field} /></FormControl>
+                  <FormControl><Input placeholder="Se autocompleta con la dirección" {...field} readOnly /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}/>
