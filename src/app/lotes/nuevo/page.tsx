@@ -182,202 +182,196 @@ export default function NuevoLotePage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Información del Lote</CardTitle>
-                    <CardDescription>Detalles principales y de gestión del lote.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Información del Lote</CardTitle>
+                <CardDescription>Detalles principales y de gestión del lote.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                   <FormField control={form.control} name="address" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dirección o SMP</FormLabel>
+                      <FormControl><Input placeholder="Ej: Av. Santa Fe 1060" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}/>
+                   <FormField control={form.control} name="smp" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>SMP</FormLabel>
+                      <FormControl><Input placeholder="Autocompletado" {...field} readOnly /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}/>
+                  <FormField control={form.control} name="agent" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Agente Asignado</FormLabel>
+                       <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder="Seleccionar agente..." /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {users.map(user => <SelectItem key={user.email} value={user.name}>{user.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}/>
+                  <FormField control={form.control} name="status" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Estado</FormLabel>
+                       <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder="Seleccionar estado..." /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {uniqueStatuses.map(status => <SelectItem key={status} value={status}>{status}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}/>
+                   <FormField control={form.control} name="origen" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Origen</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder="Seleccionar origen..." /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {uniqueOrigens.map(origen => <SelectItem key={origen} value={origen}>{origen}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}/>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Información Normativa</CardTitle>
+                    <CardDescription>Datos urbanísticos autocompletados a partir del SMP.</CardDescription>
+                </CardHeader>
+                <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                       <FormField control={form.control} name="address" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Dirección o SMP</FormLabel>
-                          <FormControl><Input placeholder="Ej: Av. Santa Fe 1060" {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}/>
-                       <FormField control={form.control} name="smp" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>SMP</FormLabel>
-                          <FormControl><Input placeholder="Autocompletado" {...field} readOnly /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}/>
-                      <FormField control={form.control} name="agent" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Agente Asignado</FormLabel>
-                           <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger><SelectValue placeholder="Seleccionar agente..." /></SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {users.map(user => <SelectItem key={user.email} value={user.name}>{user.name}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}/>
-                      <FormField control={form.control} name="status" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Estado</FormLabel>
-                           <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger><SelectValue placeholder="Seleccionar estado..." /></SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {uniqueStatuses.map(status => <SelectItem key={status} value={status}>{status}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}/>
-                       <FormField control={form.control} name="origen" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Origen</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger><SelectValue placeholder="Seleccionar origen..." /></SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {uniqueOrigens.map(origen => <SelectItem key={origen} value={origen}>{origen}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}/>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Información Normativa</CardTitle>
-                        <CardDescription>Datos urbanísticos autocompletados a partir del SMP.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                            <FormField control={form.control} name="codigoUrbanistico" render={({ field }) => (
-                                <FormItem><FormLabel>Código Urbanístico</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
-                            )}/>
-                            <FormField control={form.control} name="neighborhood" render={({ field }) => (
-                              <FormItem><FormLabel>Barrio</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
-                            )}/>
-                            <FormField control={form.control} name="area" render={({ field }) => (
-                              <FormItem><FormLabel>M² Estimados (Superficie de Parcela)</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
-                            )}/>
-                            <FormField control={form.control} name="cpu" render={({ field }) => (
-                                <FormItem><FormLabel>CPU</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
-                            )}/>
-                            <FormField control={form.control} name="partida" render={({ field }) => (
-                                <FormItem><FormLabel>Partida</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
-                            )}/>
-                            <FormField control={form.control} name="incidenciaUVA" render={({ field }) => (
-                                <FormItem><FormLabel>Incidencia UVA</FormLabel><FormControl><Input type="number" step="0.01" {...field} readOnly /></FormControl></FormItem>
-                            )}/>
-                            <FormField control={form.control} name="fot" render={({ field }) => (
-                                <FormItem><FormLabel>FOT</FormLabel><FormControl><Input type="number" step="0.1" {...field} readOnly /></FormControl></FormItem>
-                            )}/>
-                            <FormField control={form.control} name="alicuota" render={({ field }) => (
-                                <FormItem><FormLabel>Alícuota (%)</FormLabel><FormControl><Input type="number" step="0.01" {...field} readOnly /></FormControl></FormItem>
-                            )}/>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-            <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Información del propietario</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                      <FormField control={form.control} name="propietario" render={({ field }) => (
-                        <FormItem><FormLabel>Propietario</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                      )}/>
-                      <FormField control={form.control} name="fallecido" render={({ field }) => (
-                          <FormItem><FormLabel>Fallecido</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger></FormControl>
-                            <SelectContent><SelectItem value="Si">Sí</SelectItem><SelectItem value="No">No</SelectItem></SelectContent>
-                          </Select>
-                          <FormMessage /></FormItem>
-                      )}/>
-                      <FormField control={form.control} name="direccionContacto" render={({ field }) => (
-                        <FormItem><FormLabel>Dirección Contacto</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                      )}/>
-                      <FormField control={form.control} name="direccionAlternativa" render={({ field }) => (
-                        <FormItem><FormLabel>Dirección Alternativa</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                      )}/>
-                       <FormField control={form.control} name="localidad" render={({ field }) => (
-                        <FormItem><FormLabel>Localidad</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                      )}/>
-                      <FormField control={form.control} name="codigoPostal" render={({ field }) => (
-                        <FormItem><FormLabel>Código Postal</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                      )}/>
-                       <FormField control={form.control} name="email" render={({ field }) => (
-                        <FormItem><FormLabel>Correo Electrónico</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
-                      )}/>
-                       <FormField control={form.control} name="telefono1" render={({ field }) => (
-                        <FormItem><FormLabel>Teléfono 1</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                      )}/>
-                      <FormField control={form.control} name="telefono2" render={({ field }) => (
-                        <FormItem><FormLabel>Teléfono 2</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                      )}/>
-                       <FormField control={form.control} name="celular1" render={({ field }) => (
-                        <FormItem><FormLabel>Celular 1</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                      )}/>
-                      <FormField control={form.control} name="celular2" render={({ field }) => (
-                        <FormItem><FormLabel>Celular 2</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                      )}/>
-                      <FormField control={form.control} name="otrosDatos" render={({ field }) => (
-                        <FormItem className="md:col-span-2"><FormLabel>Otros Datos</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
-                      )}/>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Datos de Tasación</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                         <FormField control={form.control} name="m2Vendibles" render={({ field }) => (
-                          <FormItem><FormLabel>M2 Vendibles</FormLabel><FormControl><Input type="number" step="1" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormField control={form.control} name="codigoUrbanistico" render={({ field }) => (
+                            <FormItem><FormLabel>Código Urbanístico</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
                         )}/>
-                         <FormField control={form.control} name="valorVentaUSD" render={({ field }) => (
-                          <FormItem><FormLabel>Valor de Venta (USD)</FormLabel><FormControl><Input type="number" step="1000" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormField control={form.control} name="neighborhood" render={({ field }) => (
+                          <FormItem><FormLabel>Barrio</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
                         )}/>
-                         <FormField control={form.control} name="incidenciaTasadaUSD" render={({ field }) => (
-                          <FormItem><FormLabel>Incidencia Tasada (USD/m2)</FormLabel><FormControl><Input type="number" step="1" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormField control={form.control} name="area" render={({ field }) => (
+                          <FormItem><FormLabel>M² Estimados (Superficie de Parcela)</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
                         )}/>
-                     </div>
-                     <div className="mt-4">
-                        <FormField
-                            control={form.control}
-                            name="formaDePago"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Forma de Pago</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Seleccionar forma de pago..." />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="Cash">Cash</SelectItem>
-                                            <SelectItem value="Canje">Canje</SelectItem>
-                                            <SelectItem value="Cash/Canje">Cash/Canje</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        <FormField control={form.control} name="cpu" render={({ field }) => (
+                            <FormItem><FormLabel>CPU</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
+                        )}/>
+                        <FormField control={form.control} name="partida" render={({ field }) => (
+                            <FormItem><FormLabel>Partida</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
+                        )}/>
+                        <FormField control={form.control} name="incidenciaUVA" render={({ field }) => (
+                            <FormItem><FormLabel>Incidencia UVA</FormLabel><FormControl><Input type="number" step="0.01" {...field} readOnly /></FormControl></FormItem>
+                        )}/>
+                        <FormField control={form.control} name="fot" render={({ field }) => (
+                            <FormItem><FormLabel>FOT</FormLabel><FormControl><Input type="number" step="0.1" {...field} readOnly /></FormControl></FormItem>
+                        )}/>
+                        <FormField control={form.control} name="alicuota" render={({ field }) => (
+                            <FormItem><FormLabel>Alícuota (%)</FormLabel><FormControl><Input type="number" step="0.01" {...field} readOnly /></FormControl></FormItem>
+                        )}/>
                     </div>
-                  </CardContent>
-                </Card>
-            </div>
+                </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Información del propietario</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                  <FormField control={form.control} name="propietario" render={({ field }) => (
+                    <FormItem><FormLabel>Propietario</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )}/>
+                  <FormField control={form.control} name="fallecido" render={({ field }) => (
+                      <FormItem><FormLabel>Fallecido</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger></FormControl>
+                        <SelectContent><SelectItem value="Si">Sí</SelectItem><SelectItem value="No">No</SelectItem></SelectContent>
+                      </Select>
+                      <FormMessage /></FormItem>
+                  )}/>
+                  <FormField control={form.control} name="direccionContacto" render={({ field }) => (
+                    <FormItem><FormLabel>Dirección Contacto</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )}/>
+                  <FormField control={form.control} name="direccionAlternativa" render={({ field }) => (
+                    <FormItem><FormLabel>Dirección Alternativa</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )}/>
+                   <FormField control={form.control} name="localidad" render={({ field }) => (
+                    <FormItem><FormLabel>Localidad</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )}/>
+                  <FormField control={form.control} name="codigoPostal" render={({ field }) => (
+                    <FormItem><FormLabel>Código Postal</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )}/>
+                   <FormField control={form.control} name="email" render={({ field }) => (
+                    <FormItem><FormLabel>Correo Electrónico</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+                  )}/>
+                   <FormField control={form.control} name="telefono1" render={({ field }) => (
+                    <FormItem><FormLabel>Teléfono 1</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )}/>
+                  <FormField control={form.control} name="telefono2" render={({ field }) => (
+                    <FormItem><FormLabel>Teléfono 2</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )}/>
+                   <FormField control={form.control} name="celular1" render={({ field }) => (
+                    <FormItem><FormLabel>Celular 1</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )}/>
+                  <FormField control={form.control} name="celular2" render={({ field }) => (
+                    <FormItem><FormLabel>Celular 2</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )}/>
+                  <FormField control={form.control} name="otrosDatos" render={({ field }) => (
+                    <FormItem className="md:col-span-2"><FormLabel>Otros Datos</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+                  )}/>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Datos de Tasación</CardTitle>
+              </CardHeader>
+              <CardContent>
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                     <FormField control={form.control} name="m2Vendibles" render={({ field }) => (
+                      <FormItem><FormLabel>M2 Vendibles</FormLabel><FormControl><Input type="number" step="1" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="valorVentaUSD" render={({ field }) => (
+                      <FormItem><FormLabel>Valor de Venta (USD)</FormLabel><FormControl><Input type="number" step="1000" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="incidenciaTasadaUSD" render={({ field }) => (
+                      <FormItem><FormLabel>Incidencia Tasada (USD/m2)</FormLabel><FormControl><Input type="number" step="1" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField
+                        control={form.control}
+                        name="formaDePago"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Forma de Pago</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Seleccionar forma de pago..." />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="Cash">Cash</SelectItem>
+                                        <SelectItem value="Canje">Canje</SelectItem>
+                                        <SelectItem value="Cash/Canje">Cash/Canje</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                 </div>
+              </CardContent>
+            </Card>
         </div>
       </form>
     </Form>
