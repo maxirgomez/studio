@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
+import { useUser } from "@/context/UserContext";
 
 const formSchema = z.object({
   usuarioOEmail: z.string().min(1, { message: "El usuario o email es requerido." }).refine(
@@ -66,6 +67,8 @@ export function LoginForm() {
   const [lockUntil, setLockUntil] = useState<Date | null>(null);
   const [remaining, setRemaining] = useState<string>("");
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const { refreshUser } = useUser();
+  const [postLoginLoading, setPostLoginLoading] = useState(false);
 
   useEffect(() => {
     if (lockUntil) {
@@ -133,6 +136,8 @@ export function LoginForm() {
         title: "Login exitoso",
         description: `¡Bienvenido de nuevo, ${data.user.user || data.user.email}!`,
       });
+      setPostLoginLoading(true);
+      await refreshUser();
       // Si next es '/' o vacío, redirige a /lotes
       if (!nextUrl || nextUrl === "/") {
         router.push("/lotes");
@@ -173,6 +178,10 @@ export function LoginForm() {
         variant: "destructive",
       });
     }
+  }
+
+  if (postLoginLoading) {
+    return <div className="flex justify-center items-center h-64 text-lg font-semibold">Cargando tu información...</div>;
   }
 
   return (

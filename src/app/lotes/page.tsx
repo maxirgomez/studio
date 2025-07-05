@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import LotesClientPage from "@/components/dashboard/LotesClientPage";
+import LotesClientPage from "./../../components/dashboard/LotesClientPage";
 
 export default function LotesPage() {
   return (
