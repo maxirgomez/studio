@@ -1,5 +1,6 @@
 import { LoginForm } from "@/components/auth/login-form";
 import { BaigunRealtyLogo } from "@/components/ui/logo";
+import { Suspense } from "react";
 
 export default function LoginPage() {
   return (
@@ -22,7 +23,9 @@ export default function LoginPage() {
           <div className="flex flex-col items-center mb-8">
             <BaigunRealtyLogo className="h-20 w-auto" />
           </div>
-          <LoginForm />
+          <Suspense fallback={<div>Cargando formulario...</div>}>
+            <LoginForm />
+          </Suspense>
         </div>
       </div>
     </div>
