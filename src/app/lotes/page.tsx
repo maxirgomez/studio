@@ -1,9 +1,8 @@
-
 "use client";
 
 import Image from "next/image";
 import * as React from "react";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from "next/link";
 import {
@@ -225,213 +224,215 @@ export default function LotesPage() {
 
   
   return (
-    <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 lg:grid-cols-[280px_1fr]">
-      <div className="hidden lg:block">
-        <Card>
-          <CardHeader>
-            <CardTitle>Filtrar Lotes</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label>Origen</Label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    <span>{origenFilters.length > 0 ? `${origenFilters.length} seleccionados` : "Origenes"}</span>
-                    <ChevronDown className="h-4 w-4 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[250px]">
-                  <DropdownMenuLabel>Filtrar por Origen</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {uniqueOrigens.map((origen) => (
-                    <DropdownMenuCheckboxItem
-                      key={origen}
-                      checked={origenFilters.includes(origen)}
-                      onCheckedChange={() => handleMultiSelectFilterChange('origen', origen)}
-                    >
-                      {origen}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div className="space-y-2">
-              <Label>Estado</Label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    <span>{statusFilters.length > 0 ? `${statusFilters.length} seleccionados` : "Estados"}</span>
-                    <ChevronDown className="h-4 w-4 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[250px]">
-                  <DropdownMenuLabel>Filtrar por Estado</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {uniqueStatuses.map((status) => (
-                    <DropdownMenuCheckboxItem
-                      key={status}
-                      checked={statusFilters.includes(status)}
-                      onCheckedChange={() => handleMultiSelectFilterChange('status', status)}
-                    >
-                      {status}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div className="space-y-2">
-              <Label>Barrio</Label>
-               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    <span>{neighborhoodFilters.length > 0 ? `${neighborhoodFilters.length} seleccionados` : "Barrios"}</span>
-                    <ChevronDown className="h-4 w-4 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[250px]">
-                  <DropdownMenuLabel>Filtrar por Barrio</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {uniqueNeighborhoods.map((neighborhood) => (
-                    <DropdownMenuCheckboxItem
-                      key={neighborhood}
-                      checked={neighborhoodFilters.includes(neighborhood)}
-                      onCheckedChange={() => handleMultiSelectFilterChange('neighborhood', neighborhood)}
-                    >
-                      {neighborhood}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div className="space-y-2">
-              <Label>Agente</Label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    <span>{agentFilters.length > 0 ? `${agentFilters.length} seleccionados` : "Agentes"}</span>
-                    <ChevronDown className="h-4 w-4 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[250px]">
-                  <DropdownMenuLabel>Filtrar por Agente</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {users.map((user) => (
-                    <DropdownMenuCheckboxItem
-                      key={user.email}
-                      checked={agentFilters.includes(user.name)}
-                      onCheckedChange={() => handleMultiSelectFilterChange('agent', user.name)}
-                    >
-                      {user.name}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div className="space-y-4">
-              <Label>M² Estimados: {sliderValue[0]} - {sliderValue[1]}m²</Label>
-              <div className="flex gap-2">
-                 <Input
-                  type="number"
-                  placeholder="Min"
-                  value={areaInput[0]}
+    <Suspense fallback={<div>Cargando lotes...</div>}>
+      <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 lg:grid-cols-[280px_1fr]">
+        <div className="hidden lg:block">
+          <Card>
+            <CardHeader>
+              <CardTitle>Filtrar Lotes</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label>Origen</Label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      <span>{origenFilters.length > 0 ? `${origenFilters.length} seleccionados` : "Origenes"}</span>
+                      <ChevronDown className="h-4 w-4 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[250px]">
+                    <DropdownMenuLabel>Filtrar por Origen</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {uniqueOrigens.map((origen) => (
+                      <DropdownMenuCheckboxItem
+                        key={origen}
+                        checked={origenFilters.includes(origen)}
+                        onCheckedChange={() => handleMultiSelectFilterChange('origen', origen)}
+                      >
+                        {origen}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="space-y-2">
+                <Label>Estado</Label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      <span>{statusFilters.length > 0 ? `${statusFilters.length} seleccionados` : "Estados"}</span>
+                      <ChevronDown className="h-4 w-4 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[250px]">
+                    <DropdownMenuLabel>Filtrar por Estado</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {uniqueStatuses.map((status) => (
+                      <DropdownMenuCheckboxItem
+                        key={status}
+                        checked={statusFilters.includes(status)}
+                        onCheckedChange={() => handleMultiSelectFilterChange('status', status)}
+                      >
+                        {status}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="space-y-2">
+                <Label>Barrio</Label>
+                 <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      <span>{neighborhoodFilters.length > 0 ? `${neighborhoodFilters.length} seleccionados` : "Barrios"}</span>
+                      <ChevronDown className="h-4 w-4 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[250px]">
+                    <DropdownMenuLabel>Filtrar por Barrio</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {uniqueNeighborhoods.map((neighborhood) => (
+                      <DropdownMenuCheckboxItem
+                        key={neighborhood}
+                        checked={neighborhoodFilters.includes(neighborhood)}
+                        onCheckedChange={() => handleMultiSelectFilterChange('neighborhood', neighborhood)}
+                      >
+                        {neighborhood}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="space-y-2">
+                <Label>Agente</Label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      <span>{agentFilters.length > 0 ? `${agentFilters.length} seleccionados` : "Agentes"}</span>
+                      <ChevronDown className="h-4 w-4 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[250px]">
+                    <DropdownMenuLabel>Filtrar por Agente</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {users.map((user) => (
+                      <DropdownMenuCheckboxItem
+                        key={user.email}
+                        checked={agentFilters.includes(user.name)}
+                        onCheckedChange={() => handleMultiSelectFilterChange('agent', user.name)}
+                      >
+                        {user.name}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="space-y-4">
+                <Label>M² Estimados: {sliderValue[0]} - {sliderValue[1]}m²</Label>
+                <div className="flex gap-2">
+                   <Input
+                    type="number"
+                    placeholder="Min"
+                    value={areaInput[0]}
+                    min={minArea}
+                    max={maxArea}
+                    onChange={(e) => handleAreaInputChange(0, e.target.value)}
+                    onBlur={handleAreaInputBlur}
+                  />
+                  <Input
+                    type="number"
+                    placeholder="Max"
+                    value={areaInput[1]}
+                    min={minArea}
+                    max={maxArea}
+                    onChange={(e) => handleAreaInputChange(1, e.target.value)}
+                    onBlur={handleAreaInputBlur}
+                  />
+                </div>
+                <Slider 
+                  value={sliderValue}
+                  onValueChange={handleSliderVisualChange}
+                  onValueCommit={handleSliderFilterCommit}
                   min={minArea}
                   max={maxArea}
-                  onChange={(e) => handleAreaInputChange(0, e.target.value)}
-                  onBlur={handleAreaInputBlur}
-                />
-                <Input
-                  type="number"
-                  placeholder="Max"
-                  value={areaInput[1]}
-                  min={minArea}
-                  max={maxArea}
-                  onChange={(e) => handleAreaInputChange(1, e.target.value)}
-                  onBlur={handleAreaInputBlur}
+                  step={10}
                 />
               </div>
-              <Slider 
-                value={sliderValue}
-                onValueChange={handleSliderVisualChange}
-                onValueCommit={handleSliderFilterCommit}
-                min={minArea}
-                max={maxArea}
-                step={10}
-              />
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col items-start gap-2 pt-4 border-t">
-            <Label className="font-semibold">Filtros Activos:</Label>
-            {activeFilters.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                    {activeFilters.map(filter => (
-                        <Badge key={`${filter.key}-${filter.value}`} variant="secondary" className="flex items-center gap-1.5 pl-2">
-                            <span>{filter.type}: {filter.value}</span>
-                            <button onClick={() => handleRemoveFilter(filter.key, filter.value)} className="rounded-full p-0.5 text-muted-foreground hover:bg-background/50 hover:text-foreground">
-                                <X className="h-3 w-3" />
-                            </button>
-                        </Badge>
-                    ))}
-                </div>
-            ) : (
-                <p className="text-sm text-muted-foreground">Ningún filtro aplicado.</p>
-            )}
-          </CardFooter>
-        </Card>
-      </div>
+            </CardContent>
+            <CardFooter className="flex flex-col items-start gap-2 pt-4 border-t">
+              <Label className="font-semibold">Filtros Activos:</Label>
+              {activeFilters.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                      {activeFilters.map(filter => (
+                          <Badge key={`${filter.key}-${filter.value}`} variant="secondary" className="flex items-center gap-1.5 pl-2">
+                              <span>{filter.type}: {filter.value}</span>
+                              <button onClick={() => handleRemoveFilter(filter.key, filter.value)} className="rounded-full p-0.5 text-muted-foreground hover:bg-background/50 hover:text-foreground">
+                                  <X className="h-3 w-3" />
+                              </button>
+                          </Badge>
+                      ))}
+                  </div>
+              ) : (
+                  <p className="text-sm text-muted-foreground">Ningún filtro aplicado.</p>
+              )}
+            </CardFooter>
+          </Card>
+        </div>
 
-      <div className="flex flex-col">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Lotes</h2>
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="SMP o Dirección" className="pl-8" />
+        <div className="flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold">Lotes</h2>
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="SMP o Dirección" className="pl-8" />
+              </div>
+              <Link href="/lotes/nuevo">
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nuevo Lote
+                </Button>
+              </Link>
             </div>
-            <Link href="/lotes/nuevo">
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Nuevo Lote
-              </Button>
-            </Link>
           </div>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {listingsOnPage.map((listing) => (
+              <Link href={`/lotes/${listing.smp}`} key={listing.smp} className="block">
+                <ListingCard listing={listing} />
+              </Link>
+            ))}
+          </div>
+          {totalPages > 1 && (
+              <div className="mt-8 flex justify-center">
+                <Pagination>
+                  <PaginationContent>
+                    {currentPage > 1 && (
+                      <PaginationItem>
+                        <PaginationPrevious href={`${pathname}?${createQueryString({ page: currentPage - 1 })}`} />
+                      </PaginationItem>
+                    )}
+                    {[...Array(totalPages)].map((_, i) => (
+                      <PaginationItem key={i}>
+                        <PaginationLink 
+                          href={`${pathname}?${createQueryString({ page: i + 1 })}`}
+                          isActive={currentPage === i + 1}
+                        >
+                          {i + 1}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    {currentPage < totalPages && (
+                      <PaginationItem>
+                        <PaginationNext href={`${pathname}?${createQueryString({ page: currentPage + 1 })}`} />
+                      </PaginationItem>
+                    )}
+                  </PaginationContent>
+                </Pagination>
+              </div>
+          )}
         </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {listingsOnPage.map((listing) => (
-            <Link href={`/lotes/${listing.smp}`} key={listing.smp} className="block">
-              <ListingCard listing={listing} />
-            </Link>
-          ))}
-        </div>
-        {totalPages > 1 && (
-            <div className="mt-8 flex justify-center">
-              <Pagination>
-                <PaginationContent>
-                  {currentPage > 1 && (
-                    <PaginationItem>
-                      <PaginationPrevious href={`${pathname}?${createQueryString({ page: currentPage - 1 })}`} />
-                    </PaginationItem>
-                  )}
-                  {[...Array(totalPages)].map((_, i) => (
-                    <PaginationItem key={i}>
-                      <PaginationLink 
-                        href={`${pathname}?${createQueryString({ page: i + 1 })}`}
-                        isActive={currentPage === i + 1}
-                      >
-                        {i + 1}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-                  {currentPage < totalPages && (
-                    <PaginationItem>
-                      <PaginationNext href={`${pathname}?${createQueryString({ page: currentPage + 1 })}`} />
-                    </PaginationItem>
-                  )}
-                </PaginationContent>
-              </Pagination>
-            </div>
-        )}
       </div>
-    </div>
+    </Suspense>
   );
 }
