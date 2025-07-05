@@ -1,12 +1,11 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
-  signInWithEmailAndPassword,
   sendPasswordResetEmail,
   onAuthStateChanged,
   type UserCredential,
@@ -42,73 +41,108 @@ import {
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
-import { users } from "@/lib/data";
 
 const formSchema = z.object({
-  username: z.string().min(1, {
-    message: "El nombre de usuario es requerido.",
-  }),
-  password: z.string().min(1, {
-    message: "La contraseña no puede estar vacía.",
-  }),
+  usuarioOEmail: z.string().min(1, { message: "El usuario o email es requerido." }).refine(
+    (val) => {
+      if (val.includes("@")) {
+        // Validar formato de email
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+      }
+      return true;
+    },
+    { message: "El email no es válido." }
+  ),
+  password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
 });
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextUrl = searchParams.get("next");
   const { toast } = useToast();
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
+  const [lockUntil, setLockUntil] = useState<Date | null>(null);
+  const [remaining, setRemaining] = useState<string>("");
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        router.push("/lotes");
+    if (lockUntil) {
+      function updateRemaining() {
+        if (!lockUntil) return;
+        const now = new Date();
+        const diff = lockUntil.getTime() - now.getTime();
+        if (diff <= 0) {
+          setLockUntil(null);
+          setRemaining("");
+          if (intervalRef.current) clearInterval(intervalRef.current);
+        } else {
+          const min = Math.floor(diff / 60000);
+          const sec = Math.floor((diff % 60000) / 1000);
+          setRemaining(`${min}:${sec.toString().padStart(2, "0")}`);
+        }
       }
-    });
-    return () => unsubscribe();
-  }, [router]);
+      updateRemaining();
+      intervalRef.current = setInterval(updateRemaining, 1000);
+      return () => {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+      };
+    }
+  }, [lockUntil]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: "",
+      usuarioOEmail: "",
       password: "",
     },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const foundUser = users.find(user => user.username.toLowerCase() === values.username.toLowerCase());
-
-    if (!foundUser) {
-      toast({
-        title: "Error de inicio de sesión",
-        description: "El nombre de usuario o la contraseña son incorrectos.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
-      const userCredential: UserCredential = await signInWithEmailAndPassword(auth, foundUser.email, values.password);
-      const user = userCredential.user;
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ usuarioOEmail: values.usuarioOEmail, password: values.password }),
+      });
+      const data = await res.json();
+      if (res.status === 403 && data.error && data.error.includes("Demasiados intentos")) {
+        // Extraer fecha/hora del mensaje
+        const match = data.error.match(/despu[eé]s de (.+)$/i);
+        if (match) {
+          const until = new Date(match[1]);
+          setLockUntil(until);
+        }
+        toast({
+          title: "Demasiados intentos",
+          description: data.error,
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!res.ok) {
+        toast({
+          title: "Error de inicio de sesión",
+          description: data.error || "Usuario o contraseña incorrectos.",
+          variant: "destructive",
+        });
+        return;
+      }
       toast({
         title: "Login exitoso",
-        description: `¡Bienvenido de nuevo, ${user.displayName || user.email}!`,
+        description: `¡Bienvenido de nuevo, ${data.user.user || data.user.email}!`,
       });
-      router.push("/lotes");
-    } catch (error: any) {
-      console.error("Login failed:", error);
-      let description = "Ha ocurrido un error inesperado. Por favor, inténtelo de nuevo.";
-      
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        description = "El nombre de usuario o la contraseña son incorrectos.";
-      } else if (error.code === 'auth/invalid-email') {
-        description = "El formato del correo electrónico no es válido.";
+      // Si next es '/' o vacío, redirige a /lotes
+      if (!nextUrl || nextUrl === "/") {
+        router.push("/lotes");
+      } else {
+        router.push(nextUrl);
       }
-
+    } catch (error) {
       toast({
         title: "Error de inicio de sesión",
-        description: description,
+        description: "Ha ocurrido un error inesperado. Por favor, inténtelo de nuevo.",
         variant: "destructive",
       });
     }
@@ -147,22 +181,29 @@ export function LoginForm() {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl text-center">Iniciar Sesión</CardTitle>
           <CardDescription className="text-center">
-            Introduce tu nombre de usuario y contraseña para acceder
+            Introduce tu usuario o email y contraseña para acceder
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
+          {lockUntil ? (
+            <div className="text-center text-red-600 font-semibold">
+              Demasiados intentos fallidos.<br />
+              Intenta nuevamente en <span>{remaining}</span> minutos.
+            </div>
+          ) : null}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
-                name="username"
+                name="usuarioOEmail"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-bold">Nombre de Usuario</FormLabel>
+                    <FormLabel className="font-bold">Usuario o Email</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="nombredeusuario"
+                        placeholder="usuario o email"
                         {...field}
+                        disabled={!!lockUntil}
                       />
                     </FormControl>
                     <FormMessage />
@@ -176,20 +217,20 @@ export function LoginForm() {
                   <FormItem>
                     <div className="flex items-center">
                       <FormLabel className="font-bold">Contraseña</FormLabel>
-                       <DialogTrigger asChild>
-                         <Button variant="link" type="button" className="ml-auto inline-block px-0 text-sm">
-                            ¿Olvidaste tu contraseña?
-                         </Button>
+                      <DialogTrigger asChild>
+                        <Button variant="link" type="button" className="ml-auto inline-block px-0 text-sm">
+                          ¿Olvidaste tu contraseña?
+                        </Button>
                       </DialogTrigger>
                     </div>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
+                      <Input type="password" placeholder="••••••••" {...field} disabled={!!lockUntil} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full">
+              <Button type="submit" className="w-full" disabled={!!lockUntil}>
                 Iniciar Sesión
               </Button>
             </form>
@@ -230,4 +271,9 @@ export function LoginForm() {
       </DialogContent>
     </Dialog>
   );
+}
+
+export async function logout(router: any) {
+  await fetch("/api/logout", { method: "POST" });
+  router.push("/");
 }

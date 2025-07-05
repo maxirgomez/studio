@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -16,6 +15,7 @@ import {
   reauthenticateWithCredential,
 } from "firebase/auth"
 import { auth } from "@/lib/firebase"
+import { useUser } from "@/context/UserContext"
 
 import {
   Card,
@@ -48,58 +48,66 @@ import {
 } from "@/components/ui/alert-dialog"
 
 const profileFormSchema = z.object({
-  firstName: z.string().min(2, {
+  nombre: z.string().min(2, {
     message: "El nombre debe tener al menos 2 caracteres.",
   }),
-  lastName: z.string().min(2, {
+  apellido: z.string().min(2, {
     message: "El apellido debe tener al menos 2 caracteres.",
   }),
-  email: z.string().email({
+  mail: z.string().email({
     message: "Por favor, introduce una dirección de correo electrónico válida.",
   }),
+  password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }).optional().or(z.literal('')),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 export default function MyProfilePage() {
   const { toast } = useToast();
-  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const { user, loading, refreshUser } = useUser();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [isReauthDialogOpen, setIsReauthDialogOpen] = useState(false);
-  const [password, setPassword] = useState("");
-  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
+      nombre: "",
+      apellido: "",
+      mail: "",
+      password: "",
     },
     mode: "onChange",
   });
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        const name = currentUser.displayName || "";
-        const nameParts = name.split(" ");
-        const lastName = nameParts.pop() || "";
-        const firstName = nameParts.join(" ");
+    if (user) {
+      form.reset({
+        nombre: user.nombre || "",
+        apellido: user.apellido || "",
+        mail: user.mail || "",
+        password: "",
+      });
+      setPreviewUrl(user.foto_perfil || null);
+      setHasChanges(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
-        form.reset({
-          firstName: firstName,
-          lastName: lastName,
-          email: currentUser.email || "",
-        });
-        setPreviewUrl(currentUser.photoURL);
-      }
+  useEffect(() => {
+    if (!editMode) return;
+    const subscription = form.watch((values) => {
+      const changed =
+        values.nombre !== (user?.nombre || "") ||
+        values.apellido !== (user?.apellido || "") ||
+        values.mail !== (user?.mail || "") ||
+        values.password !== "" ||
+        !!selectedFile;
+      setHasChanges(changed);
     });
-
-    return () => unsubscribe();
-  }, [form]);
+    return () => subscription.unsubscribe();
+  }, [editMode, form, user, selectedFile]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -109,114 +117,84 @@ export default function MyProfilePage() {
         URL.revokeObjectURL(previewUrl);
       }
       setPreviewUrl(URL.createObjectURL(file));
+      setHasChanges(true);
     }
   };
 
-  const handleReauthenticateAndSubmit = async (data: ProfileFormValues) => {
-    if (!user || !user.email || !password) {
+  async function onSubmit(data: ProfileFormValues) {
+    if (!hasChanges) return;
+    if (!user) return;
+    // PATCH al backend para actualizar nombre, apellido, mail y contraseña
+    const res = await fetch("/api/me", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nombre: data.nombre,
+        apellido: data.apellido,
+        mail: data.mail,
+        password: data.password || undefined,
+      }),
+    });
+    if (res.ok) {
+      toast({ title: "Perfil actualizado" });
+      await refreshUser();
+      // Refrescar datos del usuario
+      const resUser = await fetch("/api/me");
+      if (resUser.ok) {
+        const { user: updatedUser } = await resUser.json();
+        form.reset({
+          nombre: updatedUser.nombre || "",
+          apellido: updatedUser.apellido || "",
+          mail: updatedUser.mail || "",
+          password: "",
+        });
+        setPreviewUrl(updatedUser.foto_perfil || null);
+      }
+    } else {
+      const err = await res.json();
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Se requiere la contraseña para actualizar el email.",
+        title: "Error al actualizar el perfil",
+        description: err.error || err.message || "",
       });
       return;
     }
-
-    try {
-      const credential = EmailAuthProvider.credential(user.email, password);
-      await reauthenticateWithCredential(user, credential);
-      await onSubmit(data, true); // Retry submit after reauthentication
-      setIsReauthDialogOpen(false);
-      setPassword("");
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error de Autenticación",
-        description: "La contraseña es incorrecta. Por favor, inténtalo de nuevo.",
+    // Subir imagen de perfil si hay archivo seleccionado
+    if (selectedFile) {
+      const formData = new FormData();
+      formData.append("avatar", selectedFile);
+      const resImg = await fetch("/api/me/avatar", {
+        method: "POST",
+        body: formData,
       });
-    }
-  };
-
-
-  async function onSubmit(data: ProfileFormValues, reauthenticated = false) {
-    if (!user) return;
-
-    const newDisplayName = `${data.firstName} ${data.lastName}`.trim();
-
-    // Update Display Name
-    if (newDisplayName !== user.displayName) {
-      try {
-        await updateProfile(user, {
-          displayName: newDisplayName,
-        });
-      } catch (error: any) {
+      if (resImg.ok) {
+        const { avatarUrl } = await resImg.json();
+        setPreviewUrl(avatarUrl);
+        toast({ title: "Imagen de perfil actualizada" });
+      } else {
         toast({
           variant: "destructive",
-          title: "Error al actualizar el nombre",
-          description: error.message,
+          title: "Error al subir la imagen de perfil",
         });
-        return;
       }
     }
-    
-    // Update Email
-    if (data.email !== user.email) {
-      setPendingEmail(data.email);
-      try {
-        await updateEmail(user, data.email);
-        toast({
-          title: "Email actualizado",
-          description: "Tu dirección de email ha sido actualizada.",
-        });
-        setPendingEmail(null);
-      } catch (error: any) {
-        if (error.code === 'auth/requires-recent-login' && !reauthenticated) {
-            setIsReauthDialogOpen(true);
-            return;
-        }
-        toast({
-            variant: "destructive",
-            title: "Error al actualizar el email",
-            description: error.message,
-        });
-        setPendingEmail(null);
-        return;
-      }
-    }
-
-    // TODO: Update Photo URL after implementing file storage
-    // if (selectedFile) { ... }
-
-    if (newDisplayName === user.displayName && data.email === user.email && !selectedFile) {
-       toast({
-        title: "Sin cambios",
-        description: "No se han detectado cambios en tu perfil.",
-      });
-      return;
-    }
-    
-    toast({
-      title: "Perfil Actualizado",
-      description: "Tus datos han sido guardados.",
-    });
+    setEditMode(false);
+    setHasChanges(false);
   }
-  
-  const { firstName, lastName } = form.watch();
-  const currentDisplayName = `${firstName || ""} ${lastName || ""}`.trim();
-  
-  const getInitials = (name?: string | null): string => {
-    if (name) {
-      const parts = name.split(' ').filter(Boolean);
-      if (parts.length > 1) {
-        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-      }
-      if(parts.length === 1 && parts[0].length > 0) {
-        return parts[0].substring(0,2).toUpperCase();
-      }
+
+  const getInitials = (nombre?: string, apellido?: string): string => {
+    if (nombre && apellido) {
+      return `${nombre[0] || ''}${apellido[0] || ''}`.toUpperCase();
     }
-    return user?.email?.substring(0,2).toUpperCase() || "AU";
+    if (nombre) {
+      return nombre.substring(0,2).toUpperCase();
+    }
+    return "AU";
   };
 
+  if (loading) {
+    return <div className="flex justify-center items-center h-64">Cargando perfil...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -233,23 +211,26 @@ export default function MyProfilePage() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="flex items-center gap-6">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src={previewUrl || user?.photoURL || ''} data-ai-hint="person" />
-                  <AvatarFallback>{getInitials(currentDisplayName)}</AvatarFallback>
+                  <AvatarImage src={previewUrl || ''} data-ai-hint="person" />
+                  <AvatarFallback>{getInitials(form.watch('nombre'), form.watch('apellido'))}</AvatarFallback>
                 </Avatar>
                 <div className="grid w-full max-w-sm items-center gap-1.5">
                   <Label htmlFor="picture">Foto de perfil</Label>
-                  <Input id="picture" type="file" onChange={handleFileChange} accept="image/*" />
+                  <Input id="picture" type="file" onChange={handleFileChange} accept="image/*" disabled={!editMode} />
+                  {!user?.foto_perfil && (
+                    <span className="text-xs text-red-500 mt-1">No tienes imagen de perfil. Sube una para personalizar tu cuenta.</span>
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="firstName"
+                  name="nombre"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Nombre</FormLabel>
                       <FormControl>
-                        <Input placeholder="Tu nombre" {...field} />
+                        <Input placeholder="Tu nombre" {...field} disabled={!editMode} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -257,12 +238,12 @@ export default function MyProfilePage() {
                 />
                 <FormField
                   control={form.control}
-                  name="lastName"
+                  name="apellido"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Apellido</FormLabel>
                       <FormControl>
-                        <Input placeholder="Tu apellido" {...field} />
+                        <Input placeholder="Tu apellido" {...field} disabled={!editMode} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -272,45 +253,45 @@ export default function MyProfilePage() {
 
               <FormField
                 control={form.control}
-                name="email"
+                name="mail"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="email@ejemplo.com" {...field} />
+                      <Input type="email" placeholder="email@ejemplo.com" {...field} disabled={!editMode} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit">Actualizar Perfil</Button>
+
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contraseña</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••••" {...field} disabled={!editMode} autoComplete="new-password" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {!editMode ? (
+                <Button type="button" onClick={() => setEditMode(true)}>
+                  Editar Perfil
+                </Button>
+              ) : (
+                <Button type="submit" disabled={!hasChanges}>
+                  Actualizar Perfil
+                </Button>
+              )}
             </form>
           </Form>
         </CardContent>
       </Card>
-      
-      <AlertDialog open={isReauthDialogOpen} onOpenChange={setIsReauthDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Se requiere reautenticación</AlertDialogTitle>
-            <AlertDialogDescription>
-              Por seguridad, por favor ingresa tu contraseña nuevamente para cambiar tu dirección de email.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <Input
-            type="password"
-            placeholder="Contraseña"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPassword("")}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleReauthenticateAndSubmit(form.getValues())}>
-              Confirmar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   )
 }

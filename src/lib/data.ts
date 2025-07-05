@@ -1,4 +1,6 @@
 import type { CSSProperties } from "react";
+import { Client } from 'pg';
+import pool from "@/lib/db";
 
 export const users = [
   {

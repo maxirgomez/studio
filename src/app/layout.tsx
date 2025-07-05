@@ -4,6 +4,8 @@ import { Inter } from 'next/font/google';
 import { cn } from '@/lib/utils';
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from '@/components/theme-provider';
+import { SessionGuard } from "@/components/session-guard";
+import { UserProvider } from "@/context/UserContext";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -20,14 +22,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={cn("min-h-screen bg-background font-sans antialiased", inter.variable)}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          disableTransitionOnChange
-        >
-          {children}
-          <Toaster />
-        </ThemeProvider>
+        <UserProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+          >
+            <SessionGuard />
+            {children}
+            <Toaster />
+          </ThemeProvider>
+        </UserProvider>
       </body>
     </html>
   );
