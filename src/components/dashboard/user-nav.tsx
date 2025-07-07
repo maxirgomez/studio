@@ -62,7 +62,7 @@ export function UserNav() {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user?.nombre || "Agente"}</p>
+            <p className="text-sm font-medium leading-none">{user?.nombre || "Agente"} {user?.apellido || "Apellido"}</p>
             <p className="text-xs leading-none text-muted-foreground">{user?.mail || "agente@baigun.realty"}</p>
           </div>
         </DropdownMenuLabel>
