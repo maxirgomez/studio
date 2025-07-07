@@ -212,7 +212,10 @@ export default function MyProfilePage() {
               <div className="flex items-center gap-6">
                 <Avatar className="h-20 w-20">
                   <AvatarImage src={previewUrl || ''} data-ai-hint="person" />
-                  <AvatarFallback>{getInitials(form.watch('nombre'), form.watch('apellido'))}</AvatarFallback>
+                  <AvatarFallback>{getInitials(
+                    form.watch('nombre') || user?.nombre,
+                    form.watch('apellido') || user?.apellido
+                  )}</AvatarFallback>
                 </Avatar>
                 <div className="grid w-full max-w-sm items-center gap-1.5">
                   <Label htmlFor="picture">Foto de perfil</Label>
