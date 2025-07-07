@@ -1,4 +1,3 @@
-
 "use client"
 
 import Link from "next/link";
@@ -330,7 +329,7 @@ const UserCard = ({ user }: { user: UserType }) => {
       <CardHeader className="flex flex-row items-center gap-4">
         <Avatar className="h-12 w-12">
           <AvatarImage src={user.avatarUrl} data-ai-hint={user.aiHint} />
-          <AvatarFallback>{user.initials}</AvatarFallback>
+          <AvatarFallback>{user.initials || (user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'US')}</AvatarFallback>
         </Avatar>
         <div>
           <CardTitle>{user.name}</CardTitle>

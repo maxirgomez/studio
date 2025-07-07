@@ -12,7 +12,37 @@ export async function GET(req: NextRequest) {
   }
   try {
     const payload = jwt.verify(token, JWT_SECRET);
-    return NextResponse.json({ user: payload });
+    const userId = typeof payload === 'object' && 'user' in payload ? payload.user : null;
+    if (!userId) {
+      return NextResponse.json({ error: "Token inválido" }, { status: 401 });
+    }
+    // Consultar la base de datos para obtener los datos actuales
+    const { rows } = await pool.query(
+      'SELECT nombre, mail, user, apellido, rol, foto_perfil FROM public.prefapp_users WHERE "user" = $1',
+      [userId]
+    );
+    if (rows.length === 0) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+    }
+    const user = rows[0];
+    // Si no hay apellido, intentar separar del nombre
+    let nombre = user.nombre || "";
+    let apellido = user.apellido || "";
+    if (!apellido && nombre.includes(" ")) {
+      const parts = nombre.split(" ");
+      apellido = parts.length > 1 ? parts.pop() : "";
+      nombre = parts.join(" ");
+    }
+    return NextResponse.json({
+      user: {
+        nombre: nombre,
+        apellido: apellido,
+        mail: user.mail,
+        user: user.user,
+        rol: user.rol,
+        foto_perfil: user.foto_perfil,
+      }
+    });
   } catch (err) {
     return NextResponse.json({ error: "Token inválido o expirado" }, { status: 401 });
   }
@@ -33,19 +63,22 @@ export async function PATCH(req: NextRequest) {
   if (!userId) {
     return NextResponse.json({ error: "Token inválido" }, { status: 401 });
   }
-  const { firstName, lastName, email, password } = await req.json();
-  const nombre = `${firstName} ${lastName}`.trim();
+  const { nombre, apellido, mail, password } = await req.json();
   const updates = [];
   const values = [];
-  if (nombre) {
+  if (nombre && typeof nombre === 'string' && nombre.trim()) {
     updates.push('nombre = $' + (values.length + 1));
-    values.push(nombre);
+    values.push(nombre.trim());
   }
-  if (email) {
+  if (apellido && typeof apellido === 'string' && apellido.trim()) {
+    updates.push('apellido = $' + (values.length + 1));
+    values.push(apellido.trim());
+  }
+  if (mail && typeof mail === 'string' && mail.trim()) {
     updates.push('mail = $' + (values.length + 1));
-    values.push(email);
+    values.push(mail.trim());
   }
-  if (password) {
+  if (password && typeof password === 'string' && password.trim()) {
     const hash = await bcrypt.hash(password, 10);
     updates.push('password = $' + (values.length + 1));
     values.push(hash);
@@ -53,7 +86,6 @@ export async function PATCH(req: NextRequest) {
   if (updates.length === 0) {
     return NextResponse.json({ success: false, message: "Sin cambios" });
   }
-  // user es único
   values.push(userId);
   const query = `UPDATE public.prefapp_users SET ${updates.join(", ")} WHERE "user" = $${values.length}`;
   await pool.query(query, values);
