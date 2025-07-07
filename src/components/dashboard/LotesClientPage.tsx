@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import * as React from "react";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from "next/link";
 import {
@@ -50,6 +50,7 @@ import LotesFilters from "@/components/lotes/LotesFilters";
 import LotesGrid from "@/components/lotes/LotesGrid";
 import { Listing } from "@/components/lotes/ListingCard";
 import LotesPagination from "@/components/lotes/LotesPagination";
+import ListingCardSkeleton from "@/components/lotes/ListingCardSkeleton";
 
 export default function LotesClientPage() {
   const router = useRouter();
@@ -180,6 +181,20 @@ export default function LotesClientPage() {
       });
   }
 
+  const [loadingReal, setLoadingReal] = useState(true);
+  const [minTimePassed, setMinTimePassed] = useState(false);
+  useEffect(() => {
+    setLoadingReal(true);
+    setMinTimePassed(false);
+    const timer = setTimeout(() => setMinTimePassed(true), 1000);
+    const realTimer = setTimeout(() => setLoadingReal(false), 1500); // Simulación de carga real
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(realTimer);
+    };
+  }, [searchParams]);
+  const loading = loadingReal || !minTimePassed;
+
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 lg:grid-cols-[280px_1fr]">
       <div className="hidden lg:block">
@@ -221,11 +236,13 @@ export default function LotesClientPage() {
             </Link>
           </div>
         </div>
-        {listingsOnPage.length === 0 ? (
-          <div className="flex justify-center items-center h-64 text-lg text-muted-foreground">No se encontraron lotes con los filtros seleccionados.</div>
-        ) : (
-          <LotesGrid listings={listingsOnPage} />
-        )}
+        <Suspense fallback={<ListingCardSkeleton />}>
+          {listingsOnPage.length === 0 && !loading ? (
+            <div className="flex justify-center items-center h-64 text-lg text-muted-foreground">No se encontraron lotes con los filtros seleccionados.</div>
+          ) : (
+            <LotesGrid listings={listingsOnPage} loading={loading} />
+          )}
+        </Suspense>
         <LotesPagination
           currentPage={currentPage}
           totalPages={totalPages}

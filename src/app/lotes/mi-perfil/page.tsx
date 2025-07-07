@@ -46,6 +46,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import ProfileCardSkeleton from "@/components/lotes/ProfileCardSkeleton"
 
 const profileFormSchema = z.object({
   nombre: z.string().min(2, {
@@ -69,6 +70,7 @@ export default function MyProfilePage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [minTimePassed, setMinTimePassed] = useState(false);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -108,6 +110,12 @@ export default function MyProfilePage() {
     });
     return () => subscription.unsubscribe();
   }, [editMode, form, user, selectedFile]);
+
+  useEffect(() => {
+    setMinTimePassed(false);
+    const timer = setTimeout(() => setMinTimePassed(true), 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -192,8 +200,8 @@ export default function MyProfilePage() {
     return "AU";
   };
 
-  if (loading) {
-    return <div className="flex justify-center items-center h-64">Cargando perfil...</div>;
+  if (loading || !minTimePassed) {
+    return <ProfileCardSkeleton />;
   }
 
   return (
