@@ -1,390 +1,54 @@
 "use client"
 
-import Link from "next/link";
-import * as React from "react";
-import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose,
-} from "@/components/ui/dialog"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { useToast } from "@/hooks/use-toast"
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { users, getStatusStyles } from "@/lib/data";
-import { Badge } from "@/components/ui/badge";
+import React, { useState } from "react";
+import UserList from "@/components/users/UserList";
+import UserDialog from "@/components/users/UserDialog";
+import { users } from "@/lib/data";
 
-type UserType = (typeof users)[0];
+// Agrupar usuarios por rol
+const usersByRole = users.reduce((acc, user) => {
+  (acc[user.role] = acc[user.role] || []).push(user);
+  return acc;
+}, {} as Record<string, typeof users>);
 
-const profileFormSchema = z.object({
-  firstName: z.string().min(2, {
-    message: "El nombre debe tener al menos 2 caracteres.",
-  }),
-  lastName: z.string().min(2, {
-    message: "El apellido debe tener al menos 2 caracteres.",
-  }),
-  email: z.string().email({
-    message: "Por favor, introduce una dirección de correo electrónico válida.",
-  }),
-  role: z.string({
-    required_error: "Por favor, selecciona un rol.",
-  }),
-});
+export default function ProfilePage() {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<"create" | "edit">("create");
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
-const createUserFormSchema = z.object({
-  firstName: z.string().min(2, {
-    message: "El nombre debe tener al menos 2 caracteres.",
-  }),
-  lastName: z.string().min(2, {
-    message: "El apellido debe tener al menos 2 caracteres.",
-  }),
-  username: z.string().min(3, {
-    message: "El nombre de usuario debe tener al menos 3 caracteres.",
-  }),
-  email: z.string().email({
-    message: "Por favor, introduce una dirección de correo electrónico válida.",
-  }),
-  role: z.string({
-    required_error: "Por favor, selecciona un rol.",
-  }),
-});
+  const handleCreate = () => {
+    setDialogMode("create");
+    setSelectedUser(null);
+    setDialogOpen(true);
+  };
 
+  const handleEdit = async (user: any) => {
+    setDialogMode("edit");
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/users?user=${encodeURIComponent(user.user || user.username)}`);
+      const data = await res.json();
+      if (res.ok && data.user) {
+        setSelectedUser(data.user);
+      } else {
+        setSelectedUser(user); // fallback
+      }
+    } catch (err) {
+      setSelectedUser(user); // fallback
+    }
+    setLoading(false);
+    setDialogOpen(true);
+  };
 
-type ProfileFormValues = z.infer<typeof profileFormSchema>;
-type CreateUserFormValues = z.infer<typeof createUserFormSchema>;
-
-function EditUserForm({ user, onFormSubmit }: { user: UserType, onFormSubmit: () => void }) {
-  const { toast } = useToast();
-  const nameParts = user.name.split(" ");
-  const lastName = nameParts.pop() || "";
-  const firstName = nameParts.join(" ");
-
-  const form = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileFormSchema),
-    defaultValues: {
-      firstName: firstName,
-      lastName: lastName,
-      email: user.email,
-      role: user.role,
-    },
-    mode: "onChange",
-  });
-
-  function onSubmit(data: ProfileFormValues) {
-    toast({
-      title: "Perfil Actualizado",
-      description: `Los datos de ${data.firstName} ${data.lastName} han sido guardados.`,
-    });
-    onFormSubmit();
-  }
-
-  return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="firstName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nombre</FormLabel>
-                <FormControl>
-                  <Input placeholder="Nombre" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="lastName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Apellido</FormLabel>
-                <FormControl>
-                  <Input placeholder="Apellido" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input type="email" placeholder="email@ejemplo.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="role"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Rol</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar un rol" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="Administrador">Administrador</SelectItem>
-                  <SelectItem value="Architect">Architect</SelectItem>
-                  <SelectItem value="Asesor">Asesor</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button type="button" variant="secondary">
-              Cancelar
-            </Button>
-          </DialogClose>
-          <Button type="submit">Guardar Cambios</Button>
-        </DialogFooter>
-      </form>
-    </Form>
-  )
-}
-
-function CreateUserForm({ onFormSubmit }: { onFormSubmit: () => void }) {
-  const { toast } = useToast();
-  const form = useForm<CreateUserFormValues>({
-    resolver: zodResolver(createUserFormSchema),
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      username: "",
-      email: "",
-    },
-    mode: "onChange",
-  });
-
-  function onSubmit(data: CreateUserFormValues) {
-    // Logic to create user in Firebase Auth and Firestore would go here.
-    toast({
-      title: "Usuario Creado",
-      description: `El usuario ${data.firstName} ${data.lastName} ha sido creado exitosamente.`,
-    });
-    onFormSubmit();
-  }
-
-  return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="firstName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nombre</FormLabel>
-                <FormControl>
-                  <Input placeholder="Nombre" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="lastName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Apellido</FormLabel>
-                <FormControl>
-                  <Input placeholder="Apellido" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <FormField
-          control={form.control}
-          name="username"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nombre de Usuario</FormLabel>
-              <FormControl>
-                <Input placeholder="nombredeusuario" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input type="email" placeholder="email@ejemplo.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="role"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Rol</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar un rol" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="Administrador">Administrador</SelectItem>
-                  <SelectItem value="Architect">Architect</SelectItem>
-                  <SelectItem value="Asesor">Asesor</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button type="button" variant="secondary">
-              Cancelar
-            </Button>
-          </DialogClose>
-          <Button type="submit">Crear Usuario</Button>
-        </DialogFooter>
-      </form>
-    </Form>
-  );
-}
-
-
-const UserCard = ({ user }: { user: UserType }) => {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const lotStatuses = [
-    { label: "Tomar Acción", count: user.lots.tomarAccion },
-    { label: "Tasación", count: user.lots.tasacion },
-    { label: "Evolucionando", count: user.lots.evolucionando },
-    { label: "Disponible", count: user.lots.disponible },
-    { label: "Reservado", count: user.lots.reservado },
-    { label: "Vendido", count: user.lots.vendido },
-    { label: "No vende", count: user.lots.noVende },
-    { label: "Descartado", count: user.lots.descartado },
-  ];
-
-  return(
-    <Card>
-      <CardHeader className="flex flex-row items-center gap-4">
-        <Avatar className="h-12 w-12">
-          <AvatarImage src={user.avatarUrl} data-ai-hint={user.aiHint} />
-          <AvatarFallback>{user.initials || (user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'US')}</AvatarFallback>
-        </Avatar>
-        <div>
-          <CardTitle>{user.name}</CardTitle>
-          <CardDescription>{user.username} &middot; {user.email}</CardDescription>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm font-medium mb-2 text-muted-foreground">Lotes asignados:</p>
-        <div className="flex flex-wrap gap-2">
-            {lotStatuses.map((status) => (
-              <Badge key={status.label} style={getStatusStyles(status.label)}>
-                {status.label}: {status.count}
-              </Badge>
-            ))}
-        </div>
-      </CardContent>
-      <CardFooter className="gap-2">
-        <Link href={`/lotes?agent=${encodeURIComponent(user.name)}`} className="w-full">
-          <Button className="w-full">Ver Lotes</Button>
-        </Link>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline">Editar</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Editar Perfil</DialogTitle>
-              <DialogDescription>
-                Realiza cambios en el perfil del usuario. Haz clic en guardar cuando termines.
-              </DialogDescription>
-            </DialogHeader>
-            <EditUserForm user={user} onFormSubmit={() => setIsDialogOpen(false)} />
-          </DialogContent>
-        </Dialog>
-      </CardFooter>
-    </Card>
-  );
-}
-
-
-export default function UsersPage() {
-   const [isCreateUserDialogOpen, setIsCreateUserDialogOpen] = useState(false);
-   const groupedUsers = users.reduce((acc, user) => {
-    (acc[user.role] = acc[user.role] || []).push(user);
-    return acc;
-  }, {} as Record<string, typeof users>);
-  
-  const roleOrder = ["Administrador", "Architect", "Asesor"];
-  const sortedRoles = Object.keys(groupedUsers).sort((a, b) => {
-    const indexA = roleOrder.indexOf(a);
-    const indexB = roleOrder.indexOf(b);
-    if (indexA === -1) return 1;
-    if (indexB === -1) return -1;
-    return indexA - indexB;
-  });
+  const handleSubmit = (values: any) => {
+    setLoading(true);
+    // Aquí irá la lógica real de crear/editar usuario
+    setTimeout(() => {
+      setLoading(false);
+      setDialogOpen(false);
+    }, 1500);
+  };
 
   return (
     <div className="space-y-8">
@@ -393,39 +57,17 @@ export default function UsersPage() {
           <h1 className="text-3xl font-bold tracking-tight">Usuarios</h1>
           <p className="text-muted-foreground">Administra los usuarios de tu organización.</p>
         </div>
-        <Dialog open={isCreateUserDialogOpen} onOpenChange={setIsCreateUserDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Crear Usuario
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Crear Nuevo Usuario</DialogTitle>
-              <DialogDescription>
-                Completa los datos para crear un nuevo usuario en el sistema.
-              </DialogDescription>
-            </DialogHeader>
-            <CreateUserForm onFormSubmit={() => setIsCreateUserDialogOpen(false)} />
-          </DialogContent>
-        </Dialog>
+        <button onClick={handleCreate} className="bg-blue-600 text-white px-4 py-2 rounded">Crear Usuario</button>
       </div>
-
-      <Accordion type="multiple" defaultValue={sortedRoles} className="w-full space-y-4">
-        {sortedRoles.map((role) => (
-          <AccordionItem value={role} key={role} className="border-none">
-            <AccordionTrigger className="p-0 hover:no-underline mb-4">
-              <h2 className="text-2xl font-bold">{role}</h2>
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {groupedUsers[role].map(user => <UserCard key={user.email} user={user} />)}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
+      <UserList onEditUser={handleEdit} />
+      <UserDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        mode={dialogMode}
+        user={selectedUser}
+        onSubmit={handleSubmit}
+        loading={loading}
+      />
     </div>
-  )
+  );
 }

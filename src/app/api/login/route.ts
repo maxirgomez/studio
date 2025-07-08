@@ -32,9 +32,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Demasiados intentos fallidos. Intenta nuevamente después de ${user.lock_until}` }, { status: 403 });
     }
 
-    // Validar contraseña (texto plano, sin hash)
-    console.log("[LOGIN] Comparando contraseña (texto plano)...");
-    const passwordMatch = password === user.password;
+    // Validar contraseña usando bcrypt
+    console.log("[LOGIN] Comparando contraseña con bcrypt...");
+    const passwordMatch = await bcrypt.compare(password, user.password);
     console.log("[LOGIN] ¿Password match?", passwordMatch);
     if (!passwordMatch) {
       // Incrementar failed_attempts
