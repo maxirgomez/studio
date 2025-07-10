@@ -52,6 +52,10 @@ import { Listing } from "@/components/lotes/ListingCard";
 import LotesPagination from "@/components/lotes/LotesPagination";
 import ListingCardSkeleton from "@/components/lotes/ListingCardSkeleton";
 
+function capitalizeWords(str: string) {
+  return str.replace(/\b\w+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+}
+
 export default function LotesClientPage() {
   const router = useRouter();
   const pathname = usePathname();
@@ -75,7 +79,17 @@ export default function LotesClientPage() {
   const [areaInput, setAreaInput] = useState<[string, string]>(['', '']);
   const [sliderValue, setSliderValue] = useState<[number, number]>([minArea, maxArea]);
   
-  const uniqueNeighborhoods = useMemo(() => [...new Set(listings.map(l => l.neighborhood))], []);
+  const [uniqueNeighborhoods, setUniqueNeighborhoods] = useState<string[]>([]);
+
+  useEffect(() => {
+    async function fetchBarrios() {
+      const res = await fetch('/api/lotes/barrios');
+      const data = await res.json();
+      setUniqueNeighborhoods(data.barrios || []);
+    }
+    fetchBarrios();
+  }, []);
+  
   const uniqueStatuses = useMemo(() => [...new Set(listings.map(l => l.status))], []);
   const uniqueOrigens = useMemo(() => [...new Set(listings.map(l => l.origen))], []);
   
@@ -161,13 +175,6 @@ export default function LotesClientPage() {
     });
   }, [agentFilters, neighborhoodFilters, minAreaFilter, maxAreaFilter, statusFilters, origenFilters]);
 
-  const totalPages = Math.ceil(filteredListings.length / listingsPerPage);
-  const listingsOnPage = filteredListings.slice(
-    (currentPage - 1) * listingsPerPage,
-    currentPage * listingsPerPage
-  ) as Listing[];
-
-
   const activeFilters: { type: string; value: string; key: string }[] = [];
   agentFilters.forEach(value => activeFilters.push({ type: 'Agente', value, key: 'agent' }));
   neighborhoodFilters.forEach(value => activeFilters.push({ type: 'Barrio', value, key: 'neighborhood' }));
@@ -195,6 +202,38 @@ export default function LotesClientPage() {
   }, [searchParams]);
   const loading = loadingReal || !minTimePassed;
 
+  // Estado para los lotes reales
+  const [realListings, setRealListings] = useState<Listing[]>([]);
+  const [loadingRealListings, setLoadingRealListings] = useState(true);
+  const [total, setTotal] = useState(0);
+
+  useEffect(() => {
+    setLoadingRealListings(true);
+    const fetchLotes = async () => {
+      const offset = (currentPage - 1) * listingsPerPage;
+      const params = new URLSearchParams();
+      params.set('limit', String(listingsPerPage));
+      params.set('offset', String(offset));
+      if (agentFilters.length > 0) params.set('agent', agentFilters.join(','));
+      if (neighborhoodFilters.length > 0) params.set('neighborhood', neighborhoodFilters.join(','));
+      if (statusFilters.length > 0) params.set('status', statusFilters.join(','));
+      if (origenFilters.length > 0) params.set('origen', origenFilters.join(','));
+      if (minAreaFilter !== minArea) params.set('minArea', String(minAreaFilter));
+      if (maxAreaFilter !== maxArea) params.set('maxArea', String(maxAreaFilter));
+      const res = await fetch(`/api/lotes?${params.toString()}`);
+      const data = await res.json();
+      const lotes = (data.lotes || []).map((lote: any) => ({
+        ...lote,
+        listingDate: lote.listingDate ? new Date(lote.listingDate) : null,
+        saleDate: lote.saleDate ? new Date(lote.saleDate) : null,
+      }));
+      setRealListings(lotes);
+      setTotal(data.total || 0);
+      setLoadingRealListings(false);
+    };
+    fetchLotes();
+  }, [currentPage, agentFilters, neighborhoodFilters, statusFilters, origenFilters, minAreaFilter, maxAreaFilter]);
+
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 lg:grid-cols-[280px_1fr]">
       <div className="hidden lg:block">
@@ -220,32 +259,12 @@ export default function LotesClientPage() {
           handleRemoveFilter={handleRemoveFilter}
         />
       </div>
-      <div className="flex flex-col">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Lotes</h2>
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="SMP o Dirección" className="pl-8" />
-            </div>
-            <Link href="/lotes/nuevo">
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Nuevo Lote
-              </Button>
-            </Link>
-          </div>
-        </div>
-        <Suspense fallback={<ListingCardSkeleton />}>
-          {listingsOnPage.length === 0 && !loading ? (
-            <div className="flex justify-center items-center h-64 text-lg text-muted-foreground">No se encontraron lotes con los filtros seleccionados.</div>
-          ) : (
-            <LotesGrid listings={listingsOnPage} loading={loading} />
-          )}
-        </Suspense>
+      {/* Restaurar layout de dos columnas: filtros a la izquierda, grilla a la derecha */}
+      <div className="lg:col-span-1">
+        <LotesGrid listings={realListings} loading={loadingRealListings} />
         <LotesPagination
           currentPage={currentPage}
-          totalPages={totalPages}
+          totalPages={Math.ceil(total / listingsPerPage)}
           createQueryString={createQueryString}
           pathname={pathname}
         />

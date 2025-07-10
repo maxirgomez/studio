@@ -22,6 +22,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'fotos.usig.buenosaires.gob.ar',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 };

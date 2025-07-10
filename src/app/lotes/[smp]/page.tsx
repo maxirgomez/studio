@@ -1,8 +1,7 @@
-
 "use client"
 
 import * as React from "react"
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useParams } from 'next/navigation'
@@ -37,11 +36,12 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
-import { listings, getStatusStyles } from "@/lib/data";
+import { getStatusStyles } from "@/lib/data";
+import { useSpinner } from "@/components/ui/SpinnerProvider";
 
 const PdfContent = React.forwardRef<
   HTMLDivElement,
-  { listing: (typeof listings)[0]; imageUrl: string | null | undefined }
+  { listing: any; imageUrl: string | null | undefined }
 >(({ listing, imageUrl }, ref) => {
   const sectionTitleStyle: React.CSSProperties = { fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '8px', borderBottom: '1px solid #ddd', paddingBottom: '4px', color: '#2D3746' };
   const fieldStyle: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '12px' };
@@ -91,10 +91,10 @@ const PdfContent = React.forwardRef<
       <div style={gridStyle}>
         <div>
           <div style={fieldStyle}><span style={labelStyle}>M2 Vendibles:</span> <span style={valueStyle}>{listing.m2Vendibles} m²</span></div>
-          <div style={fieldStyle}><span style={labelStyle}>Valor de Venta (USD):</span> <span style={valueStyle}>$ {listing.valorVentaUSD.toLocaleString('es-AR')}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Valor de Venta (USD):</span> <span style={valueStyle}>{typeof listing.valorVentaUSD === "number" ? `$ ${listing.valorVentaUSD.toLocaleString('es-AR')}` : "N/A"}</span></div>
         </div>
         <div>
-          <div style={fieldStyle}><span style={labelStyle}>Incidencia Tasada (USD/m2):</span> <span style={valueStyle}>$ {listing.incidenciaTasadaUSD.toLocaleString('es-AR')}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Incidencia Tasada (USD/m2):</span> <span style={valueStyle}>{typeof listing.incidenciaTasadaUSD === "number" ? `$ ${listing.incidenciaTasadaUSD.toLocaleString('es-AR')}` : "N/A"}</span></div>
           <div style={fieldStyle}><span style={labelStyle}>Forma de Pago:</span> <span style={valueStyle}>{listing.formaDePago}</span></div>
         </div>
       </div>
@@ -132,7 +132,9 @@ PdfContent.displayName = 'PdfContent';
 
 export default function LoteDetailPage() {
   const params = useParams<{ smp: string }>();
-  const listing = listings.find((l) => l.smp === params.smp);
+  const [listing, setListing] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [currentImageUrl, setCurrentImageUrl] = useState(listing?.imageUrl);
@@ -161,6 +163,33 @@ export default function LoteDetailPage() {
   const [newNote, setNewNote] = useState("");
   const pdfContentRef = useRef<HTMLDivElement>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const { hide } = useSpinner();
+
+  useEffect(() => {
+    async function fetchLote() {
+      setLoading(true);
+      setNotFound(false);
+      try {
+        const res = await fetch(`/api/lotes/${params.smp}`);
+        if (res.status === 404) {
+          setNotFound(true);
+          setListing(null);
+        } else {
+          const data = await res.json();
+          setListing(data.lote);
+        }
+      } catch (e) {
+        setNotFound(true);
+        setListing(null);
+      }
+      setLoading(false);
+    }
+    fetchLote();
+  }, [params.smp]);
+
+  useEffect(() => {
+    hide();
+  }, []);
 
   const handleAddNote = () => {
       if (newNote.trim() === "" || !listing) return;
@@ -278,7 +307,11 @@ export default function LoteDetailPage() {
     }
   };
 
-  if (!listing) {
+  if (loading) {
+    return <div>Cargando...</div>;
+  }
+
+  if (notFound || !listing) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center">
         <h1 className="text-4xl font-bold">Lote no encontrado</h1>
@@ -574,7 +607,7 @@ export default function LoteDetailPage() {
                     <div className="flex items-center">
                       <DollarSign className="h-5 w-5 mr-3 text-muted-foreground" />
                       <span className="font-medium">Valor de Venta (USD):</span>
-                      <span className="ml-auto text-muted-foreground">$ {listing.valorVentaUSD.toLocaleString('es-AR')}</span>
+                      <span className="ml-auto text-muted-foreground">{typeof listing.valorVentaUSD === "number" ? `$ ${listing.valorVentaUSD.toLocaleString('es-AR')}` : "N/A"}</span>
                     </div>
                      <div className="flex items-center">
                       <CreditCard className="h-5 w-5 mr-3 text-muted-foreground" />
@@ -586,7 +619,7 @@ export default function LoteDetailPage() {
                      <div className="flex items-center">
                       <DollarSign className="h-5 w-5 mr-3 text-muted-foreground" />
                       <span className="font-medium">Incidencia Tasada (USD/m2):</span>
-                      <span className="ml-auto text-muted-foreground">$ {listing.incidenciaTasadaUSD.toLocaleString('es-AR')}</span>
+                      <span className="ml-auto text-muted-foreground">{typeof listing.incidenciaTasadaUSD === "number" ? `$ ${listing.incidenciaTasadaUSD.toLocaleString('es-AR')}` : "N/A"}</span>
                     </div>
                      <div className="flex items-center">
                       <Calendar className="h-5 w-5 mr-3 text-muted-foreground" />

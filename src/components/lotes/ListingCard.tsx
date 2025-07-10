@@ -33,6 +33,10 @@ interface ListingCardProps {
   listing: Listing;
 }
 
+function capitalizeWords(str: string) {
+  return str.replace(/\b\w+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+}
+
 const ListingCard = ({ listing }: ListingCardProps) => (
   <Card className="overflow-hidden hover:shadow-lg transition-shadow">
     <CardContent className="p-0">
@@ -56,7 +60,7 @@ const ListingCard = ({ listing }: ListingCardProps) => (
         <h3 className="font-semibold text-lg">{listing.address}</h3>
         <div className="flex items-center text-sm text-muted-foreground">
           <MapPin className="h-4 w-4 mr-2" />
-          <span>{listing.neighborhood}</span>
+          <span>{capitalizeWords(listing.neighborhood)}</span>
         </div>
         <div className="flex items-center text-sm text-muted-foreground">
           <Scan className="h-4 w-4 mr-2" />

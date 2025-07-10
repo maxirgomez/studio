@@ -6,6 +6,9 @@ import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from '@/components/theme-provider';
 import { SessionGuard } from "@/components/session-guard";
 import { UserProvider } from "@/context/UserContext";
+import SpinnerProvider from "@/components/ui/SpinnerProvider";
+import SpinnerOverlay from "@/components/ui/SpinnerOverlay";
+import NavigationSpinnerHandler from "@/components/ui/NavigationSpinnerHandler";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -28,9 +31,13 @@ export default function RootLayout({
             defaultTheme="system"
             enableSystem
           >
-            <SessionGuard />
-            {children}
-            <Toaster />
+            <SpinnerProvider>
+              <NavigationSpinnerHandler />
+              <SessionGuard />
+              <SpinnerOverlay />
+              {children}
+              <Toaster />
+            </SpinnerProvider>
           </ThemeProvider>
         </UserProvider>
       </body>
