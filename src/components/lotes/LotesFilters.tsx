@@ -29,6 +29,7 @@ interface LotesFiltersProps {
   uniqueOrigens: string[];
   uniqueStatuses: string[];
   uniqueNeighborhoods: string[];
+  uniqueAgents: string[];
   users: any[];
   sliderValue: [number, number];
   minArea: number;
@@ -51,6 +52,7 @@ const LotesFilters: React.FC<LotesFiltersProps> = ({
   uniqueOrigens,
   uniqueStatuses,
   uniqueNeighborhoods,
+  uniqueAgents,
   users,
   sliderValue,
   minArea,
@@ -153,13 +155,13 @@ const LotesFilters: React.FC<LotesFiltersProps> = ({
           <DropdownMenuContent className="w-[250px]">
             <DropdownMenuLabel>Filtrar por Agente</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {users.map((user) => (
+            {uniqueAgents.map((agente) => (
               <DropdownMenuCheckboxItem
-                key={user.email}
-                checked={agentFilters.includes(user.name)}
-                onCheckedChange={() => handleMultiSelectFilterChange('agent', user.name)}
+                key={agente}
+                checked={agentFilters.includes(agente)}
+                onCheckedChange={() => handleMultiSelectFilterChange('agent', agente)}
               >
-                {user.name}
+                {agente}
               </DropdownMenuCheckboxItem>
             ))}
           </DropdownMenuContent>

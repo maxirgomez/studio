@@ -41,13 +41,15 @@ import { useSpinner } from "@/components/ui/SpinnerProvider";
 
 const PdfContent = React.forwardRef<
   HTMLDivElement,
-  { listing: any; imageUrl: string | null | undefined }
->(({ listing, imageUrl }, ref) => {
+  { listing: any; imageUrl: string | null | undefined; agenteUsuario?: any }
+>(({ listing, imageUrl, agenteUsuario }, ref) => {
   const sectionTitleStyle: React.CSSProperties = { fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '8px', borderBottom: '1px solid #ddd', paddingBottom: '4px', color: '#2D3746' };
   const fieldStyle: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '12px' };
   const labelStyle: React.CSSProperties = { fontWeight: 'bold', color: '#555' };
   const valueStyle: React.CSSProperties = { color: '#333', textAlign: 'right' };
   const gridStyle: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 24px' };
+
+  console.log('DEBUG PdfContent:', { agenteUsuario, agente: listing.agente });
 
   return (
     <div ref={ref} style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#333', padding: '40px', background: 'white', width: '210mm' }}>
@@ -66,7 +68,10 @@ const PdfContent = React.forwardRef<
       <h3 style={sectionTitleStyle}>Datos Principales</h3>
       <div style={gridStyle}>
         <div style={fieldStyle}><span style={labelStyle}>Estado:</span> <span style={valueStyle}>{listing.status}</span></div>
-        <div style={fieldStyle}><span style={labelStyle}>Agente:</span> <span style={valueStyle}>{listing.agent.name}</span></div>
+        <div style={fieldStyle}>
+          <span style={labelStyle}>Agente:</span>
+          <span style={valueStyle}>{agenteUsuario ? `${agenteUsuario.nombre} ${agenteUsuario.apellido}` : listing.agente}</span>
+        </div>
         <div style={fieldStyle}><span style={labelStyle}>Origen:</span> <span style={valueStyle}>{listing.origen}</span></div>
         <div style={fieldStyle}><span style={labelStyle}>SMP:</span> <span style={valueStyle}>{listing.smp}</span></div>
       </div>
@@ -105,20 +110,20 @@ const PdfContent = React.forwardRef<
       <h3 style={sectionTitleStyle}>Información del Propietario</h3>
       <div style={gridStyle}>
         <div>
-          <div style={fieldStyle}><span style={labelStyle}>Propietario:</span> <span style={valueStyle}>Juan Pérez</span></div>
-          <div style={fieldStyle}><span style={labelStyle}>Dirección Contacto:</span> <span style={valueStyle}>Calle Falsa 123</span></div>
-          <div style={fieldStyle}><span style={labelStyle}>Localidad:</span> <span style={valueStyle}>Buenos Aires, C1425</span></div>
-          <div style={fieldStyle}><span style={labelStyle}>Dirección Alternativa:</span> <span style={valueStyle}>Av. Siempreviva 742</span></div>
-          <div style={fieldStyle}><span style={labelStyle}>Fallecido:</span> <span style={valueStyle}>No</span></div>
-          <div style={fieldStyle}><span style={labelStyle}>Email:</span> <span style={valueStyle}>juan.perez@example.com</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Propietario:</span> <span style={valueStyle}>{listing.propietario}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Dirección Contacto:</span> <span style={valueStyle}>{listing.direccion}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Localidad:</span> <span style={valueStyle}>{listing.localidad}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Dirección Alternativa:</span> <span style={valueStyle}>{listing.direccionalt}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Fallecido:</span> <span style={valueStyle}>{listing.fallecido}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Email:</span> <span style={valueStyle}>{listing.mail}</span></div>
         </div>
         <div>
-          <div style={fieldStyle}><span style={labelStyle}>Teléfono 1:</span> <span style={valueStyle}>(011) 4555-5555</span></div>
-          <div style={fieldStyle}><span style={labelStyle}>Teléfono 2:</span> <span style={valueStyle}>(011) 4666-6666</span></div>
-          <div style={fieldStyle}><span style={labelStyle}>Teléfono 3:</span> <span style={valueStyle}>-</span></div>
-          <div style={fieldStyle}><span style={labelStyle}>Celular 1:</span> <span style={valueStyle}>(011) 15-1234-5678</span></div>
-          <div style={fieldStyle}><span style={labelStyle}>Celular 2:</span> <span style={valueStyle}>-</span></div>
-          <div style={fieldStyle}><span style={labelStyle}>Celular 3:</span> <span style={valueStyle}>-</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Teléfono 1:</span> <span style={valueStyle}>{listing.tel1}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Teléfono 2:</span> <span style={valueStyle}>{listing.tel2}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Teléfono 3:</span> <span style={valueStyle}>{listing.tel3}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Celular 1:</span> <span style={valueStyle}>{listing.cel1}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Celular 2:</span> <span style={valueStyle}>{listing.cel2}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Celular 3:</span> <span style={valueStyle}>{listing.cel3}</span></div>
         </div>
       </div>
       <div style={{ marginTop: '16px' }}>
@@ -164,6 +169,7 @@ export default function LoteDetailPage() {
   const pdfContentRef = useRef<HTMLDivElement>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const { hide } = useSpinner();
+  const [agenteUsuario, setAgenteUsuario] = useState<any | null>(null);
 
   useEffect(() => {
     async function fetchLote() {
@@ -174,13 +180,16 @@ export default function LoteDetailPage() {
         if (res.status === 404) {
           setNotFound(true);
           setListing(null);
+          setAgenteUsuario(null);
         } else {
           const data = await res.json();
           setListing(data.lote);
+          setAgenteUsuario(data.agenteUsuario || null);
         }
       } catch (e) {
         setNotFound(true);
         setListing(null);
+        setAgenteUsuario(null);
       }
       setLoading(false);
     }
@@ -325,6 +334,8 @@ export default function LoteDetailPage() {
     );
   }
 
+  console.log('DEBUG avatar:', { agenteUsuario, agente: listing.agente });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
@@ -349,20 +360,20 @@ export default function LoteDetailPage() {
         <div className="space-y-6 lg:col-span-1">
             <Card>
                 <CardContent className="p-0">
-                {currentImageUrl ? (
-                    <Image
-                        src={currentImageUrl}
-                        alt={listing.address}
-                        width={600}
-                        height={400}
-                        className="aspect-video object-cover rounded-lg"
-                        data-ai-hint={listing.aiHint}
-                    />
-                ) : (
-                    <div className="aspect-video bg-muted flex items-center justify-center rounded-lg">
-                        <p className="text-muted-foreground">Imagen no disponible</p>
-                    </div>
-                )}
+  {listing.foto_lote ? (
+    <Image
+      src={listing.foto_lote}
+      alt={listing.address}
+      width={600}
+      height={400}
+      className="aspect-video object-cover rounded-lg"
+      data-ai-hint={listing.aiHint}
+    />
+  ) : (
+    <div className="aspect-video bg-muted flex items-center justify-center rounded-lg">
+      <p className="text-muted-foreground">Imagen no disponible</p>
+    </div>
+  )}
                 </CardContent>
             </Card>
 
@@ -375,13 +386,23 @@ export default function LoteDetailPage() {
                         <span className="font-medium">Estado</span>
                         <Badge style={getStatusStyles(listing.status)}>{listing.status}</Badge>
                     </div>
-                     <div className="flex items-center pt-2">
+                    <div className="flex items-center pt-2">
                         <Avatar className="h-10 w-10 mr-4">
-                             <AvatarImage src={"https://placehold.co/100x100.png"} data-ai-hint={"person"} />
-                            <AvatarFallback>{listing.agent.initials}</AvatarFallback>
+                            {agenteUsuario && agenteUsuario.foto_perfil ? (
+                                <AvatarImage src={agenteUsuario.foto_perfil} />
+                            ) : null}
+                            <AvatarFallback>
+                                {agenteUsuario
+                                  ? agenteUsuario.iniciales
+                                  : (listing.agente ? listing.agente[0].toUpperCase() : "?")}
+                            </AvatarFallback>
                         </Avatar>
                         <div className="space-y-1">
-                            <p className="font-medium">{listing.agent.name}</p>
+                            <p className="font-medium">
+                                {agenteUsuario
+                                    ? `${agenteUsuario.nombre} ${agenteUsuario.apellido}`
+                                    : listing.agente}
+                            </p>
                             <p className="text-sm text-muted-foreground">Agente a cargo</p>
                         </div>
                     </div>
@@ -518,74 +539,69 @@ export default function LoteDetailPage() {
                       <div className="flex items-center">
                           <User className="h-5 w-5 mr-3 text-muted-foreground" />
                           <span className="font-medium">Propietario:</span>
-                          <span className="ml-auto text-muted-foreground">Juan Pérez</span>
+                          <span className="ml-auto text-muted-foreground">{listing.propietario}</span>
                       </div>
                       <div className="flex items-center">
                           <Home className="h-5 w-5 mr-3 text-muted-foreground" />
                           <span className="font-medium">Direccion Contacto:</span>
-                          <span className="ml-auto text-muted-foreground">Calle Falsa 123</span>
+                          <span className="ml-auto text-muted-foreground">{listing.direccion}</span>
                       </div>
                       <div className="flex items-center">
                           <Mailbox className="h-5 w-5 mr-3 text-muted-foreground" />
                           <span className="font-medium">Codigo Postal:</span>
-                          <span className="ml-auto text-muted-foreground">C1425</span>
+                          <span className="ml-auto text-muted-foreground">{listing.cp}</span>
                       </div>
                       <div className="flex items-center">
                           <Building className="h-5 w-5 mr-3 text-muted-foreground" />
                           <span className="font-medium">Localidad:</span>
-                          <span className="ml-auto text-muted-foreground">Buenos Aires</span>
+                          <span className="ml-auto text-muted-foreground">{listing.localidad}</span>
                       </div>
                       <div className="flex items-center">
                           <Home className="h-5 w-5 mr-3 text-muted-foreground" />
                           <span className="font-medium">Direccion Alternativa:</span>
-                          <span className="ml-auto text-muted-foreground">Av. Siempreviva 742</span>
+                          <span className="ml-auto text-muted-foreground">{listing.direccionalt}</span>
                       </div>
                       <div className="flex items-center">
                           <XCircle className="h-5 w-5 mr-3 text-muted-foreground" />
                           <span className="font-medium">Fallecido:</span>
-                          <span className="ml-auto text-muted-foreground">No</span>
+                          <span className="ml-auto text-muted-foreground">{listing.fallecido}</span>
                       </div>
                        <div className="flex items-center">
-                          <Info className="h-5 w-5 mr-3 text-muted-foreground" />
-                          <span className="font-medium">Otros Datos:</span>
-                          <span className="ml-auto text-muted-foreground">Contactar solo por la mañana.</span>
+                          <Mail className="h-5 w-5 mr-3 text-muted-foreground" />
+                          <span className="font-medium">Correo Electrónico:</span>
+                          <span className="ml-auto text-muted-foreground truncate">{listing.mail}</span>
                       </div>
                     </div>
                     <div className="space-y-4">
                       <div className="flex items-center">
                           <Phone className="h-5 w-5 mr-3 text-muted-foreground" />
                           <span className="font-medium">Teléfono 1:</span>
-                          <span className="ml-auto text-muted-foreground">(011) 4555-5555</span>
+                          <span className="ml-auto text-muted-foreground">{listing.tel1}</span>
                       </div>
                       <div className="flex items-center">
                           <Phone className="h-5 w-5 mr-3 text-muted-foreground" />
                           <span className="font-medium">Teléfono 2:</span>
-                          <span className="ml-auto text-muted-foreground">(011) 4666-6666</span>
+                          <span className="ml-auto text-muted-foreground">{listing.tel2}</span>
                       </div>
                       <div className="flex items-center">
                           <Phone className="h-5 w-5 mr-3 text-muted-foreground" />
                           <span className="font-medium">Teléfono 3:</span>
-                          <span className="ml-auto text-muted-foreground">-</span>
+                          <span className="ml-auto text-muted-foreground">{listing.tel3}</span>
                       </div>
                       <div className="flex items-center">
                           <Smartphone className="h-5 w-5 mr-3 text-muted-foreground" />
                           <span className="font-medium">Celular 1:</span>
-                          <span className="ml-auto text-muted-foreground">(011) 15-1234-5678</span>
+                          <span className="ml-auto text-muted-foreground">{listing.cel1}</span>
                       </div>
                       <div className="flex items-center">
                           <Smartphone className="h-5 w-5 mr-3 text-muted-foreground" />
                           <span className="font-medium">Celular 2:</span>
-                          <span className="ml-auto text-muted-foreground">-</span>
+                          <span className="ml-auto text-muted-foreground">{listing.cel2}</span>
                       </div>
                       <div className="flex items-center">
                           <Smartphone className="h-5 w-5 mr-3 text-muted-foreground" />
                           <span className="font-medium">Celular 3:</span>
-                          <span className="ml-auto text-muted-foreground">-</span>
-                      </div>
-                      <div className="flex items-center">
-                          <Mail className="h-5 w-5 mr-3 text-muted-foreground" />
-                          <span className="font-medium">Correo Electrónico:</span>
-                          <span className="ml-auto text-muted-foreground truncate">juan.perez@example.com</span>
+                          <span className="ml-auto text-muted-foreground">{listing.cel3}</span>
                       </div>
                     </div>
                   </div>
@@ -633,6 +649,7 @@ export default function LoteDetailPage() {
               </CardContent>
             </Card>
             
+            {/*
             <Card>
                 <CardHeader>
                     <CardTitle>Seguimiento del Lote</CardTitle>
@@ -642,7 +659,7 @@ export default function LoteDetailPage() {
                         <div className="flex gap-4">
                             <Avatar>
                                 <AvatarImage src="https://placehold.co/100x100.png" data-ai-hint="person" />
-                                <AvatarFallback>{listing.agent.initials}</AvatarFallback>
+                                <AvatarFallback>AN</AvatarFallback>
                             </Avatar>
                             <div className="w-full space-y-2">
                                 <Textarea
@@ -661,7 +678,9 @@ export default function LoteDetailPage() {
                                 <div key={index} className="flex gap-4">
                                     <Avatar>
                                         <AvatarImage src={note.avatarUrl} data-ai-hint={note.aiHint} />
-                                        <AvatarFallback>{note.initials}</AvatarFallback>
+                                        <AvatarFallback>
+                                            {note.initials ? note.initials : (note.user ? note.user[0].toUpperCase() : "?")}
+                                        </AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1">
                                         <div className="flex items-center justify-between">
@@ -678,11 +697,12 @@ export default function LoteDetailPage() {
                     </div>
                 </CardContent>
             </Card>
+            */}
         </div>
       </div>
       <div className="absolute -left-[9999px] -top-[9999px]">
         <div ref={pdfContentRef}>
-          {listing && <PdfContent listing={listing} imageUrl={currentImageUrl} />}
+          {listing && <PdfContent ref={pdfContentRef} listing={listing} imageUrl={currentImageUrl} agenteUsuario={agenteUsuario} />}
         </div>
       </div>
     </div>

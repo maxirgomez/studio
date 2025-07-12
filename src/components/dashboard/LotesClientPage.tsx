@@ -80,6 +80,9 @@ export default function LotesClientPage() {
   const [sliderValue, setSliderValue] = useState<[number, number]>([minArea, maxArea]);
   
   const [uniqueNeighborhoods, setUniqueNeighborhoods] = useState<string[]>([]);
+  const [uniqueStatuses, setUniqueStatuses] = useState<string[]>([]);
+  const [uniqueOrigens, setUniqueOrigens] = useState<string[]>([]);
+  const [uniqueAgents, setUniqueAgents] = useState<string[]>([]);
 
   useEffect(() => {
     async function fetchBarrios() {
@@ -89,9 +92,33 @@ export default function LotesClientPage() {
     }
     fetchBarrios();
   }, []);
+
+  useEffect(() => {
+    async function fetchEstados() {
+      const res = await fetch('/api/lotes/estados');
+      const data = await res.json();
+      setUniqueStatuses(data.estados || []);
+    }
+    fetchEstados();
+  }, []);
   
-  const uniqueStatuses = useMemo(() => [...new Set(listings.map(l => l.status))], []);
-  const uniqueOrigens = useMemo(() => [...new Set(listings.map(l => l.origen))], []);
+  useEffect(() => {
+    async function fetchOrigenes() {
+      const res = await fetch('/api/lotes/origenes');
+      const data = await res.json();
+      setUniqueOrigens(data.origenes || []);
+    }
+    fetchOrigenes();
+  }, []);
+
+  useEffect(() => {
+    async function fetchAgentes() {
+      const res = await fetch('/api/lotes/agentes');
+      const data = await res.json();
+      setUniqueAgents(data.agentes || []);
+    }
+    fetchAgentes();
+  }, []);
   
   useEffect(() => {
     setAreaInput([String(minAreaFilter), String(maxAreaFilter)]);
@@ -245,6 +272,7 @@ export default function LotesClientPage() {
           uniqueOrigens={uniqueOrigens}
           uniqueStatuses={uniqueStatuses}
           uniqueNeighborhoods={uniqueNeighborhoods}
+          uniqueAgents={uniqueAgents}
           users={users}
           sliderValue={sliderValue}
           minArea={minArea}
