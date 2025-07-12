@@ -4,6 +4,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useParams, useRouter } from 'next/navigation'
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -26,14 +27,15 @@ import { Calendar } from "@/components/ui/calendar"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { cn } from "@/lib/utils"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const editLoteFormSchema = z.object({
-  propietario: z.string().min(2, "El nombre es requerido."),
-  direccionContacto: z.string(),
-  codigoPostal: z.string(),
-  localidad: z.string(),
+  propietario: z.string().optional(),
+  direccionContacto: z.string().optional(),
+  codigoPostal: z.string().optional(),
+  localidad: z.string().optional(),
   direccionAlternativa: z.string().optional(),
-  fallecido: z.string(),
+  fallecido: z.string().optional(),
   otrosDatos: z.string().max(200, "Máximo 200 caracteres.").optional(),
   telefono1: z.string().optional(),
   telefono2: z.string().optional(),
@@ -43,10 +45,10 @@ const editLoteFormSchema = z.object({
   celular3: z.string().optional(),
   email: z.string().email("Email inválido.").or(z.literal("")).optional(),
   
-  m2Vendibles: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
-  valorVentaUSD: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
-  incidenciaTasadaUSD: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
-  formaDePago: z.string().min(1, "La forma de pago es requerida."),
+  m2Vendibles: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.").optional()),
+  valorVentaUSD: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.").optional()),
+  incidenciaTasadaUSD: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.").optional()),
+  formaDePago: z.string().optional(),
   fechaVenta: z.date().optional(),
 });
 
@@ -56,35 +58,98 @@ export default function LoteEditPage() {
   const params = useParams<{ smp: string }>();
   const router = useRouter();
   const { toast } = useToast();
-  const listing = listings.find((l) => l.smp === params.smp);
+
+  // Estado para el lote real
+  const [listing, setListing] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [saving, setSaving] = useState(false); // Nuevo estado para loader
+
+  useEffect(() => {
+    async function fetchLote() {
+      setLoading(true);
+      setNotFound(false);
+      try {
+        const res = await fetch(`/api/lotes/${params.smp}`);
+        if (res.status === 404) {
+          setNotFound(true);
+          setListing(null);
+        } else {
+          const data = await res.json();
+          setListing(data.lote);
+        }
+      } catch (e) {
+        setNotFound(true);
+        setListing(null);
+      }
+      setLoading(false);
+    }
+    fetchLote();
+  }, [params.smp]);
+
+  // Valores por defecto SIEMPRE definidos
+  const defaultFormValues: EditLoteFormValues = {
+    propietario: listing?.propietario ?? "",
+    direccionContacto: listing?.direccion ?? "",
+    codigoPostal: listing?.cp ?? "",
+    localidad: listing?.localidad ?? "",
+    direccionAlternativa: listing?.direccionalt ?? "",
+    fallecido: listing?.fallecido ?? "No",
+    otrosDatos: listing?.otrosDatos ?? "",
+    telefono1: listing?.tel1 ?? "",
+    telefono2: listing?.tel2 ?? "",
+    telefono3: listing?.tel3 ?? "",
+    celular1: listing?.cel1 ?? "",
+    celular2: listing?.cel2 ?? "",
+    celular3: listing?.cel3 ?? "",
+    email: listing?.email ?? "", // CAMBIO mail -> email
+    m2Vendibles: listing?.m2Vendibles ?? listing?.m2vendibles ?? 0, // CAMBIO m2_vendibles -> m2vendibles
+    valorVentaUSD: listing?.valorVentaUSD ?? listing?.vventa ?? 0, // CAMBIO valor_venta_usd -> valorventausd
+    incidenciaTasadaUSD: listing?.incidenciaTasadaUSD ?? listing?.inctasada ?? 0,
+    formaDePago: listing?.formaDePago ?? listing?.fpago ?? "",
+    fechaVenta: listing?.fechaVenta ? new Date(listing.fechaVenta) : (listing?.fventa ? new Date(listing.fventa) : undefined), // CAMBIO fechaventa -> fventa
+  };
 
   const form = useForm<EditLoteFormValues>({
     resolver: zodResolver(editLoteFormSchema),
-    defaultValues: {
-      propietario: "Juan Pérez",
-      direccionContacto: "Calle Falsa 123",
-      codigoPostal: "C1425",
-      localidad: "Buenos Aires",
-      direccionAlternativa: "Av. Siempreviva 742",
-      fallecido: "No",
-      otrosDatos: "Contactar solo por la mañana.",
-      telefono1: "(011) 4555-5555",
-      telefono2: "(011) 4666-6666",
-      telefono3: "-",
-      celular1: "(011) 15-1234-5678",
-      celular2: "-",
-      celular3: "-",
-      email: "juan.perez@example.com",
-      m2Vendibles: 555,
-      valorVentaUSD: 1200000,
-      incidenciaTasadaUSD: 2162,
-      formaDePago: "A convenir",
-      fechaVenta: listing?.saleDate ? new Date(listing.saleDate) : undefined,
-    },
+    defaultValues: defaultFormValues,
     mode: "onChange",
   });
 
-  if (!listing) {
+  // Resetear el formulario cuando llega el lote real
+  useEffect(() => {
+    if (listing) {
+      form.reset({
+        propietario: listing.propietario ?? "",
+        direccionContacto: listing.direccion ?? "",
+        codigoPostal: listing.cp ?? "",
+        localidad: listing.localidad ?? "",
+        direccionAlternativa: listing.direccionalt ?? "",
+        fallecido: listing.fallecido ?? "No",
+        otrosDatos: listing.otrosDatos ?? "",
+        telefono1: listing.tel1 ?? "",
+        telefono2: listing.tel2 ?? "",
+        telefono3: listing.tel3 ?? "",
+        celular1: listing.cel1 ?? "",
+        celular2: listing.cel2 ?? "",
+        celular3: listing.cel3 ?? "",
+        email: listing.email ?? "", // CAMBIO mail -> email
+        m2Vendibles: listing.m2Vendibles ?? listing.m2vendibles ?? 0, // CAMBIO m2_vendibles -> m2vendibles
+        valorVentaUSD: listing.valorVentaUSD ?? listing.vventa ?? 0, // CAMBIO valor_venta_usd -> valorventausd
+        incidenciaTasadaUSD: listing.incidenciaTasadaUSD ?? listing.inctasada ?? 0,
+        formaDePago: listing.formaDePago ?? listing.fpago ?? "",
+        fechaVenta: listing.fechaVenta ? new Date(listing.fechaVenta) : (listing.fventa ? new Date(listing.fventa) : undefined), // CAMBIO fechaventa -> fventa
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listing]);
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-full">Cargando...</div>;
+  }
+
+  if (notFound || !listing) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center">
         <h1 className="text-4xl font-bold">Lote no encontrado</h1>
@@ -98,17 +163,78 @@ export default function LoteEditPage() {
     );
   }
   
-  function onSubmit(data: EditLoteFormValues) {
-    toast({
-      title: "Lote Actualizado",
-      description: `Los datos del lote en ${listing?.address} han sido guardados.`,
-    });
-    router.push(`/lotes/${listing?.smp}`);
+  async function onSubmit(data: EditLoteFormValues) {
+    setSaving(true);
+    // Normalizar campos numéricos vacíos a null
+    const safeData = {
+      ...data,
+      m2Vendibles: data.m2Vendibles === undefined || isNaN(data.m2Vendibles as number) ? null : data.m2Vendibles,
+      valorVentaUSD: data.valorVentaUSD === undefined || isNaN(data.valorVentaUSD as number) ? null : data.valorVentaUSD,
+      incidenciaTasadaUSD: data.incidenciaTasadaUSD === undefined || isNaN(data.incidenciaTasadaUSD as number) ? null : data.incidenciaTasadaUSD,
+    };
+    try {
+      const res = await fetch(`/api/lotes/${params.smp}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          propietario: safeData.propietario,
+          direccion: safeData.direccionContacto,
+          cp: safeData.codigoPostal,
+          localidad: safeData.localidad,
+          direccionalt: safeData.direccionAlternativa,
+          fallecido: safeData.fallecido,
+          otrosDatos: safeData.otrosDatos,
+          tel1: safeData.telefono1,
+          tel2: safeData.telefono2,
+          tel3: safeData.telefono3,
+          cel1: safeData.celular1,
+          cel2: safeData.celular2,
+          cel3: safeData.celular3,
+          email: safeData.email, // CAMBIO mail -> email
+          m2vendibles: safeData.m2Vendibles, // CAMBIO m2_vendibles -> m2vendibles
+          vventa: safeData.valorVentaUSD, // CAMBIO valor_venta_usd -> valorventausd
+          inctasada: safeData.incidenciaTasadaUSD,
+          fpago: safeData.formaDePago,
+          fventa: safeData.fechaVenta ? safeData.fechaVenta.toISOString().split('T')[0] : null, // CAMBIO fechaventa -> fventa
+        }),
+      });
+      if (res.ok) {
+        setSuccess(true);
+        toast({
+          title: "Lote Actualizado",
+          description: `Los datos del lote en ${listing?.address} han sido guardados.`,
+        });
+        setTimeout(() => {
+          setSuccess(false);
+          router.push(`/lotes/${listing?.smp}`);
+        }, 1500);
+      } else {
+        const error = await res.json();
+        toast({
+          title: "Error al guardar",
+          description: error.details || error.error || 'No se pudo actualizar el lote.',
+          variant: 'destructive',
+        });
+      }
+    } catch (e) {
+      toast({
+        title: "Error de red",
+        description: 'No se pudo conectar con el servidor.',
+        variant: 'destructive',
+      });
+    }
+    setSaving(false);
   }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {success && (
+          <Alert variant="default">
+            <AlertTitle>¡Lote actualizado!</AlertTitle>
+            <AlertDescription>Los datos fueron guardados correctamente.</AlertDescription>
+          </Alert>
+        )}
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
               <Link href={`/lotes/${listing.smp}`}>
@@ -125,7 +251,9 @@ export default function LoteEditPage() {
             <Link href={`/lotes/${listing.smp}`}>
               <Button variant="outline" type="button">Cancelar</Button>
             </Link>
-            <Button type="submit">Guardar Cambios</Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? 'Guardando...' : 'Guardar Cambios'}
+            </Button>
           </div>
         </div>
 

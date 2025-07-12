@@ -82,7 +82,7 @@ export default function LotesClientPage() {
   const [uniqueNeighborhoods, setUniqueNeighborhoods] = useState<string[]>([]);
   const [uniqueStatuses, setUniqueStatuses] = useState<string[]>([]);
   const [uniqueOrigens, setUniqueOrigens] = useState<string[]>([]);
-  const [uniqueAgents, setUniqueAgents] = useState<string[]>([]);
+  const [uniqueAgents, setUniqueAgents] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchBarrios() {

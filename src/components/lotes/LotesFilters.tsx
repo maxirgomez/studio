@@ -29,7 +29,7 @@ interface LotesFiltersProps {
   uniqueOrigens: string[];
   uniqueStatuses: string[];
   uniqueNeighborhoods: string[];
-  uniqueAgents: string[];
+  uniqueAgents: { user: string; nombre: string; apellido: string; iniciales: string }[];
   users: any[];
   sliderValue: [number, number];
   minArea: number;
@@ -157,11 +157,11 @@ const LotesFilters: React.FC<LotesFiltersProps> = ({
             <DropdownMenuSeparator />
             {uniqueAgents.map((agente) => (
               <DropdownMenuCheckboxItem
-                key={agente}
-                checked={agentFilters.includes(agente)}
-                onCheckedChange={() => handleMultiSelectFilterChange('agent', agente)}
+                key={agente.user}
+                checked={agentFilters.includes(agente.user)}
+                onCheckedChange={() => handleMultiSelectFilterChange('agent', agente.user)}
               >
-                {agente}
+                {agente.nombre} {agente.apellido} ({agente.iniciales})
               </DropdownMenuCheckboxItem>
             ))}
           </DropdownMenuContent>
@@ -205,7 +205,11 @@ const LotesFilters: React.FC<LotesFiltersProps> = ({
         <div className="flex flex-wrap gap-2">
           {activeFilters.map(filter => (
             <Badge key={`${filter.key}-${filter.value}`} variant="secondary" className="flex items-center gap-1.5 pl-2">
-              <span>{filter.type}: {filter.value}</span>
+              <span>
+                {filter.type}: {filter.key === 'agent'
+                  ? (uniqueAgents.find(a => a.user === filter.value)?.nombre + ' ' + uniqueAgents.find(a => a.user === filter.value)?.apellido)
+                  : filter.value}
+              </span>
               <button onClick={() => handleRemoveFilter(filter.key, filter.value)} className="rounded-full p-0.5 text-muted-foreground hover:bg-background/50 hover:text-foreground">
                 <X className="h-3 w-3" />
               </button>

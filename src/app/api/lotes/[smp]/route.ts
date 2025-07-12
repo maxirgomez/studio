@@ -2,6 +2,13 @@ import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
 function mapLote(row: any) {
+  function cleanPhone(val: any) {
+    if (val === null || val === undefined) return "";
+    return String(val).replace(/\.0+$/, "");
+  }
+  // LOG para depuración de m2vendibles
+  console.log('DEBUG row.m2vendibles:', row.m2vendibles);
+  console.log('DEBUG row completo:', row);
   return {
     address: row.direccion,
     neighborhood: row.barrio,
@@ -14,28 +21,31 @@ function mapLote(row: any) {
     codigoUrbanistico: row.codigo_urbanistico,
     cpu: row.cpu,
     partida: row.partida,
-    valorVentaUSD: row.valor_venta_usd,
     listingDate: row.fecha_publicacion,
     saleDate: row.fecha_venta,
     incidenciaUVA: row.incidencia_uva,
     fot: row.fot,
     alicuota: row.alicuota,
-    m2Vendibles: row.m2_vendibles,
-    incidenciaTasadaUSD: row.incidencia_tasada_usd,
-    formaDePago: row.forma_pago,
+    // --- Tasación ---
+    m2vendibles: row.m2vendibles,
+    vventa: row.vventa,
+    inctasada: row.inctasada,
+    fpago: row.fpago,
+    fventa: row.fventa,
+    // ---
     propietario: row.propietario,
     direccion: row.direccion,
     localidad: row.localidad,
     cp: row.cp,
     direccionalt: row.direccionalt,
     fallecido: row.fallecido,
-    mail: row.mail,
-    tel1: row.tel1,
-    tel2: row.tel2,
-    tel3: row.tel3,
-    cel1: row.cel1,
-    cel2: row.cel2,
-    cel3: row.cel3,
+    email: row.email,
+    tel1: cleanPhone(row.tel1),
+    tel2: cleanPhone(row.tel2),
+    tel3: cleanPhone(row.tel3),
+    cel1: cleanPhone(row.cel1),
+    cel2: cleanPhone(row.cel2),
+    cel3: cleanPhone(row.cel3),
   };
 }
 
@@ -64,12 +74,12 @@ export async function GET(req: Request, context: any) {
       return NextResponse.json({ error: 'Lote no encontrado' }, { status: 404 });
     }
     const lote = mapLote(rows[0]);
-    // Buscar usuario (agente) asociado
+    // Buscar usuario (agente) asociado usando JOIN
     let agenteUsuario = null;
     if (lote.agente) {
       const { rows: userRows } = await pool.query(
-        `SELECT user, nombre, apellido, foto_perfil FROM public.prefapp_users WHERE LOWER(user) = $1 LIMIT 1`,
-        [lote.agente.toLowerCase()]
+        `SELECT u.user, u.nombre, u.apellido, u.foto_perfil FROM public.prefapp_lotes l JOIN public.prefapp_users u ON LOWER(l.agente) = LOWER(u.user) WHERE l.smp = $1 LIMIT 1`,
+        [lote.smp]
       );
       if (userRows.length > 0) {
         const user = userRows[0];
@@ -86,6 +96,80 @@ export async function GET(req: Request, context: any) {
   } catch (error) {
     return NextResponse.json(
       { error: 'Error al obtener el lote', details: (error as Error).message },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(req: Request, context: any) {
+  let smp: string | undefined;
+  if (context?.params && typeof context.params.then === 'function') {
+    const awaitedParams = await context.params;
+    smp = awaitedParams?.smp;
+  } else {
+    smp = context?.params?.smp;
+  }
+  if (!smp) {
+    const url = new URL(req.url);
+    const parts = url.pathname.split('/');
+    smp = parts[parts.length - 1] || parts[parts.length - 2];
+  }
+  if (!smp) {
+    console.log('[PUT /api/lotes/[smp]] SMP no especificado');
+    return NextResponse.json({ error: 'SMP no especificado' }, { status: 400 });
+  }
+
+  try {
+    const body = await req.json();
+    console.log(`[PUT /api/lotes/${smp}] Body recibido:`, body);
+    // Normalizar campos numéricos vacíos a null
+    const numericFields = ['m2vendibles', 'vventa', 'inctasada'];
+    for (const field of numericFields) {
+      if (body[field] === "") {
+        body[field] = null;
+      }
+    }
+    // Validar que el lote existe
+    const { rows: existingRows } = await pool.query(
+      `SELECT 1 FROM public.prefapp_lotes WHERE smp = $1 LIMIT 1`,
+      [smp]
+    );
+    if (existingRows.length === 0) {
+      console.log(`[PUT /api/lotes/${smp}] Lote no encontrado`);
+      return NextResponse.json({ error: 'Lote no encontrado' }, { status: 404 });
+    }
+    // Actualizar solo los campos editables
+    const fields = [
+      'propietario', 'direccion', 'localidad', 'cp', 'direccionalt', 'fallecido', 'email',
+      'tel1', 'tel2', 'tel3', 'cel1', 'cel2', 'cel3',
+      'm2vendibles', 'vventa', 'inctasada', 'fpago', 'fventa'
+    ];
+    const updates = [];
+    const values = [];
+    let idx = 1;
+    for (const field of fields) {
+      if (body[field] !== undefined) {
+        // Si el valor es string vacío, lo convertimos a null
+        const value = body[field] === "" ? null : body[field];
+        updates.push(`${field} = $${idx}`);
+        values.push(value);
+        idx++;
+      }
+    }
+    if (updates.length === 0) {
+      console.log(`[PUT /api/lotes/${smp}] No hay campos para actualizar`);
+      return NextResponse.json({ error: 'No hay campos para actualizar' }, { status: 400 });
+    }
+    values.push(smp);
+    const updateQuery = `UPDATE public.prefapp_lotes SET ${updates.join(', ')} WHERE smp = $${idx}`;
+    console.log(`[PUT /api/lotes/${smp}] Ejecutando query:`, updateQuery, 'con valores:', values);
+    await pool.query(updateQuery, values);
+    console.log(`[PUT /api/lotes/${smp}] Actualización exitosa`);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error(`[PUT /api/lotes/${smp}] Error al actualizar:`, error);
+    return NextResponse.json(
+      { error: 'Error al actualizar el lote', details: (error as Error).message },
       { status: 500 }
     );
   }

@@ -9,14 +9,19 @@ function normalizeBarrio(str: string) {
   return capitalizeWords(str.trim());
 }
 
-function mapLote(row: any) {
+function mapLote(row: any, agenteUsuario: any = null) {
   return {
     address: row.dir_lote,
     neighborhood: row.barrio,
     smp: row.smp,
     area: row.m2aprox,
     status: row.estado,
-    agent: { name: row.agente, initials: row.agente ? row.agente.slice(0,2).toUpperCase() : '' },
+    agent: {
+      user: row.agente,
+      nombre: agenteUsuario?.nombre || null,
+      apellido: agenteUsuario?.apellido || null,
+      initials: agenteUsuario ? `${(agenteUsuario.nombre?.[0] || '').toUpperCase()}${(agenteUsuario.apellido?.[0] || '').toUpperCase()}` : (row.agente ? row.agente[0].toUpperCase() : "")
+    },
     imageUrl: row.foto_lote,
     aiHint: row.ai_hint,
     origen: row.origen,
@@ -62,7 +67,6 @@ export async function GET(req: Request) {
     }
   }
   if (neighborhood) {
-    // Normalizar barrios para que coincidan con la base (minúsculas y sin espacios extra)
     const neighborhoods = neighborhood.split(',').map(b => b.trim().toLowerCase()).filter(Boolean);
     if (neighborhoods.length > 0) {
       whereClauses.push(`LOWER(TRIM(barrio)) = ANY($${idx}::text[])`);
@@ -115,7 +119,28 @@ export async function GET(req: Request) {
     const total = parseInt(countResult.rows[0].count, 10);
     // Obtener los lotes paginados
     const { rows } = await pool.query(query, pagValues);
-    const lotes = rows.map(mapLote);
+
+    // Obtener info de agentes con JOIN (como en el filtro)
+    const { rows: agentesRows } = await pool.query(`
+      SELECT DISTINCT l.agente, u.user, u.nombre, u.apellido
+      FROM public.prefapp_lotes l
+      JOIN public.prefapp_users u ON LOWER(l.agente) = LOWER(u.user)
+      WHERE l.agente IS NOT NULL AND u.user IS NOT NULL
+    `);
+    let agentesInfo: Record<string, any> = {};
+    agentesRows.forEach(u => {
+      agentesInfo[u.agente.toLowerCase()] = u;
+    });
+
+    const lotes = rows.map(row => {
+      const agenteUsuario = agentesInfo[(row.agente || '').toLowerCase()] || null;
+      if (agenteUsuario) {
+        console.log('DEBUG agenteUsuario encontrado:', agenteUsuario);
+      } else {
+        console.log('DEBUG agenteUsuario NO encontrado para:', row.agente);
+      }
+      return mapLote(row, agenteUsuario);
+    });
     return NextResponse.json({ lotes, total });
   } catch (error) {
     console.error('Error en /api/lotes:', error);

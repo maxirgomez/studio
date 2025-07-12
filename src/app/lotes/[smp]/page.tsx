@@ -70,7 +70,7 @@ const PdfContent = React.forwardRef<
         <div style={fieldStyle}><span style={labelStyle}>Estado:</span> <span style={valueStyle}>{listing.status}</span></div>
         <div style={fieldStyle}>
           <span style={labelStyle}>Agente:</span>
-          <span style={valueStyle}>{agenteUsuario ? `${agenteUsuario.nombre} ${agenteUsuario.apellido}` : listing.agente}</span>
+          <span style={valueStyle}>{getAgenteNombre(agenteUsuario, listing.agente)}</span>
         </div>
         <div style={fieldStyle}><span style={labelStyle}>Origen:</span> <span style={valueStyle}>{listing.origen}</span></div>
         <div style={fieldStyle}><span style={labelStyle}>SMP:</span> <span style={valueStyle}>{listing.smp}</span></div>
@@ -134,6 +134,13 @@ const PdfContent = React.forwardRef<
   );
 });
 PdfContent.displayName = 'PdfContent';
+
+function getAgenteNombre(agenteUsuario: any, agente: string) {
+  if (agenteUsuario && agenteUsuario.nombre && agenteUsuario.apellido) {
+    return `${agenteUsuario.nombre} ${agenteUsuario.apellido}`;
+  }
+  return agente || "-";
+}
 
 export default function LoteDetailPage() {
   const params = useParams<{ smp: string }>();
@@ -334,6 +341,13 @@ export default function LoteDetailPage() {
     );
   }
 
+  // LOGS para depuración de datos de tasación
+  console.log('DEBUG listing:', listing);
+  console.log('DEBUG vventa:', listing.vventa);
+  console.log('DEBUG inctasada:', listing.inctasada);
+  console.log('DEBUG fventa:', listing.fventa);
+  console.log('DEBUG fpago:', listing.fpago);
+
   console.log('DEBUG avatar:', { agenteUsuario, agente: listing.agente });
 
   return (
@@ -394,14 +408,14 @@ export default function LoteDetailPage() {
                             <AvatarFallback>
                                 {agenteUsuario
                                   ? agenteUsuario.iniciales
-                                  : (listing.agente ? listing.agente[0].toUpperCase() : "?")}
+                                  : (listing.agente && listing.agente.length > 0
+                                      ? listing.agente[0].toUpperCase()
+                                      : "-")}
                             </AvatarFallback>
                         </Avatar>
                         <div className="space-y-1">
                             <p className="font-medium">
-                                {agenteUsuario
-                                    ? `${agenteUsuario.nombre} ${agenteUsuario.apellido}`
-                                    : listing.agente}
+                                {getAgenteNombre(agenteUsuario, listing.agente)}
                             </p>
                             <p className="text-sm text-muted-foreground">Agente a cargo</p>
                         </div>
@@ -618,30 +632,30 @@ export default function LoteDetailPage() {
                     <div className="flex items-center">
                       <Ruler className="h-5 w-5 mr-3 text-muted-foreground" />
                       <span className="font-medium">M2 Vendibles:</span>
-                      <span className="ml-auto text-muted-foreground">{listing.m2Vendibles} m²</span>
+                      <span className="ml-auto text-muted-foreground">{listing.m2vendibles != null ? Number(listing.m2vendibles).toLocaleString('es-AR') + ' m²' : 'N/A'}</span>
                     </div>
                     <div className="flex items-center">
                       <DollarSign className="h-5 w-5 mr-3 text-muted-foreground" />
                       <span className="font-medium">Valor de Venta (USD):</span>
-                      <span className="ml-auto text-muted-foreground">{typeof listing.valorVentaUSD === "number" ? `$ ${listing.valorVentaUSD.toLocaleString('es-AR')}` : "N/A"}</span>
+                      <span className="ml-auto text-muted-foreground">{listing.vventa != null ? `$ ${Number(listing.vventa).toLocaleString('es-AR')}` : 'N/A'}</span>
                     </div>
-                     <div className="flex items-center">
+                    <div className="flex items-center">
                       <CreditCard className="h-5 w-5 mr-3 text-muted-foreground" />
                       <span className="font-medium">Forma de Pago:</span>
-                      <span className="ml-auto text-muted-foreground">{listing.formaDePago}</span>
+                      <span className="ml-auto text-muted-foreground">{listing.fpago || 'N/A'}</span>
                     </div>
                   </div>
                   <div className="space-y-4">
-                     <div className="flex items-center">
+                    <div className="flex items-center">
                       <DollarSign className="h-5 w-5 mr-3 text-muted-foreground" />
                       <span className="font-medium">Incidencia Tasada (USD/m2):</span>
-                      <span className="ml-auto text-muted-foreground">{typeof listing.incidenciaTasadaUSD === "number" ? `$ ${listing.incidenciaTasadaUSD.toLocaleString('es-AR')}` : "N/A"}</span>
+                      <span className="ml-auto text-muted-foreground">{listing.inctasada != null ? `$ ${Number(listing.inctasada).toLocaleString('es-AR')}` : 'N/A'}</span>
                     </div>
-                     <div className="flex items-center">
+                    <div className="flex items-center">
                       <Calendar className="h-5 w-5 mr-3 text-muted-foreground" />
                       <span className="font-medium">Fecha de Venta:</span>
                       <span className="ml-auto text-muted-foreground">
-                        {listing.saleDate ? format(new Date(listing.saleDate), "dd/MM/yyyy") : "N/A"}
+                        {listing.fventa ? format(new Date(listing.fventa), 'dd/MM/yyyy') : 'N/A'}
                       </span>
                     </div>
                   </div>

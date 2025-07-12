@@ -11,7 +11,12 @@ export interface Listing {
   smp: string;
   area: number;
   status: string;
-  agent: { name: string; initials: string };
+  agent: {
+    user: string;
+    nombre: string | null;
+    apellido: string | null;
+    initials: string;
+  };
   imageUrl: string | null;
   aiHint?: string;
   origen: string;
@@ -78,7 +83,11 @@ const ListingCard = ({ listing }: ListingCardProps) => (
             <Avatar className="h-6 w-6">
                 <AvatarFallback>{listing.agent.initials}</AvatarFallback>
             </Avatar>
-            <span className="text-xs text-muted-foreground">{listing.agent.name}</span>
+            <span className="text-xs text-muted-foreground">
+  {listing.agent.nombre && listing.agent.apellido
+    ? `${listing.agent.nombre} ${listing.agent.apellido}`
+    : listing.agent.user}
+</span>
         </div>
     </CardFooter>
   </Card>
