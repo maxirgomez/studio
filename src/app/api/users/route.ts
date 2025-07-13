@@ -79,10 +79,31 @@ export async function GET(req: NextRequest) {
       if (rows.length === 0) {
         return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
       }
-      return NextResponse.json({ user: rows[0] });
+      // Traer estados y conteo para este usuario
+      const { rows: estadosRows } = await pool.query('SELECT DISTINCT estado FROM public.prefapp_lotes WHERE estado IS NOT NULL');
+      const estadosDisponibles = estadosRows.map(r => r.estado);
+      const { rows: conteoRows } = await pool.query(
+        'SELECT estado, COUNT(*) as cantidad FROM public.prefapp_lotes WHERE agente = $1 GROUP BY estado',
+        [userParam]
+      );
+      const estados = conteoRows.map(r => ({ estado: r.estado, cantidad: Number(r.cantidad) }));
+      return NextResponse.json({ user: { ...rows[0], estados, estadosDisponibles } });
     } else {
+      // Traer todos los usuarios
       const { rows } = await pool.query('SELECT * FROM public.prefapp_users ORDER BY rol, nombre, apellido');
-      return NextResponse.json({ users: rows });
+      // Traer todos los estados posibles
+      const { rows: estadosRows } = await pool.query('SELECT DISTINCT estado FROM public.prefapp_lotes WHERE estado IS NOT NULL');
+      const estadosDisponibles = estadosRows.map(r => r.estado);
+      // Para cada usuario, traer el conteo de lotes por estado
+      const usersWithEstados = await Promise.all(rows.map(async (user) => {
+        const { rows: conteoRows } = await pool.query(
+          'SELECT estado, COUNT(*) as cantidad FROM public.prefapp_lotes WHERE agente = $1 GROUP BY estado',
+          [user.user]
+        );
+        const estados = conteoRows.map(r => ({ estado: r.estado, cantidad: Number(r.cantidad) }));
+        return { ...user, estados, estadosDisponibles };
+      }));
+      return NextResponse.json({ users: usersWithEstados });
     }
   } catch (err) {
     return NextResponse.json({ error: "Error al obtener usuarios" }, { status: 500 });

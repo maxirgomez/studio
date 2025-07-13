@@ -33,6 +33,19 @@ export async function GET(req: NextRequest) {
       apellido = parts.length > 1 ? parts.pop() : "";
       nombre = parts.join(" ");
     }
+
+    // --- AGREGADO: conteo de lotes por estado para este usuario ---
+    // 1. Traer todos los estados posibles
+    const { rows: estadosRows } = await pool.query('SELECT DISTINCT estado FROM public.prefapp_lotes WHERE estado IS NOT NULL');
+    const estadosDisponibles = estadosRows.map(r => r.estado);
+    // 2. Contar lotes por estado para este agente
+    const { rows: conteoRows } = await pool.query(
+      'SELECT estado, COUNT(*) as cantidad FROM public.prefapp_lotes WHERE agente = $1 GROUP BY estado',
+      [user.user]
+    );
+    const estados = conteoRows.map(r => ({ estado: r.estado, cantidad: Number(r.cantidad) }));
+    // ---
+
     return NextResponse.json({
       user: {
         nombre: nombre,
@@ -41,6 +54,8 @@ export async function GET(req: NextRequest) {
         user: user.user,
         rol: user.rol,
         foto_perfil: user.foto_perfil,
+        estados,
+        estadosDisponibles,
       }
     });
   } catch (err) {
