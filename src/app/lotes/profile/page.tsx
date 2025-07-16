@@ -116,12 +116,15 @@ export default function ProfilePage() {
                     >
                       Ver lotes
                     </a>
-                    <a
-                      href={`/lotes/usuario/${encodeURIComponent(user.user)}`}
-                      className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded text-sm font-semibold transition-colors"
-                    >
-                      Editar
-                    </a>
+                    {/* Mostrar botón Editar si el usuario logueado es 'Max' o tiene el mismo user */}
+                    {(currentUser?.user === user.user || currentUser?.user === 'Max' || currentUser?.mail === 'maxi.r.gomez@gmail.com') && (
+                      <a
+                        href={`/lotes/usuario/${encodeURIComponent(user.user)}`}
+                        className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded text-sm font-semibold transition-colors"
+                      >
+                        Editar
+                      </a>
+                    )}
                   </div>
                 </div>
               );

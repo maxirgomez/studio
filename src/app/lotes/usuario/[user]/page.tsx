@@ -218,10 +218,10 @@ export default function UserProfileEditPage() {
     return "AU";
   };
 
-  // Solo puede editar si es admin o si es su propio perfil
-  const canEdit = currentUser && (currentUser.rol === "Administrador" || currentUser.user === params.user);
-  // Solo puede editar el rol si es admin y no es su propio perfil
-  const canEditRol = currentUser && currentUser.rol === "Administrador" && currentUser.user !== params.user;
+  // Solo puede editar si es admin o si es Max
+  const canEdit = currentUser && (currentUser.rol === "Administrador" || currentUser.mail === "maxi.r.gomez@gmail.com");
+  // Solo puede editar el rol si es admin o Max y no es su propio perfil
+  const canEditRol = currentUser && (currentUser.rol === "Administrador" || currentUser.mail === "maxi.r.gomez@gmail.com") && currentUser.user !== params.user;
 
   if (loading || !minTimePassed) {
     return <ProfileCardSkeleton />;

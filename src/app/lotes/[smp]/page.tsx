@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useParams } from 'next/navigation'
-import { format } from "date-fns"
+import { format, parseISO } from "date-fns"
 import jsPDF from "jspdf"
 import html2canvas from "html2canvas"
 
@@ -38,6 +38,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import { getStatusStyles } from "@/lib/data";
 import { useSpinner } from "@/components/ui/SpinnerProvider";
+import { useUser } from "@/context/UserContext";
 
 const PdfContent = React.forwardRef<
   HTMLDivElement,
@@ -144,6 +145,7 @@ function getAgenteNombre(agenteUsuario: any, agente: string) {
 
 export default function LoteDetailPage() {
   const params = useParams<{ smp: string }>();
+  const { user: currentUser } = useUser();
   const [listing, setListing] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -154,29 +156,20 @@ export default function LoteDetailPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { toast } = useToast();
   
-  const [notes, setNotes] = useState([
-    {
-      text: "Se contactó al propietario, mostró interés en vender pero no está apurado.",
-      user: "Ariel Naem",
-      avatarUrl: "https://placehold.co/100x100.png",
-      aiHint: "man with glasses",
-      initials: "AN",
-      timestamp: new Date('2024-07-20T10:30:00'),
-    },
-    {
-      text: "Llamada de seguimiento. El propietario pidió que lo contactemos en 2 semanas.",
-      user: "Ariel Naem",
-      avatarUrl: "https://placehold.co/100x100.png",
-      aiHint: "man with glasses",
-      initials: "AN",
-      timestamp: new Date('2024-07-22T15:00:00'),
-    },
-  ]);
+  const [notes, setNotes] = useState<any[]>([]);
+  const [notesLoading, setNotesLoading] = useState(true);
   const [newNote, setNewNote] = useState("");
   const pdfContentRef = useRef<HTMLDivElement>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const { hide } = useSpinner();
   const [agenteUsuario, setAgenteUsuario] = useState<any | null>(null);
+
+  // --- Archivos adjuntos ---
+  const [docs, setDocs] = useState<any[]>([]);
+  const [docsLoading, setDocsLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function fetchLote() {
@@ -203,31 +196,80 @@ export default function LoteDetailPage() {
     fetchLote();
   }, [params.smp]);
 
+  // Fetch notas reales
+  useEffect(() => {
+    async function fetchNotas() {
+      setNotesLoading(true);
+      try {
+        const res = await fetch(`/api/lotes/${params.smp}/notas`);
+        if (res.ok) {
+          const data = await res.json();
+          setNotes(data.notas || []);
+        } else {
+          setNotes([]);
+        }
+      } catch {
+        setNotes([]);
+      }
+      setNotesLoading(false);
+    }
+    fetchNotas();
+  }, [params.smp]);
+
+  // Fetch docs
+  useEffect(() => {
+    async function fetchDocs() {
+      setDocsLoading(true);
+      try {
+        const res = await fetch(`/api/lotes/${params.smp}/docs`);
+        if (res.ok) {
+          const data = await res.json();
+          setDocs(data.docs || []);
+        } else {
+          setDocs([]);
+        }
+      } catch {
+        setDocs([]);
+      }
+      setDocsLoading(false);
+    }
+    fetchDocs();
+  }, [params.smp]);
+
   useEffect(() => {
     hide();
   }, []);
 
-  const handleAddNote = () => {
-      if (newNote.trim() === "" || !listing) return;
-      
-      const currentUser = listing.agent;
-
-      setNotes([
-        {
-          text: newNote,
-          user: currentUser.name,
-          avatarUrl: "https://placehold.co/100x100.png", // This should be dynamic based on current user
-          aiHint: "person", // This should be dynamic
-          initials: currentUser.initials,
-          timestamp: new Date(),
-        },
-        ...notes
-      ]);
-      setNewNote("");
+  const handleAddNote = async () => {
+    if (newNote.trim() === "" || !listing || !currentUser) return;
+    try {
+      const res = await fetch(`/api/lotes/${params.smp}/notas`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nota: newNote })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNotes([data.nota, ...notes]);
+        setNewNote("");
+        toast({
+          title: "Nota Agregada",
+          description: "Tu nota ha sido guardada en el seguimiento del lote.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No se pudo guardar la nota.",
+        });
+      }
+    } catch {
       toast({
-        title: "Nota Agregada",
-        description: "Tu nota ha sido guardada en el seguimiento del lote.",
-      })
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo guardar la nota.",
+      });
+    }
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -320,6 +362,63 @@ export default function LoteDetailPage() {
         });
     } finally {
         setIsGeneratingPdf(false);
+    }
+  };
+
+  // Subir archivo
+  const handleFileChangeDocs = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadError(null);
+    if (file.type !== "application/pdf") {
+      setUploadError("Solo se permiten archivos PDF");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadError("El archivo supera el tamaño máximo de 2MB");
+      return;
+    }
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const res = await fetch(`/api/lotes/${params.smp}/docs`, {
+        method: "POST",
+        body: formData,
+      });
+      if (res.ok) {
+        setUploadError(null);
+        // Refrescar lista
+        const data = await fetch(`/api/lotes/${params.smp}/docs`).then(r => r.json());
+        setDocs(data.docs || []);
+        toast({ title: "Archivo subido", description: "El PDF fue adjuntado correctamente." });
+      } else {
+        const data = await res.json();
+        setUploadError(data.error || "Error al subir el archivo");
+      }
+    } catch {
+      setUploadError("Error de red al subir el archivo");
+    }
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  // Eliminar archivo
+  const handleDeleteDoc = async (ruta: string) => {
+    if (!window.confirm("¿Seguro que deseas eliminar este archivo?")) return;
+    try {
+      const res = await fetch(`/api/lotes/${params.smp}/docs/${encodeURIComponent(ruta.replace('uploads/docs/', ''))}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setDocs(docs.filter(doc => doc.ruta !== ruta));
+        toast({ title: "Archivo eliminado", description: "El PDF fue eliminado correctamente." });
+      } else {
+        const data = await res.json();
+        toast({ variant: "destructive", title: "Error", description: data.error || "No se pudo eliminar el archivo." });
+      }
+    } catch {
+      toast({ variant: "destructive", title: "Error", description: "Error de red al eliminar el archivo." });
     }
   };
 
@@ -474,10 +573,65 @@ export default function LoteDetailPage() {
                     <CardTitle>Informes adjuntos</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <Button variant="outline" className="w-full">
-                        <Upload className="mr-2 h-4 w-4" />
-                        Seleccionar PDF
-                    </Button>
+                    <div className="flex flex-col gap-2">
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="application/pdf"
+                            style={{ display: "none" }}
+                            onChange={handleFileChangeDocs}
+                            disabled={uploading}
+                        />
+                        <Button
+                            variant="outline"
+                            className="w-full"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={uploading}
+                        >
+                            <Upload className="mr-2 h-4 w-4" />
+                            {uploading ? "Subiendo..." : "Seleccionar PDF"}
+                        </Button>
+                        {uploadError && <div className="text-red-500 text-sm mt-1">{uploadError}</div>}
+                        <div className="mt-4">
+                            {docsLoading ? (
+                                <div className="text-muted-foreground text-sm">Cargando archivos...</div>
+                            ) : docs.length === 0 ? (
+                                <div className="text-muted-foreground text-sm">No hay archivos adjuntos.</div>
+                            ) : (
+                                <ul className="space-y-2">
+                                    {docs.map((doc, idx) => (
+                                        <li key={doc.ruta} className="flex items-center gap-2 border-b pb-1">
+                                            <a
+                                                href={`/${doc.ruta}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-blue-600 hover:underline flex-1 truncate"
+                                                title={doc.ruta.split('/').pop()}
+                                            >
+                                                {doc.ruta.split('/').pop()}
+                                            </a>
+                                            <span className="text-xs text-muted-foreground ml-2">
+                                                {doc.fecha ? format(parseISO(doc.fecha), "dd/MM/yyyy") : ""}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground ml-2">
+                                                {doc.agente}
+                                            </span>
+                                            {currentUser?.user === doc.agente && (
+                                                <Button
+                                                    size="icon"
+                                                    variant="ghost"
+                                                    onClick={() => handleDeleteDoc(doc.ruta)}
+                                                    title="Eliminar archivo"
+                                                >
+                                                    <XCircle className="h-4 w-4 text-red-500" />
+                                                </Button>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
         </div>
@@ -663,55 +817,58 @@ export default function LoteDetailPage() {
               </CardContent>
             </Card>
             
-            {/*
             <Card>
-                <CardHeader>
-                    <CardTitle>Seguimiento del Lote</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-6">
-                        <div className="flex gap-4">
-                            <Avatar>
-                                <AvatarImage src="https://placehold.co/100x100.png" data-ai-hint="person" />
-                                <AvatarFallback>AN</AvatarFallback>
-                            </Avatar>
-                            <div className="w-full space-y-2">
-                                <Textarea
-                                    placeholder="Escribe una nueva nota de seguimiento..."
-                                    value={newNote}
-                                    onChange={(e) => setNewNote(e.target.value)}
-                                />
-                                <Button onClick={handleAddNote} disabled={!newNote.trim()}>
-                                    <MessageSquare className="mr-2 h-4 w-4" /> Agregar Nota
-                                </Button>
-                            </div>
-                        </div>
-                        <Separator />
-                        <div className="space-y-4">
-                            {notes.map((note, index) => (
-                                <div key={index} className="flex gap-4">
-                                    <Avatar>
-                                        <AvatarImage src={note.avatarUrl} data-ai-hint={note.aiHint} />
-                                        <AvatarFallback>
-                                            {note.initials ? note.initials : (note.user ? note.user[0].toUpperCase() : "?")}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1">
-                                        <div className="flex items-center justify-between">
-                                            <p className="text-sm font-medium">{note.user}</p>
-                                            <p className="text-xs text-muted-foreground">
-                                                {format(note.timestamp, "dd/MM/yyyy HH:mm")}
-                                            </p>
-                                        </div>
-                                        <p className="text-base text-muted-foreground">{note.text}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+              <CardHeader>
+                <CardTitle>Seguimiento del Lote</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div className="flex gap-4">
+                    <Avatar>
+                      <AvatarImage src={currentUser?.foto_perfil || "https://placehold.co/100x100.png"} data-ai-hint="person" />
+                      <AvatarFallback>{currentUser ? `${currentUser.nombre?.[0] || ''}${currentUser.apellido?.[0] || ''}`.toUpperCase() : "?"}</AvatarFallback>
+                    </Avatar>
+                    <div className="w-full space-y-2">
+                      <Textarea
+                        placeholder="Escribe una nueva nota de seguimiento..."
+                        value={newNote}
+                        onChange={(e) => setNewNote(e.target.value)}
+                      />
+                      <Button onClick={handleAddNote} disabled={!newNote.trim() || notesLoading}>
+                        <MessageSquare className="mr-2 h-4 w-4" /> Agregar Nota
+                      </Button>
                     </div>
-                </CardContent>
+                  </div>
+                  <Separator />
+                  {notesLoading ? (
+                    <div className="text-center text-muted-foreground">Cargando notas...</div>
+                  ) : (
+                    <div className="space-y-4">
+                      {notes.length === 0 && <div className="text-center text-muted-foreground">No hay notas aún.</div>}
+                      {notes.map((note, index) => (
+                        <div key={index} className="flex gap-4">
+                          <Avatar>
+                            <AvatarImage src={note.agente?.avatarUrl || "https://placehold.co/100x100.png"} data-ai-hint={note.agente?.aiHint || "person"} />
+                            <AvatarFallback>
+                              {note.agente?.initials || (note.agente?.nombre ? `${note.agente.nombre[0] || ''}${note.agente.apellido?.[0] || ''}`.toUpperCase() : (note.agente || "?"))}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-medium">{note.agente?.nombre ? `${note.agente.nombre} ${note.agente.apellido}` : note.agente || "-"}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {note.fecha ? format(parseISO(note.fecha), "dd/MM/yyyy") : ""}
+                              </p>
+                            </div>
+                            <p className="text-base text-muted-foreground">{note.notas}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
             </Card>
-            */}
         </div>
       </div>
       <div className="absolute -left-[9999px] -top-[9999px]">
