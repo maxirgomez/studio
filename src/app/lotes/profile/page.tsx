@@ -68,7 +68,7 @@ export default function ProfilePage() {
     <div className="flex flex-1 flex-col gap-4 p-4 md:p-6 lg:p-8 bg-background">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Usuarios</h1>
-        {currentUser?.rol === "Architect" && (
+        {(currentUser?.rol === "Architect" || currentUser?.rol === "Administrador") && (
           <Link href="/lotes/usuario/nuevo">
             <Button className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
@@ -119,8 +119,11 @@ export default function ProfilePage() {
                         Ver Lotes
                       </Button>
                     </Link>
-                    {/* Mostrar botón Editar si el usuario logueado es 'Max' o tiene el mismo user */}
-                    {(currentUser?.user === user.user || currentUser?.user === 'Max' || currentUser?.mail === 'maxi.r.gomez@gmail.com') && (
+                    {/* Mostrar botón Editar si el usuario logueado es 'Max', Administrador, o tiene el mismo user */}
+                    {(currentUser?.user === user.user || 
+                      currentUser?.user === 'Max' || 
+                      currentUser?.mail === 'maxi.r.gomez@gmail.com' ||
+                      currentUser?.rol === 'Administrador') && (
                       <Link href={`/lotes/usuario/${encodeURIComponent(user.user)}`}>
                         <Button variant="secondary" className="flex items-center gap-2">
                           Editar
