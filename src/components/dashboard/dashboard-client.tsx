@@ -28,9 +28,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { listings, users, getStatusStyles } from "@/lib/data"
+import { useDashboardOptimized } from "@/hooks/use-dashboard-optimized"
+import { getStatusStyles } from "@/hooks/use-dashboard-data"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
-import { Activity, TrendingUp, X, ArrowUpNarrowWide } from "lucide-react"
+import { Activity, TrendingUp, X, ArrowUpNarrowWide, Loader2 } from "lucide-react"
 import { format, subMonths, differenceInMonths, startOfQuarter, subQuarters } from "date-fns"
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils"
@@ -43,6 +44,11 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button"
+
+interface ChartDataPoint {
+  name: string;
+  total: number;
+}
 
 const statusOrder = [
     "Tomar Acción",
@@ -63,34 +69,34 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 
-const processDashboardData = (agentFilter: string, statusFilter: string, salesChartRange: "12m" | "6m" | "3m") => {
+const processDashboardData = (listings: any[], agentFilter: string, statusFilter: string, salesChartRange: "12m" | "6m" | "3m") => {
   const agentFilteredListings = agentFilter === 'todos'
     ? listings
-    : listings.filter(l => l.agent.name === agentFilter);
+    : listings.filter((l: any) => l.agent?.user === agentFilter);
   
-  const lotsByStatus = agentFilteredListings.reduce((acc, l) => {
+  const lotsByStatus = agentFilteredListings.reduce((acc: any, l: any) => {
     acc[l.status] = (acc[l.status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
   const fullyFilteredListings = statusFilter
-    ? agentFilteredListings.filter(l => l.status === statusFilter)
+    ? agentFilteredListings.filter((l: any) => l.status === statusFilter)
     : agentFilteredListings;
 
   const totalLots = agentFilteredListings.length;
 
-  const salesListings = agentFilteredListings.filter(l => l.status === "Vendido" && l.saleDate);
+  const salesListings = agentFilteredListings.filter((l: any) => l.status === "Vendido" && l.saleDate);
   
   const today = new Date();
   const currentQuarterStart = startOfQuarter(today);
   const previousQuarterStart = subQuarters(currentQuarterStart, 1);
   
-  const quarterlySales = salesListings.filter(l => {
+  const quarterlySales = salesListings.filter((l: any) => {
     const saleDate = new Date(l.saleDate!);
     return saleDate >= currentQuarterStart && saleDate <= today;
   }).length;
 
-  const previousQuarterSales = salesListings.filter(l => {
+  const previousQuarterSales = salesListings.filter((l: any) => {
     const saleDate = new Date(l.saleDate!);
     return saleDate >= previousQuarterStart && saleDate < currentQuarterStart;
   }).length;
@@ -98,11 +104,11 @@ const processDashboardData = (agentFilter: string, statusFilter: string, salesCh
   const quarterlySalesChange = previousQuarterSales > 0 ? ((quarterlySales - previousQuarterSales) / previousQuarterSales) * 100 : quarterlySales > 0 ? 100 : 0;
   
   const lotsByNeighborhoodChartData = Object.entries(
-    fullyFilteredListings.reduce((acc, l) => {
+    fullyFilteredListings.reduce((acc: any, l: any) => {
       acc[l.neighborhood] = (acc[l.neighborhood] || 0) + 1;
       return acc;
     }, {} as Record<string, number>)
-  ).map(([name, total]) => ({ name, total }));
+  ).map(([name, total]) => ({ name, total: Number(total) }));
 
 
   const monthsToShowMap: Record<typeof salesChartRange, number> = {
@@ -119,7 +125,7 @@ const processDashboardData = (agentFilter: string, statusFilter: string, salesCh
   });
 
   const salesCutoffDate = subMonths(new Date(), monthsToShow);
-  salesListings.forEach(l => {
+  salesListings.forEach((l: any) => {
     if (l.saleDate) {
       const saleDate = new Date(l.saleDate);
       if (saleDate >= salesCutoffDate) {
@@ -155,39 +161,18 @@ export default function DashboardClientPage() {
   const statusFilter = searchParams.get('status') || '';
   const currentPage = Number(searchParams.get('page')) || 1;
   const listingsPerPage = Number(searchParams.get('pageSize')) || 10;
+
+  // Usar el hook optimizado para obtener datos reales
+  const { stats, tableData, users, estados, loading, error } = useDashboardOptimized(
+    agentFilter,
+    statusFilter,
+    currentPage,
+    listingsPerPage
+  );
   const [salesChartRange, setSalesChartRange] = useState<"12m" | "6m" | "3m">("12m");
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const { 
-    totalLots,
-    quarterlySales,
-    quarterlySalesChange,
-    lotsByStatus,
-    lotsByNeighborhoodChartData,
-    filteredListings,
-    salesByMonthChartData
-  } = useMemo(() => {
-    const data = processDashboardData(agentFilter, statusFilter, salesChartRange);
-    const sortedChartData = [...data.lotsByNeighborhoodChartData].sort((a, b) => {
-        return sortOrder === 'asc' ? a.total - b.total : b.total - a.total;
-    });
-    return { ...data, lotsByNeighborhoodChartData: sortedChartData };
-  }, [agentFilter, statusFilter, salesChartRange, sortOrder]);
-  
-  const totalPages = Math.ceil(filteredListings.length / listingsPerPage);
-  const listingsOnPage = filteredListings.slice(
-    (currentPage - 1) * listingsPerPage,
-    currentPage * listingsPerPage
-  );
-  
-  const sortedLotsByStatus = Object.entries(lotsByStatus).sort(([a], [b]) => {
-    const indexA = statusOrder.indexOf(a);
-    const indexB = statusOrder.indexOf(b);
-    if(indexA === -1) return 1;
-    if(indexB === -1) return -1;
-    return indexA - indexB;
-  });
-
+  // useCallback debe ir antes de cualquier return condicional
   const createQueryString = useCallback(
     (paramsToUpdate: Record<string, string | null | number>) => {
       const params = new URLSearchParams(searchParams.toString());
@@ -202,7 +187,72 @@ export default function DashboardClientPage() {
     },
     [searchParams]
   );
+
+  // Usar datos optimizados del hook
+  const totalLots = stats?.totalLots || 0;
+  const quarterlySales = stats?.currentQuarterSales || 0;
+  const quarterlySalesChange = stats?.quarterlySalesChange || 0;
+  const lotsByStatus = stats?.lotsByStatus || {};
   
+  // Ordenar datos de barrios según el sortOrder
+  const lotsByNeighborhoodChartData = useMemo(() => {
+    if (!stats?.lotsByNeighborhood) return [];
+    return [...stats.lotsByNeighborhood].sort((a, b) => {
+      return sortOrder === 'asc' ? a.total - b.total : b.total - a.total;
+    });
+  }, [stats?.lotsByNeighborhood, sortOrder]);
+
+  // Usar datos de la tabla paginada
+  const filteredListings = tableData?.lotes || [];
+  const totalPages = tableData ? Math.ceil(tableData.total / listingsPerPage) : 0;
+  const listingsOnPage = filteredListings;
+
+  // Asegurar que todos los estados aparezcan, incluso con 0 lotes
+  const statusWithCounts = useMemo(() => {
+    const allStatuses = estados || [];
+    const realStatusCounts = stats?.lotsByStatus || {};
+    
+    return allStatuses.map((status: string) => ({
+      status,
+      count: realStatusCounts[status] || 0
+    })).sort((a: any, b: any) => {
+      const indexA = statusOrder.indexOf(a.status);
+      const indexB = statusOrder.indexOf(b.status);
+      if(indexA === -1) return 1;
+      if(indexB === -1) return -1;
+      return indexA - indexB;
+    });
+  }, [estados, stats?.lotsByStatus]);
+
+  // Datos para el gráfico de ventas mensuales
+  const salesByMonthChartData = useMemo(() => {
+    if (!stats?.monthlySales) return [];
+    return stats.monthlySales;
+  }, [stats?.monthlySales]);
+
+  // returns condicionales DESPUÉS de todos los hooks
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Cargando datos del dashboard...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="text-red-600 mb-2">Error al cargar datos</div>
+          <div className="text-sm text-muted-foreground">{error}</div>
+        </div>
+      </div>
+    );
+  }
+
   const handleAgentFilterChange = (agent: string) => {
     router.push(`${pathname}?${createQueryString({ agent, page: 1 })}`, { scroll: false });
   };
@@ -216,9 +266,18 @@ export default function DashboardClientPage() {
     router.push(`${pathname}?${createQueryString({ [key]: null, page: 1 })}`, { scroll: false });
   };
 
+  // Función helper para obtener el nombre completo del agente
+  const getAgentDisplayName = (userValue: string) => {
+    const user = users.find((u: any) => u.user === userValue);
+    if (user) {
+      return user.nombre && user.apellido ? `${user.nombre} ${user.apellido}` : user.nombre || user.apellido || user.user;
+    }
+    return userValue;
+  };
+
   const activeFilters = [];
   if (agentFilter !== 'todos') {
-    activeFilters.push({ type: 'Agente', value: agentFilter, key: 'agent' });
+    activeFilters.push({ type: 'Agente', value: getAgentDisplayName(agentFilter), key: 'agent' });
   }
   if (statusFilter) {
     activeFilters.push({ type: 'Estado', value: statusFilter, key: 'status' });
@@ -238,8 +297,10 @@ export default function DashboardClientPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos los agentes</SelectItem>
-              {users.map(user => (
-                <SelectItem key={user.email} value={user.name}>{user.name}</SelectItem>
+              {users.map((user: any) => (
+                <SelectItem key={user.user} value={user.user}>
+                  {user.nombre && user.apellido ? `${user.nombre} ${user.apellido}` : user.nombre || user.apellido || user.user}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -259,7 +320,7 @@ export default function DashboardClientPage() {
       </div>
       
       <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-8">
-        {sortedLotsByStatus.map(([status, count]) => {
+        {statusWithCounts.map(({ status, count }) => {
           const styles = getStatusStyles(status);
           return (
             <button
@@ -275,7 +336,7 @@ export default function DashboardClientPage() {
                   <CardTitle className="text-sm font-medium">{status}</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-2">
-                  <div className="text-2xl font-bold">{count}</div>
+                  <div className="text-2xl font-bold">{Number(count) || 0}</div>
                 </CardContent>
               </Card>
             </button>
@@ -470,22 +531,37 @@ export default function DashboardClientPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {listingsOnPage.map((listing) => (
+                        {listingsOnPage.map((listing) => {
+                          // Logs de debug para identificar el problema
+                          console.log('DEBUG listing completo:', listing);
+                          console.log('DEBUG listing.valorVentaUSD:', listing.valorVentaUSD, typeof listing.valorVentaUSD);
+                          console.log('DEBUG listing.vventa:', listing.vventa, typeof listing.vventa);
+                          
+                          return (
                             <TableRow key={listing.smp}>
-                                <TableCell className="font-medium">{listing.address}</TableCell>
-                                <TableCell>{listing.neighborhood}</TableCell>
-                                <TableCell className="text-right">{listing.area}</TableCell>
-                                <TableCell className="text-right">{listing.area}</TableCell>
+                                <TableCell className="font-medium">{String(listing.address || '')}</TableCell>
+                                <TableCell>{String(listing.neighborhood || '')}</TableCell>
+                                <TableCell className="text-right">{Number(listing.area) || 0}</TableCell>
+                                <TableCell className="text-right">{Number(listing.area) || 0}</TableCell>
                                 <TableCell className="text-right">
-                                  {listing.valorVentaUSD.toLocaleString('es-AR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 })}
+                                  {(listing.valorVentaUSD || listing.vventa) ? 
+                                    Number(listing.valorVentaUSD || listing.vventa).toLocaleString('es-AR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }) 
+                                    : '$0'
+                                  }
                                 </TableCell>
                                 <TableCell>
-                                    <Badge style={getStatusStyles(listing.status)}>{listing.status}</Badge>
+                                    <Badge style={getStatusStyles(listing.status)}>{String(listing.status || '')}</Badge>
                                 </TableCell>
-                                <TableCell>{listing.agent.name}</TableCell>
-                                <TableCell>{listing.origen}</TableCell>
+                                <TableCell>
+                                  {listing.agent && typeof listing.agent === 'object' 
+                                    ? (listing.agent.name?.user || listing.agent.name?.nombre || listing.agent.name?.apellido || listing.agent.user || listing.agent.nombre || 'Sin nombre')
+                                    : String(listing.agent || 'Sin asignar')
+                                  }
+                                </TableCell>
+                                <TableCell>{String(listing.origen || '')}</TableCell>
                             </TableRow>
-                        ))}
+                          );
+                        })}
                     </TableBody>
                 </Table>
             </CardContent>
@@ -497,24 +573,69 @@ export default function DashboardClientPage() {
                   {totalPages > 1 && (
                       <Pagination>
                           <PaginationContent>
+                              {/* Botón Anterior */}
                               {currentPage > 1 && (
                               <PaginationItem>
-                                  <PaginationPrevious href={`${pathname}?${createQueryString({ page: currentPage - 1 })}`} />
+                                  <PaginationPrevious 
+                                    onClick={() => router.push(`${pathname}?${createQueryString({ page: currentPage - 1 })}`, { scroll: false })}
+                                    className="cursor-pointer"
+                                  />
                               </PaginationItem>
                               )}
-                              {[...Array(totalPages)].map((_, i) => (
-                                  <PaginationItem key={i}>
-                                      <PaginationLink
-                                          href={`${pathname}?${createQueryString({ page: i + 1 })}`}
-                                          isActive={currentPage === i + 1}
-                                      >
-                                          {i + 1}
-                                      </PaginationLink>
-                                  </PaginationItem>
-                              ))}
+                              
+                              {/* Página actual */}
+                              <PaginationItem>
+                                  <PaginationLink
+                                      onClick={() => router.push(`${pathname}?${createQueryString({ page: currentPage })}`, { scroll: false })}
+                                      isActive={true}
+                                      className="cursor-pointer"
+                                  >
+                                      {currentPage}
+                                  </PaginationLink>
+                              </PaginationItem>
+                              
+                              {/* Página siguiente (si existe) */}
                               {currentPage < totalPages && (
                               <PaginationItem>
-                                  <PaginationNext href={`${pathname}?${createQueryString({ page: currentPage + 1 })}`} />
+                                  <PaginationLink
+                                      onClick={() => router.push(`${pathname}?${createQueryString({ page: currentPage + 1 })}`, { scroll: false })}
+                                      isActive={false}
+                                      className="cursor-pointer"
+                                  >
+                                      {currentPage + 1}
+                                  </PaginationLink>
+                              </PaginationItem>
+                              )}
+                              
+                              {/* Indicador de más páginas */}
+                              {currentPage + 1 < totalPages && (
+                              <PaginationItem>
+                                  <span className="px-3 py-2 text-sm text-muted-foreground">
+                                      ...
+                                  </span>
+                              </PaginationItem>
+                              )}
+                              
+                              {/* Última página (si no es la actual o siguiente) */}
+                              {totalPages > currentPage + 1 && (
+                              <PaginationItem>
+                                  <PaginationLink
+                                      onClick={() => router.push(`${pathname}?${createQueryString({ page: totalPages })}`, { scroll: false })}
+                                      isActive={false}
+                                      className="cursor-pointer"
+                                  >
+                                      {totalPages}
+                                  </PaginationLink>
+                              </PaginationItem>
+                              )}
+                              
+                              {/* Botón Siguiente */}
+                              {currentPage < totalPages && (
+                              <PaginationItem>
+                                  <PaginationNext 
+                                    onClick={() => router.push(`${pathname}?${createQueryString({ page: currentPage + 1 })}`, { scroll: false })}
+                                    className="cursor-pointer"
+                                  />
                               </PaginationItem>
                               )}
                           </PaginationContent>

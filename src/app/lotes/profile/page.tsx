@@ -1,10 +1,13 @@
 "use client"
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import UserList from "@/components/users/UserList";
 import UserDialog from "@/components/users/UserDialog";
 import { users } from "@/lib/data";
 import { useUser } from "@/context/UserContext";
+import { Button } from "@/components/ui/button";
+import { Plus, Eye } from "lucide-react";
 
 // Agrupar usuarios por rol
 const usersByRole = users.reduce((acc, user) => {
@@ -66,12 +69,12 @@ export default function ProfilePage() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Usuarios</h1>
         {currentUser?.rol === "Architect" && (
-          <a
-            href="/lotes/usuario/nuevo"
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-semibold transition-colors"
-          >
-            + Crear usuario
-          </a>
+          <Link href="/lotes/usuario/nuevo">
+            <Button className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Crear Usuario
+            </Button>
+          </Link>
         )}
       </div>
       {Object.entries(usersByRole).map(([role, users]) => (
@@ -110,20 +113,19 @@ export default function ProfilePage() {
                     })}
                   </div>
                   <div className="flex gap-2 mt-auto">
-                    <a
-                      href={`/lotes?agent=${encodeURIComponent(user.user)}`}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-semibold transition-colors"
-                    >
-                      Ver lotes
-                    </a>
+                    <Link href={`/lotes?agent=${encodeURIComponent(user.user)}`}>
+                      <Button variant="outline" className="flex items-center gap-2">
+                        <Eye className="h-4 w-4" />
+                        Ver Lotes
+                      </Button>
+                    </Link>
                     {/* Mostrar botón Editar si el usuario logueado es 'Max' o tiene el mismo user */}
                     {(currentUser?.user === user.user || currentUser?.user === 'Max' || currentUser?.mail === 'maxi.r.gomez@gmail.com') && (
-                      <a
-                        href={`/lotes/usuario/${encodeURIComponent(user.user)}`}
-                        className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded text-sm font-semibold transition-colors"
-                      >
-                        Editar
-                      </a>
+                      <Link href={`/lotes/usuario/${encodeURIComponent(user.user)}`}>
+                        <Button variant="secondary" className="flex items-center gap-2">
+                          Editar
+                        </Button>
+                      </Link>
                     )}
                   </div>
                 </div>

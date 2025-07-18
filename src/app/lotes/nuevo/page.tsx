@@ -22,12 +22,61 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast"
 import { ArrowLeft, Calendar as CalendarIcon } from "lucide-react"
 import { users, listings } from "@/lib/data"
-import { useEffect } from "react"
+import { useEffect, useState, useRef, useCallback } from "react"
 import { cn } from "@/lib/utils"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
+
+// Hook personalizado para detectar cuando el usuario termina de escribir
+function useTypingComplete<T>(value: T, minLength: number = 3): { value: T; triggerSearch: () => void } {
+  const [completedValue, setCompletedValue] = useState<T>(value);
+  const [isTyping, setIsTyping] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout>();
+
+  const triggerSearch = useCallback(() => {
+    setCompletedValue(value);
+    setIsTyping(false);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+  }, [value]);
+
+  useEffect(() => {
+    const stringValue = String(value).trim();
+    
+    if (stringValue.length >= minLength) {
+      setIsTyping(true);
+      
+      // Limpiar timeout anterior
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      
+      // Detectar si el usuario terminó de escribir (espacio, punto, coma, etc.)
+      const hasEndingPunctuation = /[.,;!?]/.test(stringValue);
+      const hasSpace = stringValue.includes(' ');
+      const delay = hasEndingPunctuation ? 100 : (hasSpace ? 200 : 600);
+      
+      timeoutRef.current = setTimeout(() => {
+        setCompletedValue(value);
+        setIsTyping(false);
+      }, delay);
+    } else {
+      setIsTyping(false);
+      setCompletedValue(value);
+    }
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [value, minLength]);
+
+  return { value: completedValue, triggerSearch };
+}
 
 
 const newLoteFormSchema = z.object({
@@ -76,12 +125,30 @@ const newLoteFormSchema = z.object({
 
 type NewLoteFormValues = z.infer<typeof newLoteFormSchema>;
 
-const uniqueStatuses = [...new Set(listings.map(l => l.status))];
-const uniqueOrigens = [...new Set(listings.map(l => l.origen))];
-
 export default function NuevoLotePage() {
   const router = useRouter();
   const { toast } = useToast();
+
+  // Estados para datos dinámicos
+  const [agentes, setAgentes] = useState<any[]>([]);
+  const [estados, setEstados] = useState<string[]>([]);
+  const [origens, setOrigens] = useState<string[]>([]);
+  const [calleSugerencias, setCalleSugerencias] = useState<string[]>([]);
+  const [mostrarCalleSug, setMostrarCalleSug] = useState(false);
+  const [numeroSugerencias, setNumeroSugerencias] = useState<string[]>([]);
+  const [mostrarNumeroSug, setMostrarNumeroSug] = useState(false);
+  const [smpEditable, setSmpEditable] = useState(false);
+  const [loadingCalle, setLoadingCalle] = useState(false);
+  const [loadingNumero, setLoadingNumero] = useState(false);
+  const [loadingSMP, setLoadingSMP] = useState(false);
+  const calleInputRef = useRef<HTMLInputElement>(null);
+  const numeroInputRef = useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    fetch('/api/lotes/agentes').then(res => res.json()).then(data => setAgentes(data.agentes || []));
+    fetch('/api/lotes/estados').then(res => res.json()).then(data => setEstados(data.estados || []));
+    fetch('/api/lotes/origenes').then(res => res.json()).then(data => setOrigens(data.origenes || []));
+  }, []);
 
   const form = useForm<NewLoteFormValues>({
     resolver: zodResolver(newLoteFormSchema),
@@ -125,41 +192,105 @@ export default function NuevoLotePage() {
 
   const frenteValue = form.watch("frente");
   const numeroValue = form.watch("numero");
+  
+  // Aplicar detección de escritura completa a los valores de búsqueda
+  const frenteTyping = useTypingComplete(frenteValue, 3);
+  const numeroTyping = useTypingComplete(numeroValue, 1);
+  const completedFrenteValue = frenteTyping.value;
+  const completedNumeroValue = numeroTyping.value;
 
+  // Sugerencias de calle con detección de escritura completa
   useEffect(() => {
-    const searchFrente = frenteValue.toLowerCase();
-    const searchNumero = numeroValue?.toLowerCase() || '';
-    const fullSearch = `${searchFrente} ${searchNumero}`.trim();
-    
-    if (searchFrente) {
-      const foundListing = listings.find(l => 
-        l.smp.toLowerCase() === searchFrente ||
-        l.address.toLowerCase().includes(fullSearch)
-      );
-
-      if (foundListing) {
-        form.setValue("smp", foundListing.smp, { shouldValidate: true });
-        form.setValue("neighborhood", foundListing.neighborhood, { shouldValidate: true });
-        form.setValue("partida", foundListing.partida || "", { shouldValidate: true });
-        form.setValue("area", foundListing.area, { shouldValidate: true });
-        form.setValue("codigoUrbanistico", foundListing.codigoUrbanistico || "", { shouldValidate: true });
-        form.setValue("cpu", foundListing.cpu || "", { shouldValidate: true });
-        form.setValue("incidenciaUVA", foundListing.incidenciaUVA || 0, { shouldValidate: true });
-        form.setValue("fot", foundListing.fot || 0, { shouldValidate: true });
-        form.setValue("alicuota", foundListing.alicuota || 0, { shouldValidate: true });
-      } else {
-        form.setValue("smp", "", { shouldValidate: false });
-        form.setValue("neighborhood", "", { shouldValidate: false });
-        form.setValue("partida", "", { shouldValidate: false });
-        form.setValue("area", 0, { shouldValidate: false });
-        form.setValue("codigoUrbanistico", "", { shouldValidate: false });
-        form.setValue("cpu", "", { shouldValidate: false });
-        form.setValue("incidenciaUVA", 0, { shouldValidate: false });
-        form.setValue("fot", 0, { shouldValidate: false });
-        form.setValue("alicuota", 0, { shouldValidate: false });
-      }
+    const query = completedFrenteValue.trim();
+    if (query.length >= 3) {
+      setLoadingCalle(true);
+      fetch(`/api/lotes/buscar?frente=${encodeURIComponent(query)}`)
+        .then(res => res.json())
+        .then(data => {
+          const unicas = Array.from(new Set(data.lotes.map((l: any) => l.frente))).filter(Boolean) as string[];
+          setCalleSugerencias(unicas);
+          // Solo mostrar sugerencias si el valor actual no está en la lista
+          setMostrarCalleSug(unicas.length > 0 && !unicas.includes(completedFrenteValue));
+          setLoadingCalle(false);
+        })
+        .catch(() => setLoadingCalle(false));
+    } else {
+      setCalleSugerencias([]);
+      setMostrarCalleSug(false);
+      setLoadingCalle(false);
     }
-  }, [frenteValue, numeroValue, form]);
+  }, [completedFrenteValue]);
+
+  // Actualizar mostrarCalleSug cuando cambie frenteValue
+  useEffect(() => {
+    if (calleSugerencias.length > 0) {
+      setMostrarCalleSug(!calleSugerencias.includes(completedFrenteValue));
+    }
+  }, [completedFrenteValue, calleSugerencias]);
+
+  // Sugerencias de número - siempre cargar para la calle seleccionada
+  useEffect(() => {
+    const calle = completedFrenteValue.trim();
+    if (calle && calle.length > 0) {
+      setLoadingNumero(true);
+      fetch(`/api/lotes/buscar?frente=${encodeURIComponent(calle)}`)
+        .then(res => res.json())
+        .then(data => {
+          const nums = Array.from(new Set(data.lotes.map((l: any) => l.num_dom))).filter(Boolean) as string[];
+          setNumeroSugerencias(nums);
+          setLoadingNumero(false);
+        })
+        .catch(() => setLoadingNumero(false));
+    } else {
+      setNumeroSugerencias([]);
+      setLoadingNumero(false);
+    }
+  }, [completedFrenteValue]);
+
+  // Filtrar sugerencias de número en tiempo real
+  const numeroSugerenciasFiltradas = numeroSugerencias.filter(num => 
+    num.toLowerCase().includes(numeroValue?.toLowerCase() || '')
+  );
+
+  // Mostrar sugerencias de número si hay calle seleccionada y hay sugerencias filtradas
+  const mostrarNumeroSugerencias = completedFrenteValue.trim() && numeroSugerenciasFiltradas.length > 0;
+
+  // Autocomplete SMP y datos normativos
+  useEffect(() => {
+    const searchFrente = completedFrenteValue.trim();
+    const searchNumero = completedNumeroValue?.trim() || '';
+    setSmpEditable(false);
+    if (searchFrente && searchNumero) {
+      setLoadingSMP(true);
+      const params = new URLSearchParams({ frente: searchFrente, num_dom: searchNumero });
+      fetch(`/api/lotes/buscar?${params.toString()}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.found && data.lotes.length > 0) {
+            const lote = data.lotes[0];
+            form.setValue('smp', lote.smp || '', { shouldValidate: true });
+            form.setValue('neighborhood', lote.neighborhood || '', { shouldValidate: true });
+            form.setValue('partida', lote.partida || '', { shouldValidate: true });
+            form.setValue('area', lote.area || 0, { shouldValidate: true });
+            form.setValue('codigoUrbanistico', lote.codigoUrbanistico || '', { shouldValidate: true });
+            form.setValue('cpu', lote.cpu || '', { shouldValidate: true });
+            form.setValue('incidenciaUVA', lote.incidenciaUVA || 0, { shouldValidate: true });
+            form.setValue('fot', lote.fot || 0, { shouldValidate: true });
+            form.setValue('alicuota', lote.alicuota || 0, { shouldValidate: true });
+            setSmpEditable(false);
+          } else {
+            form.setValue('smp', '', { shouldValidate: false });
+            setSmpEditable(true);
+          }
+          setLoadingSMP(false);
+        })
+        .catch(() => setLoadingSMP(false));
+    } else {
+      form.setValue('smp', '', { shouldValidate: false });
+      setSmpEditable(false);
+      setLoadingSMP(false);
+    }
+  }, [completedFrenteValue, completedNumeroValue, form]);
 
   function onSubmit(data: NewLoteFormValues) {
     console.log(data);
@@ -203,26 +334,177 @@ export default function NuevoLotePage() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                    <FormField control={form.control} name="frente" render={({ field }) => (
-                    <FormItem className="lg:col-span-2">
-                      <FormLabel>Calle</FormLabel>
-                      <FormControl><Input placeholder="Ej: Av. Santa Fe o SMP" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}/>
+                  <FormItem className="lg:col-span-2 relative">
+                    <FormLabel>Calle</FormLabel>
+                    <FormControl>
+                      <div>
+                        <Input
+                          placeholder="Ej: Av. Santa Fe o SMP"
+                          {...field}
+                          ref={calleInputRef}
+                          autoComplete="off"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              frenteTyping.triggerSearch();
+                            }
+                          }}
+                          onFocus={() => {
+                            console.log('[CALLE FOCUS] frenteValue:', frenteValue);
+                            console.log('[CALLE FOCUS] calleSugerencias:', calleSugerencias);
+                            console.log('[CALLE FOCUS] mostrarCalleSug:', mostrarCalleSug);
+                            // No cambiar el estado aquí, ya se maneja en useEffect
+                          }}
+                          onBlur={() => {
+                            setTimeout(() => setMostrarCalleSug(false), 200);
+                          }}
+                        />
+                        {loadingCalle && (
+                          <div className="mt-2">
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '100%' }}></div>
+                            </div>
+                            <div className="text-xs text-gray-600 mt-1">Cargando...</div>
+                          </div>
+                        )}
+                        {mostrarCalleSug && calleSugerencias.length > 0 && (
+                          <div style={{
+                            position: 'absolute',
+                            zIndex: 10,
+                            background: 'white',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: 4,
+                            marginTop: 2,
+                            maxHeight: 120,
+                            overflowY: calleSugerencias.length > 3 ? 'scroll' : 'auto',
+                            width: '100%'
+                          }}>
+                            {calleSugerencias.slice(0, 3).map((calle, idx) => (
+                              <div
+                                key={calle}
+                                style={{
+                                  padding: '8px 12px',
+                                  borderBottom: idx < Math.min(2, calleSugerencias.length - 1) ? '1px solid lightgray' : 'none',
+                                  cursor: 'pointer',
+                                  background: frenteValue === calle ? '#f3f4f6' : 'white'
+                                }}
+                                onClick={() => {
+                                  console.log('[CALLE CLICK] Seleccionando calle:', calle);
+                                  console.log('[CALLE CLICK] frenteValue antes:', frenteValue);
+                                  form.setValue('frente', calle, { shouldValidate: true });
+                                  setMostrarCalleSug(false);
+                                  console.log('[CALLE CLICK] Sugerencias ocultadas');
+                                  setTimeout(() => numeroInputRef.current?.focus(), 100);
+                                }}
+                              >
+                                {calle}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}/>
                   <FormField control={form.control} name="numero" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Número</FormLabel>
-                      <FormControl><Input placeholder="Ej: 1060" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}/>
+                  <FormItem className="relative">
+                    <FormLabel>Número</FormLabel>
+                    <FormControl>
+                      <div>
+                        <Input
+                          placeholder="Ej: 1060"
+                          {...field}
+                          ref={numeroInputRef}
+                          autoComplete="off"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              numeroTyping.triggerSearch();
+                            }
+                          }}
+                          onFocus={() => {
+                            if (mostrarNumeroSugerencias) {
+                              setMostrarNumeroSug(true);
+                            }
+                          }}
+                          onBlur={() => {
+                            setTimeout(() => setMostrarNumeroSug(false), 200);
+                          }}
+                        />
+                        {loadingNumero && (
+                          <div className="mt-2">
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '100%' }}></div>
+                            </div>
+                            <div className="text-xs text-gray-600 mt-1">Cargando...</div>
+                          </div>
+                        )}
+                        {mostrarNumeroSug && mostrarNumeroSugerencias && (
+                          <div style={{
+                            position: 'absolute',
+                            zIndex: 10,
+                            background: 'white',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: 4,
+                            marginTop: 2,
+                            maxHeight: 120,
+                            overflowY: numeroSugerenciasFiltradas.length > 3 ? 'scroll' : 'auto',
+                            width: '100%'
+                          }}>
+                            {numeroSugerenciasFiltradas.slice(0, 3).map((num, idx) => (
+                              <div
+                                key={num}
+                                style={{
+                                  padding: '8px 12px',
+                                  borderBottom: idx < Math.min(2, numeroSugerenciasFiltradas.length - 1) ? '1px solid lightgray' : 'none',
+                                  cursor: 'pointer',
+                                  background: numeroValue === num ? '#f3f4f6' : 'white'
+                                }}
+                                onMouseDown={() => {
+                                  form.setValue('numero', num, { shouldValidate: true });
+                                  setMostrarNumeroSug(false);
+                                }}
+                                onClick={() => {
+                                  form.setValue('numero', num, { shouldValidate: true });
+                                  setMostrarNumeroSug(false);
+                                }}
+                              >
+                                {num}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}/>
                    <FormField control={form.control} name="smp" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>SMP</FormLabel>
-                      <FormControl><Input {...field} readOnly /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}/>
+                  <FormItem>
+                    <FormLabel>SMP</FormLabel>
+                    <FormControl>
+                      <div>
+                        <Input
+                          {...field}
+                          readOnly={!smpEditable}
+                          placeholder={smpEditable ? 'No existe SMP, ingrese uno nuevo' : ''}
+                          style={smpEditable ? { background: '#fffbe6', border: '1px solid #facc15' } : {}}
+                        />
+                        {loadingSMP && (
+                          <div className="mt-2">
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '100%' }}></div>
+                            </div>
+                            <div className="text-xs text-gray-600 mt-1">Cargando...</div>
+                          </div>
+                        )}
+                      </div>
+                    </FormControl>
+                    {smpEditable && <div className="text-xs text-yellow-700 mt-1">No existe SMP para esa combinación. Ingrese uno nuevo.</div>}
+                    <FormMessage />
+                  </FormItem>
+                )}/>
                   <FormField control={form.control} name="agent" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Agente Asignado</FormLabel>
@@ -231,7 +513,7 @@ export default function NuevoLotePage() {
                           <SelectTrigger><SelectValue placeholder="Seleccionar agente..." /></SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {users.map(user => <SelectItem key={user.email} value={user.name}>{user.name}</SelectItem>)}
+                          {agentes.map(user => <SelectItem key={user.user || user.email} value={user.name || user.user}>{user.name || user.user}</SelectItem>)}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -245,7 +527,7 @@ export default function NuevoLotePage() {
                           <SelectTrigger><SelectValue placeholder="Seleccionar estado..." /></SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {uniqueStatuses.map(status => <SelectItem key={status} value={status}>{status}</SelectItem>)}
+                          {estados.map(status => <SelectItem key={status} value={status}>{status}</SelectItem>)}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -259,7 +541,7 @@ export default function NuevoLotePage() {
                           <SelectTrigger><SelectValue placeholder="Seleccionar origen..." /></SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {uniqueOrigens.map(origen => <SelectItem key={origen} value={origen}>{origen}</SelectItem>)}
+                          {origens.map(origen => <SelectItem key={origen} value={origen}>{origen}</SelectItem>)}
                         </SelectContent>
                       </Select>
                       <FormMessage />

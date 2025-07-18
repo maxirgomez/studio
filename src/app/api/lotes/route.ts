@@ -52,6 +52,7 @@ export async function GET(req: Request) {
   const origen = searchParams.get('origen');
   const minArea = searchParams.get('minArea');
   const maxArea = searchParams.get('maxArea');
+  const search = searchParams.get('search');
 
   // Construir query dinámica
   let whereClauses = [];
@@ -98,6 +99,11 @@ export async function GET(req: Request) {
   if (maxArea) {
     whereClauses.push(`m2aprox <= $${idx}`);
     values.push(Number(maxArea));
+    idx++;
+  }
+  if (search) {
+    whereClauses.push(`(LOWER(smp) LIKE LOWER($${idx}) OR LOWER(dir_lote) LIKE LOWER($${idx}) OR LOWER(barrio) LIKE LOWER($${idx}))`);
+    values.push(`%${search.toLowerCase()}%`);
     idx++;
   }
 
@@ -159,5 +165,44 @@ export async function GET_BARRIOS() {
     return NextResponse.json({ barrios });
   } catch (error) {
     return NextResponse.json({ error: 'Error al obtener barrios', details: (error as Error).message }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    // Validar campos requeridos
+    const requiredFields = [
+      'smp', 'propietario', 'direccion', 'barrio', 'superficie', 'estado', 'agente', 'origen'
+    ];
+    for (const field of requiredFields) {
+      if (!body[field] || body[field] === "") {
+        return NextResponse.json({ error: `El campo '${field}' es requerido.` }, { status: 400 });
+      }
+    }
+    // Chequear si ya existe un lote con ese SMP
+    const { rows: existingRows } = await pool.query(
+      `SELECT 1 FROM public.prefapp_lotes WHERE smp = $1 LIMIT 1`,
+      [body.smp]
+    );
+    if (existingRows.length > 0) {
+      return NextResponse.json({ error: 'Ya existe un lote con ese SMP.' }, { status: 409 });
+    }
+    // Insertar el nuevo lote
+    const insertFields = [
+      'smp', 'propietario', 'direccion', 'barrio', 'superficie', 'estado', 'agente', 'origen',
+      'codigo_urbanistico', 'cpu', 'partida', 'incidencia_uva', 'fot', 'alicuota',
+      'localidad', 'cp', 'direccionalt', 'fallecido', 'email',
+      'tel1', 'tel2', 'tel3', 'cel1', 'cel2', 'cel3',
+      'm2vendibles', 'vventa', 'inctasada', 'fpago', 'fventa'
+    ];
+    const values = insertFields.map(f => body[f] === undefined ? null : body[f]);
+    const placeholders = insertFields.map((_, i) => `$${i + 1}`).join(', ');
+    const insertQuery = `INSERT INTO public.prefapp_lotes (${insertFields.join(', ')}) VALUES (${placeholders})`;
+    await pool.query(insertQuery, values);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('[POST /api/lotes] Error al crear lote:', error);
+    return NextResponse.json({ error: 'Error al crear el lote', details: (error as Error).message }, { status: 500 });
   }
 } 

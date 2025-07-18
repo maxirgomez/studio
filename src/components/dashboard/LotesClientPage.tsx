@@ -72,6 +72,7 @@ export default function LotesClientPage() {
   const neighborhoodFilters = useMemo(() => searchParams.get('neighborhood')?.split(',') || [], [searchParams]);
   const statusFilters = useMemo(() => searchParams.get('status')?.split(',') || [], [searchParams]);
   const origenFilters = useMemo(() => searchParams.get('origen')?.split(',') || [], [searchParams]);
+  const searchFilter = useMemo(() => searchParams.get('search') || '', [searchParams]);
 
   const minAreaFilter = useMemo(() => searchParams.get('minArea') ? Number(searchParams.get('minArea')) : minArea, [searchParams, minArea]);
   const maxAreaFilter = useMemo(() => searchParams.get('maxArea') ? Number(searchParams.get('maxArea')) : maxArea, [searchParams, maxArea]);
@@ -191,6 +192,30 @@ export default function LotesClientPage() {
      router.push(`${pathname}?${createQueryString({ minArea: String(newRange[0]), maxArea: String(newRange[1]), page: 1 })}`, { scroll: false });
   };
 
+  // Hook de debounce para el buscador
+  const [searchInput, setSearchInput] = useState(searchFilter);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput !== searchFilter) {
+        router.push(`${pathname}?${createQueryString({ search: searchInput || null, page: 1 })}`, { scroll: false });
+      }
+    }, 500); // 500ms de debounce
+
+    return () => clearTimeout(timer);
+  }, [searchInput, searchFilter, pathname, createQueryString, router]);
+
+  const handleSearchChange = (searchTerm: string) => {
+    setSearchInput(searchTerm);
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      router.push(`${pathname}?${createQueryString({ search: searchInput || null, page: 1 })}`, { scroll: false });
+    }
+  };
+
   const filteredListings = useMemo(() => {
     return listings.filter(listing => {
       const agentMatch = agentFilters.length === 0 || agentFilters.includes(listing.agent.name);
@@ -233,6 +258,19 @@ export default function LotesClientPage() {
   const [realListings, setRealListings] = useState<Listing[]>([]);
   const [loadingRealListings, setLoadingRealListings] = useState(true);
   const [total, setTotal] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Filtrar lotes por término de búsqueda
+  const filteredRealListings = useMemo(() => {
+    if (!searchTerm.trim()) return realListings;
+    
+    const term = searchTerm.toLowerCase().trim();
+    return realListings.filter(lote => 
+      lote.smp?.toLowerCase().includes(term) ||
+      lote.address?.toLowerCase().includes(term) ||
+      lote.neighborhood?.toLowerCase().includes(term)
+    );
+  }, [realListings, searchTerm]);
 
   useEffect(() => {
     setLoadingRealListings(true);
@@ -247,6 +285,7 @@ export default function LotesClientPage() {
       if (origenFilters.length > 0) params.set('origen', origenFilters.join(','));
       if (minAreaFilter !== minArea) params.set('minArea', String(minAreaFilter));
       if (maxAreaFilter !== maxArea) params.set('maxArea', String(maxAreaFilter));
+      if (searchFilter) params.set('search', searchFilter);
       const res = await fetch(`/api/lotes?${params.toString()}`);
       const data = await res.json();
       const lotes = (data.lotes || []).map((lote: any) => ({
@@ -259,7 +298,7 @@ export default function LotesClientPage() {
       setLoadingRealListings(false);
     };
     fetchLotes();
-  }, [currentPage, agentFilters, neighborhoodFilters, statusFilters, origenFilters, minAreaFilter, maxAreaFilter]);
+  }, [currentPage, agentFilters, neighborhoodFilters, statusFilters, origenFilters, minAreaFilter, maxAreaFilter, searchFilter]);
 
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 lg:grid-cols-[280px_1fr]">
@@ -287,8 +326,28 @@ export default function LotesClientPage() {
           handleRemoveFilter={handleRemoveFilter}
         />
       </div>
-      {/* Restaurar layout de dos columnas: filtros a la izquierda, grilla a la derecha */}
-      <div className="lg:col-span-1">
+      {/* Botón '+ Nuevo Lote' y buscador arriba de la grilla */}
+      <div className="lg:col-span-1 flex flex-col gap-4">
+        <div className="flex justify-between items-center mb-2 gap-4">
+          <div className="flex-1 max-w-md">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por SMP, dirección o barrio..."
+                value={searchInput}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                className="pl-10"
+              />
+            </div>
+          </div>
+          <Link href="/lotes/nuevo">
+            <Button className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Nuevo Lote
+            </Button>
+          </Link>
+        </div>
         <LotesGrid listings={realListings} loading={loadingRealListings} />
         <LotesPagination
           currentPage={currentPage}
