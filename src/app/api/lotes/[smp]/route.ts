@@ -6,6 +6,16 @@ function mapLote(row: any) {
     if (val === null || val === undefined) return "";
     return String(val).replace(/\.0+$/, "");
   }
+  
+  function formatCuitCuil(cuitcuil: any): string {
+    if (!cuitcuil) return '';
+    const str = String(cuitcuil).replace(/\.0+$/, ''); // Eliminar .0000000000
+    if (/^\d{11}$/.test(str)) {
+      return `${str.slice(0, 2)}-${str.slice(2, 10)}-${str.slice(10)}`;
+    }
+    return str;
+  }
+  
   // LOG para depuración de m2vendibles
   console.log('DEBUG row.m2vendibles:', row.m2vendibles);
   console.log('DEBUG row completo:', row);
@@ -40,6 +50,7 @@ function mapLote(row: any) {
     direccionalt: row.direccionalt,
     fallecido: row.fallecido,
     email: row.email,
+    cuitcuil: formatCuitCuil(row.cuitcuil),
     tel1: cleanPhone(row.tel1),
     tel2: cleanPhone(row.tel2),
     tel3: cleanPhone(row.tel3),
@@ -129,6 +140,11 @@ export async function PUT(req: Request, context: any) {
         body[field] = null;
       }
     }
+    
+    // Limpiar formato del CUIT/CUIL si existe
+    if (body.cuitcuil) {
+      body.cuitcuil = String(body.cuitcuil).replace(/[^0-9]/g, ''); // Solo números
+    }
     // Validar que el lote existe
     const { rows: existingRows } = await pool.query(
       `SELECT 1 FROM public.prefapp_lotes WHERE smp = $1 LIMIT 1`,
@@ -140,7 +156,7 @@ export async function PUT(req: Request, context: any) {
     }
     // Actualizar solo los campos editables
     const fields = [
-      'propietario', 'direccion', 'localidad', 'cp', 'direccionalt', 'fallecido', 'email',
+      'propietario', 'direccion', 'localidad', 'cp', 'direccionalt', 'fallecido', 'email', 'cuitcuil',
       'tel1', 'tel2', 'tel3', 'cel1', 'cel2', 'cel3',
       'm2vendibles', 'vventa', 'inctasada', 'fpago', 'fventa'
     ];

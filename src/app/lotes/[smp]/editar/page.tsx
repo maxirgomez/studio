@@ -44,6 +44,7 @@ const editLoteFormSchema = z.object({
   celular2: z.string().optional(),
   celular3: z.string().optional(),
   email: z.string().email("Email inválido.").or(z.literal("")).optional(),
+  cuitcuil: z.string().optional(),
   
   m2Vendibles: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.").optional()),
   valorVentaUSD: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.").optional()),
@@ -53,6 +54,21 @@ const editLoteFormSchema = z.object({
 });
 
 type EditLoteFormValues = z.infer<typeof editLoteFormSchema>;
+
+function formatCuitCuil(cuitcuil: any): string {
+  if (!cuitcuil) return '';
+  
+  // Convertir a string y limpiar
+  const str = String(cuitcuil).replace(/\.0+$/, ''); // Eliminar .0000000000
+  
+  // Si es un número válido, formatearlo como CUIT/CUIL
+  if (/^\d{11}$/.test(str)) {
+    return `${str.slice(0, 2)}-${str.slice(2, 10)}-${str.slice(10)}`;
+  }
+  
+  // Si ya tiene formato o es otro tipo de dato, devolverlo tal como está
+  return str;
+}
 
 export default function LoteEditPage() {
   const params = useParams<{ smp: string }>();
@@ -104,6 +120,7 @@ export default function LoteEditPage() {
     celular2: listing?.cel2 ?? "",
     celular3: listing?.cel3 ?? "",
     email: listing?.email ?? "", // CAMBIO mail -> email
+    cuitcuil: listing?.cuitcuil ?? "",
     m2Vendibles: listing?.m2Vendibles ?? listing?.m2vendibles ?? 0, // CAMBIO m2_vendibles -> m2vendibles
     valorVentaUSD: listing?.valorVentaUSD ?? listing?.vventa ?? 0, // CAMBIO valor_venta_usd -> valorventausd
     incidenciaTasadaUSD: listing?.incidenciaTasadaUSD ?? listing?.inctasada ?? 0,
@@ -135,6 +152,7 @@ export default function LoteEditPage() {
         celular2: listing.cel2 ?? "",
         celular3: listing.cel3 ?? "",
         email: listing.email ?? "", // CAMBIO mail -> email
+        cuitcuil: formatCuitCuil(listing.cuitcuil),
         m2Vendibles: listing.m2Vendibles ?? listing.m2vendibles ?? 0, // CAMBIO m2_vendibles -> m2vendibles
         valorVentaUSD: listing.valorVentaUSD ?? listing.vventa ?? 0, // CAMBIO valor_venta_usd -> valorventausd
         incidenciaTasadaUSD: listing.incidenciaTasadaUSD ?? listing.inctasada ?? 0,
@@ -191,6 +209,7 @@ export default function LoteEditPage() {
           cel2: safeData.celular2,
           cel3: safeData.celular3,
           email: safeData.email, // CAMBIO mail -> email
+          cuitcuil: safeData.cuitcuil,
           m2vendibles: safeData.m2Vendibles, // CAMBIO m2_vendibles -> m2vendibles
           vventa: safeData.valorVentaUSD, // CAMBIO valor_venta_usd -> valorventausd
           inctasada: safeData.incidenciaTasadaUSD,
@@ -358,6 +377,9 @@ export default function LoteEditPage() {
                   )}/>
                    <FormField control={form.control} name="email" render={({ field }) => (
                     <FormItem><FormLabel>Correo Electrónico</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+                  )}/>
+                   <FormField control={form.control} name="cuitcuil" render={({ field }) => (
+                    <FormItem><FormLabel>CUIT/CUIL</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                   )}/>
                 </div>
                  <div className="mt-4">

@@ -20,7 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, MapPin, Scan, Ruler, Edit, Download, Upload, Library, FileText, User, Home, Mailbox, Building, Phone, Smartphone, Mail, Info, XCircle, Scaling, Percent, CreditCard, DollarSign, MessageSquare, Calendar } from "lucide-react"
+import { ArrowLeft, MapPin, Scan, Ruler, Edit, Download, Upload, Library, FileText, User, Home, Mailbox, Building, Phone, Smartphone, Mail, Info, XCircle, Scaling, Percent, CreditCard, DollarSign, MessageSquare, Calendar, CreditCard as CreditCardIcon } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -117,6 +117,7 @@ const PdfContent = React.forwardRef<
           <div style={fieldStyle}><span style={labelStyle}>Dirección Alternativa:</span> <span style={valueStyle}>{listing.direccionalt}</span></div>
           <div style={fieldStyle}><span style={labelStyle}>Fallecido:</span> <span style={valueStyle}>{listing.fallecido}</span></div>
           <div style={fieldStyle}><span style={labelStyle}>Email:</span> <span style={valueStyle}>{listing.mail}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Cuit/Cuil:</span> <span style={valueStyle}>{formatCuitCuil(listing.cuitcuil)}</span></div>
         </div>
         <div>
           <div style={fieldStyle}><span style={labelStyle}>Teléfono 1:</span> <span style={valueStyle}>{listing.tel1}</span></div>
@@ -141,6 +142,21 @@ function getAgenteNombre(agenteUsuario: any, agente: string) {
     return `${agenteUsuario.nombre} ${agenteUsuario.apellido}`;
   }
   return agente || "-";
+}
+
+function formatCuitCuil(cuitcuil: any): string {
+  if (!cuitcuil) return 'N/A';
+  
+  // Convertir a string y limpiar
+  const str = String(cuitcuil).replace(/\.0+$/, ''); // Eliminar .0000000000
+  
+  // Si es un número válido, formatearlo como CUIT/CUIL
+  if (/^\d{11}$/.test(str)) {
+    return `${str.slice(0, 2)}-${str.slice(2, 10)}-${str.slice(10)}`;
+  }
+  
+  // Si ya tiene formato o es otro tipo de dato, devolverlo tal como está
+  return str;
 }
 
 export default function LoteDetailPage() {
@@ -738,6 +754,11 @@ export default function LoteDetailPage() {
                           <Mail className="h-5 w-5 mr-3 text-muted-foreground" />
                           <span className="font-medium">Correo Electrónico:</span>
                           <span className="ml-auto text-muted-foreground truncate">{listing.mail}</span>
+                      </div>
+                      <div className="flex items-center">
+                          <CreditCardIcon className="h-5 w-5 mr-3 text-muted-foreground" />
+                          <span className="font-medium">CUIT/CUIL:</span>
+                          <span className="ml-auto text-muted-foreground">{formatCuitCuil(listing.cuitcuil)}</span>
                       </div>
                     </div>
                     <div className="space-y-4">
