@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { useToast } from "@/hooks/use-toast"
-import { ArrowLeft, MapPin, Scan, Ruler, Building, FileText, User, Home, Mailbox, Phone, Smartphone, Mail, Info, XCircle, Scaling, Percent, CreditCard, DollarSign, Library, Calendar as CalendarIcon } from "lucide-react"
+import { ArrowLeft, MapPin, Scan, Ruler, Building, FileText, User, Home, Mailbox, Phone, Smartphone, Mail, Info, XCircle, Scaling, Percent, CreditCard, DollarSign, Library, Calendar as CalendarIcon, Edit } from "lucide-react"
 import { listings } from "@/lib/data"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -28,6 +28,10 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import Image from "next/image";
+import { useUser } from "@/context/UserContext"
 
 const editLoteFormSchema = z.object({
   propietario: z.string().optional(),
@@ -74,13 +78,23 @@ export default function LoteEditPage() {
   const params = useParams<{ smp: string }>();
   const router = useRouter();
   const { toast } = useToast();
+  const { user } = useUser();
 
   // Estado para el lote real
   const [listing, setListing] = useState<any | null>(null);
+  const [agenteUsuario, setAgenteUsuario] = useState<any | null>(null);
+  const [estados, setEstados] = useState<string[]>([]);
+  const [agentes, setAgentes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [success, setSuccess] = useState(false);
   const [saving, setSaving] = useState(false); // Nuevo estado para loader
+
+  // Estados para edición de foto
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchLote() {
@@ -91,18 +105,33 @@ export default function LoteEditPage() {
         if (res.status === 404) {
           setNotFound(true);
           setListing(null);
+          setAgenteUsuario(null);
         } else {
           const data = await res.json();
           setListing(data.lote);
+          setAgenteUsuario(data.agenteUsuario || null);
         }
       } catch (e) {
         setNotFound(true);
         setListing(null);
+        setAgenteUsuario(null);
       }
       setLoading(false);
     }
     fetchLote();
   }, [params.smp]);
+
+  useEffect(() => {
+    fetch('/api/lotes/estados')
+      .then(res => res.json())
+      .then(data => setEstados(data.estados || []));
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/lotes/agentes')
+      .then(res => res.json())
+      .then(data => setAgentes(data.agentes || []));
+  }, []);
 
   // Valores por defecto SIEMPRE definidos
   const defaultFormValues: EditLoteFormValues = {
@@ -245,6 +274,44 @@ export default function LoteEditPage() {
     setSaving(false);
   }
 
+  // Handler para cambio de archivo
+  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      setSelectedFile(file);
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  }
+
+  // Handler para guardar la nueva foto
+  async function handleSaveChanges() {
+    if (!selectedFile || !listing) return;
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      const res = await fetch(`/api/lotes/${listing.smp}/foto`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentImageUrl(data.url);
+        setListing((prev: any) => ({ ...prev, foto_lote: data.url }));
+        setIsEditDialogOpen(false);
+        setSelectedFile(null);
+        setPreviewUrl(null);
+        toast({ title: 'Foto actualizada', description: 'La foto del lote fue actualizada correctamente.' });
+      } else {
+        toast({ title: 'Error al subir la foto', description: 'No se pudo subir la imagen.', variant: 'destructive' });
+      }
+    } catch (e) {
+      toast({ title: 'Error de red', description: 'No se pudo conectar con el servidor.', variant: 'destructive' });
+    }
+  }
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -330,9 +397,76 @@ export default function LoteEditPage() {
                 </div>
               </CardContent>
             </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Estado y agente</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm">
+                <div className="flex items-center">
+                  <Scan className="h-5 w-5 mr-3 text-muted-foreground" />
+                  <span className="font-medium">Agente:</span>
+                  {user?.rol === 'Administrador' || user?.rol === 'Asesor' ? (
+                    <div className="ml-auto">
+                      <Select
+                        value={listing?.agente || ''}
+                        onValueChange={val => {
+                          setListing((prev: any) => ({ ...prev, agente: val }));
+                        }}
+                      >
+                        <SelectTrigger className="w-40">
+                          <SelectValue placeholder="Seleccionar agente..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {agentes.map(agente => {
+                            const nombreCompleto = agente.nombre && agente.apellido 
+                              ? `${agente.nombre} ${agente.apellido}` 
+                              : agente.user || 'Sin nombre';
+                            return (
+                              <SelectItem key={agente.user} value={agente.user}>
+                                {nombreCompleto}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : (
+                    <span className="ml-auto text-muted-foreground">
+                      {agenteUsuario ? `${agenteUsuario.nombre || ''} ${agenteUsuario.apellido || ''}`.trim() : 'Sin asignar'}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center">
+                  <Library className="h-5 w-5 mr-3 text-muted-foreground" />
+                  <span className="font-medium">Estado:</span>
+                  {user?.rol === 'Administrador' || user?.rol === 'Asesor' ? (
+                    <div className="ml-auto">
+                      <Select
+                        value={listing?.status || ''}
+                        onValueChange={val => setListing((prev: any) => ({ ...prev, status: val }))}
+                      >
+                        <SelectTrigger className="w-40">
+                          <SelectValue placeholder="Seleccionar estado..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {estados.map(estado => (
+                            <SelectItem key={estado} value={estado}>{estado}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : (
+                    <span className="ml-auto text-muted-foreground">
+                      {listing?.status || 'Sin estado'}
+                    </span>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
           
           <div className="space-y-6 lg:col-span-2">
+            {user?.rol === 'Administrador' || user?.rol === 'Asesor' ? (
              <Card>
               <CardHeader>
                 <CardTitle>Información del propietario</CardTitle>
@@ -389,6 +523,7 @@ export default function LoteEditPage() {
                 </div>
               </CardContent>
             </Card>
+            ) : null}
             <Card>
               <CardHeader>
                 <CardTitle>Datos de Tasación</CardTitle>
@@ -473,6 +608,47 @@ export default function LoteEditPage() {
               </CardContent>
             </Card>
           </div>
+        </div>
+        <div className="flex flex-col gap-2">
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="default"><Edit className="mr-2 h-4 w-4"/> Editar foto</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Editar Foto del Lote</DialogTitle>
+                <DialogDescription>
+                  Selecciona una nueva imagen para el lote. La imagen se actualizará al guardar los cambios.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid w-full max-w-sm items-center gap-1.5">
+                  <Label htmlFor="picture">Nueva Foto</Label>
+                  <Input id="picture" type="file" onChange={handleFileChange} accept="image/*" />
+                </div>
+                {(previewUrl || currentImageUrl || listing?.foto_lote) && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium mb-2">Vista Previa:</p>
+                    <Image 
+                      src={previewUrl || currentImageUrl || listing.foto_lote} 
+                      alt="Vista previa de la imagen"
+                      width={400}
+                      height={300}
+                      className="rounded-md object-cover aspect-video"
+                    />
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="secondary">Cancelar</Button>
+                </DialogClose>
+                <Button type="button" onClick={handleSaveChanges} disabled={!selectedFile}>
+                  Guardar Cambios
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </form>
     </Form>

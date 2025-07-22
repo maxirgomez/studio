@@ -68,11 +68,17 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+const getDateCutoff = (range: "12m" | "6m" | "3m") => {
+  const months = range === "12m" ? 12 : range === "6m" ? 6 : 3;
+  return subMonths(new Date(), months);
+};
 
 const processDashboardData = (listings: any[], agentFilter: string, statusFilter: string, salesChartRange: "12m" | "6m" | "3m") => {
+  const dateCutoff = getDateCutoff(salesChartRange);
+  const filteredByDate = listings.filter(l => l.listingDate && new Date(l.listingDate) >= dateCutoff);
   const agentFilteredListings = agentFilter === 'todos'
-    ? listings
-    : listings.filter((l: any) => l.agent?.user === agentFilter);
+    ? filteredByDate
+    : filteredByDate.filter((l: any) => l.agent?.user === agentFilter);
   
   const lotsByStatus = agentFilteredListings.reduce((acc: any, l: any) => {
     acc[l.status] = (acc[l.status] || 0) + 1;
@@ -161,15 +167,16 @@ export default function DashboardClientPage() {
   const statusFilter = searchParams.get('status') || '';
   const currentPage = Number(searchParams.get('page')) || 1;
   const listingsPerPage = Number(searchParams.get('pageSize')) || 10;
+  const salesChartRange = searchParams.get('salesChartRange') || "12m";
 
   // Usar el hook optimizado para obtener datos reales
   const { stats, tableData, users, estados, loading, error } = useDashboardOptimized(
     agentFilter,
     statusFilter,
     currentPage,
-    listingsPerPage
+    listingsPerPage,
+    salesChartRange // pasar el rango de tiempo al hook
   );
-  const [salesChartRange, setSalesChartRange] = useState<"12m" | "6m" | "3m">("12m");
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // useCallback debe ir antes de cualquier return condicional
@@ -226,9 +233,20 @@ export default function DashboardClientPage() {
 
   // Datos para el gráfico de ventas mensuales
   const salesByMonthChartData = useMemo(() => {
+    console.log('Stats recibidos:', stats);
+    console.log('Monthly sales:', stats?.monthlySales);
+    
     if (!stats?.monthlySales) return [];
-    return stats.monthlySales;
-  }, [stats?.monthlySales]);
+    
+    // Usar directamente los datos del servidor
+    const chartData = stats.monthlySales.map((sale: any) => ({
+      name: sale.name,
+      total: sale.total
+    }));
+    
+    console.log('Chart data procesado:', chartData);
+    return chartData;
+  }, [stats?.monthlySales, salesChartRange]);
 
   // returns condicionales DESPUÉS de todos los hooks
   if (loading) {
@@ -264,6 +282,10 @@ export default function DashboardClientPage() {
   
   const handleRemoveFilter = (key: string) => {
     router.push(`${pathname}?${createQueryString({ [key]: null, page: 1 })}`, { scroll: false });
+  };
+
+  const handleSalesChartRangeChange = (value: "12m" | "6m" | "3m") => {
+    router.push(`${pathname}?${createQueryString({ salesChartRange: value, page: 1 })}`, { scroll: false });
   };
 
   // Función helper para obtener el nombre completo del agente
@@ -377,7 +399,7 @@ export default function DashboardClientPage() {
                 Cantidad de lotes vendidos en los últimos {salesChartRange === "12m" ? "12" : salesChartRange === "6m" ? "6" : "3"} meses.
               </CardDescription>
             </div>
-            <Select value={salesChartRange} onValueChange={(value) => setSalesChartRange(value as "12m" | "6m" | "3m")}>
+            <Select value={salesChartRange} onValueChange={handleSalesChartRangeChange}>
               <SelectTrigger className="ml-auto w-[160px]">
                 <SelectValue placeholder="Seleccionar rango" />
               </SelectTrigger>
@@ -438,7 +460,7 @@ export default function DashboardClientPage() {
               <div>
                 <CardTitle>Total de Lotes por Barrio</CardTitle>
                 <CardDescription>
-                  Cantidad total de lotes registrados en cada barrio.
+                  Cantidad total de lotes registrados en cada barrio en los últimos {salesChartRange === "12m" ? "12" : salesChartRange === "6m" ? "6" : "3"} meses.
                 </CardDescription>
               </div>
               <Button 
@@ -492,7 +514,7 @@ export default function DashboardClientPage() {
                   <div>
                       <CardTitle>Listado de Lotes</CardTitle>
                       <CardDescription>
-                          Una tabla detallada de los lotes según los filtros aplicados.
+                          Una tabla detallada de los lotes según los filtros aplicados en los últimos {salesChartRange === "12m" ? "12" : salesChartRange === "6m" ? "6" : "3"} meses.
                       </CardDescription>
                   </div>
                   <div className="w-48">

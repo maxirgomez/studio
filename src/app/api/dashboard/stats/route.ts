@@ -6,8 +6,34 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const agentFilter = searchParams.get('agent') || 'todos';
     const statusFilter = searchParams.get('status') || '';
+    const salesChartRange = searchParams.get('salesChartRange') || '12m';
 
-    console.log('Dashboard stats params:', { agentFilter, statusFilter });
+    console.log('Dashboard stats params:', { agentFilter, statusFilter, salesChartRange });
+
+    // Verificar estructura de la tabla para columnas de fecha
+    try {
+      const { rows: columnInfo } = await pool.query(`
+        SELECT column_name, data_type 
+        FROM information_schema.columns 
+        WHERE table_name = 'prefapp_lotes' 
+        AND table_schema = 'public'
+        AND (data_type LIKE '%date%' OR data_type LIKE '%timestamp%')
+        ORDER BY column_name
+      `);
+      console.log('Available date columns:', columnInfo);
+    } catch (error) {
+      console.log('Could not check table structure:', error);
+    }
+
+    // Calcular la fecha de corte según el rango
+    const getDateCutoff = (range: string) => {
+      const months = range === "12m" ? 12 : range === "6m" ? 6 : 3;
+      const cutoffDate = new Date();
+      cutoffDate.setMonth(cutoffDate.getMonth() - months);
+      return cutoffDate.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+    };
+
+    const dateCutoff = getDateCutoff(salesChartRange);
 
     // Construir filtros base
     let baseWhereClause = '';
@@ -30,63 +56,88 @@ export async function GET(req: Request) {
       paramIndex++;
     }
 
+    // Agregar filtro de fecha (opcional) - usando una aproximación más segura
+    // Por ahora no filtramos por fecha hasta confirmar qué columnas están disponibles
+    // TODO: Implementar filtro de fecha cuando se confirme la estructura de la BD
+    
     console.log('Base where clause:', baseWhereClause);
     console.log('Base values:', baseValues);
+    console.log('Date cutoff:', dateCutoff);
 
     // Consultas simplificadas y más robustas
     const queries = [
-      // Total de lotes
-      pool.query(`SELECT COUNT(*) as total FROM public.prefapp_lotes ${baseWhereClause}`, baseValues),
+      // Total de lotes (SIEMPRE total global, sin filtro de estado)
+      pool.query(`
+        SELECT COUNT(*) as total 
+        FROM public.prefapp_lotes 
+        WHERE fventa IS NOT NULL
+        AND fventa::date >= CURRENT_DATE - INTERVAL '${salesChartRange === "12m" ? "12" : salesChartRange === "6m" ? "6" : "3"} months'
+        ${agentFilter !== 'todos' ? 'AND agente = $1' : ''}
+      `, agentFilter !== 'todos' ? [agentFilter] : []),
       
-      // Lotes por estado
+      // Lotes por estado (SIEMPRE total global, sin filtro de estado)
       pool.query(`
         SELECT estado, COUNT(*) as count 
-        FROM public.prefapp_lotes ${baseWhereClause}
+        FROM public.prefapp_lotes 
+        WHERE fventa IS NOT NULL
+        AND fventa::date >= CURRENT_DATE - INTERVAL '${salesChartRange === "12m" ? "12" : salesChartRange === "6m" ? "6" : "3"} months'
+        ${agentFilter !== 'todos' ? 'AND agente = $1' : ''}
         GROUP BY estado 
         ORDER BY count DESC
-      `, baseValues),
+      `, agentFilter !== 'todos' ? [agentFilter] : []),
       
-      // Lotes por barrio
+      // Lotes por barrio (con filtro de fecha y estado)
       pool.query(`
         SELECT barrio as name, COUNT(*) as total 
-        FROM public.prefapp_lotes ${baseWhereClause} ${baseWhereClause ? 'AND' : 'WHERE'} barrio IS NOT NULL
+        FROM public.prefapp_lotes 
+        WHERE fventa IS NOT NULL
+        AND fventa::date >= CURRENT_DATE - INTERVAL '${salesChartRange === "12m" ? "12" : salesChartRange === "6m" ? "6" : "3"} months'
+        ${agentFilter !== 'todos' ? 'AND agente = $1' : ''}
+        ${statusFilter ? `AND estado = $${agentFilter !== 'todos' ? '2' : '1'}` : ''}
+        AND barrio IS NOT NULL
         GROUP BY barrio 
         ORDER BY total DESC
         LIMIT 20
-      `, baseValues),
+      `, statusFilter ? (agentFilter !== 'todos' ? [agentFilter, statusFilter] : [statusFilter]) : (agentFilter !== 'todos' ? [agentFilter] : [])),
       
       // Ventas del trimestre actual
       pool.query(`
         SELECT COUNT(*) as count
         FROM public.prefapp_lotes 
-        ${baseWhereClause} ${baseWhereClause ? 'AND' : 'WHERE'} estado = 'Vendido' 
+        WHERE estado = 'Vendido' 
         AND fventa IS NOT NULL
-        AND fventa >= DATE_TRUNC('quarter', CURRENT_DATE)
-        AND fventa < DATE_TRUNC('quarter', CURRENT_DATE) + INTERVAL '3 months'
-      `, baseValues),
+        AND fventa::date >= DATE_TRUNC('quarter', CURRENT_DATE)
+        AND fventa::date < DATE_TRUNC('quarter', CURRENT_DATE) + INTERVAL '3 months'
+        ${agentFilter !== 'todos' ? 'AND agente = $1' : ''}
+        ${statusFilter ? `AND estado = $${agentFilter !== 'todos' ? '2' : '1'}` : ''}
+      `, statusFilter ? (agentFilter !== 'todos' ? [agentFilter, statusFilter] : [statusFilter]) : (agentFilter !== 'todos' ? [agentFilter] : [])),
       
       // Ventas del trimestre anterior
       pool.query(`
         SELECT COUNT(*) as count
         FROM public.prefapp_lotes 
-        ${baseWhereClause} ${baseWhereClause ? 'AND' : 'WHERE'} estado = 'Vendido' 
+        WHERE estado = 'Vendido' 
         AND fventa IS NOT NULL
-        AND fventa >= DATE_TRUNC('quarter', CURRENT_DATE) - INTERVAL '3 months'
-        AND fventa < DATE_TRUNC('quarter', CURRENT_DATE)
-      `, baseValues),
+        AND fventa::date >= DATE_TRUNC('quarter', CURRENT_DATE) - INTERVAL '3 months'
+        AND fventa::date < DATE_TRUNC('quarter', CURRENT_DATE)
+        ${agentFilter !== 'todos' ? 'AND agente = $1' : ''}
+        ${statusFilter ? `AND estado = $${agentFilter !== 'todos' ? '2' : '1'}` : ''}
+      `, statusFilter ? (agentFilter !== 'todos' ? [agentFilter, statusFilter] : [statusFilter]) : (agentFilter !== 'todos' ? [agentFilter] : [])),
       
-      // Ventas por mes (últimos 12 meses)
+      // Ventas por mes (dinámico según el rango seleccionado)
       pool.query(`
         SELECT 
           TO_CHAR(DATE_TRUNC('month', fventa), 'YYYY-MM') as month,
           COUNT(*) as total
         FROM public.prefapp_lotes 
-        ${baseWhereClause} ${baseWhereClause ? 'AND' : 'WHERE'} estado = 'Vendido' 
-        AND fventa IS NOT NULL
-        AND fventa >= CURRENT_DATE - INTERVAL '12 months'
+        WHERE fventa IS NOT NULL
+        AND fventa::date >= CURRENT_DATE - INTERVAL '${salesChartRange === "12m" ? "12" : salesChartRange === "6m" ? "6" : "3"} months'
+        AND estado = 'Vendido'
+        ${agentFilter !== 'todos' ? 'AND agente = $1' : ''}
+        ${statusFilter ? `AND estado = $${agentFilter !== 'todos' ? '2' : '1'}` : ''}
         GROUP BY DATE_TRUNC('month', fventa)
         ORDER BY month
-      `, baseValues)
+      `, statusFilter ? (agentFilter !== 'todos' ? [agentFilter, statusFilter] : [statusFilter]) : (agentFilter !== 'todos' ? [agentFilter] : []))
     ];
 
     console.log('Executing queries...');

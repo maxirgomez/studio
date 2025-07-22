@@ -190,7 +190,7 @@ export async function POST(req: Request) {
     }
     // Insertar el nuevo lote
     const insertFields = [
-      'smp', 'propietario', 'direccion', 'barrio', 'superficie', 'estado', 'agente', 'origen',
+      'smp', 'propietario', 'direccion', 'barrio', 'm2aprox', 'estado', 'agente', 'origen',
       'codigo_urbanistico', 'cpu', 'partida', 'incidencia_uva', 'fot', 'alicuota',
       'localidad', 'cp', 'direccionalt', 'fallecido', 'email',
       'tel1', 'tel2', 'tel3', 'cel1', 'cel2', 'cel3',

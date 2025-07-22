@@ -27,6 +27,17 @@ export async function GET(req: Request) {
     const offset = parseInt(searchParams.get('offset') || '0');
     const agentFilter = searchParams.get('agent') || 'todos';
     const statusFilter = searchParams.get('status') || '';
+    const salesChartRange = searchParams.get('salesChartRange') || '12m';
+
+    // Calcular la fecha de corte según el rango
+    const getDateCutoff = (range: string) => {
+      const months = range === "12m" ? 12 : range === "6m" ? 6 : 3;
+      const cutoffDate = new Date();
+      cutoffDate.setMonth(cutoffDate.getMonth() - months);
+      return cutoffDate.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+    };
+
+    const dateCutoff = getDateCutoff(salesChartRange);
 
     // Construir filtros
     let whereClauses = [];
@@ -44,6 +55,10 @@ export async function GET(req: Request) {
       values.push(statusFilter);
       idx++;
     }
+
+    // Agregar filtro de fecha (opcional) - usando una aproximación más segura
+    // Por ahora no filtramos por fecha hasta confirmar qué columnas están disponibles
+    // TODO: Implementar filtro de fecha cuando se confirme la estructura de la BD
 
     const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 

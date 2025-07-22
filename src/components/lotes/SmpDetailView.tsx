@@ -1,13 +1,9 @@
-"use client"
-
-import * as React from "react"
-import { useState, useRef, useEffect } from "react"
-import Image from "next/image"
-import Link from "next/link"
-import { useParams } from 'next/navigation'
-import { format, parseISO } from "date-fns"
-import jsPDF from "jspdf"
-import html2canvas from "html2canvas"
+import React, { useState, useRef, useEffect } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { format, parseISO } from "date-fns";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 import {
   Card,
@@ -16,11 +12,11 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, MapPin, Scan, Ruler, Edit, Download, Upload, Library, FileText, User, Home, Mailbox, Building, Phone, Smartphone, Mail, Info, XCircle, Scaling, Percent, CreditCard, DollarSign, MessageSquare, Calendar, CreditCard as CreditCardIcon } from "lucide-react"
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, MapPin, Scan, Ruler, Edit, Download, Upload, Library, FileText, User, Home, Mailbox, Building, Phone, Smartphone, Mail, Info, XCircle, Scaling, Percent, CreditCard, DollarSign, MessageSquare, Calendar, CreditCard as CreditCardIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -30,21 +26,19 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogClose,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
-import { Textarea } from "@/components/ui/textarea"
-import { Separator } from "@/components/ui/separator"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import { getStatusStyles } from "@/lib/data";
 import { useSpinner } from "@/components/ui/SpinnerProvider";
-import { useUser } from "@/context/UserContext";
-import { use } from "react";
 
 const PdfContent = React.forwardRef<
   HTMLDivElement,
-  { listing: any; imageUrl: string | null | undefined; agenteUsuario?: any; currentUser?: any }
->(({ listing, imageUrl, agenteUsuario, currentUser }, ref) => {
+  { listing: any; imageUrl: string | null | undefined; agenteUsuario?: any }
+>(({ listing, imageUrl, agenteUsuario }, ref) => {
   const sectionTitleStyle: React.CSSProperties = { fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '8px', borderBottom: '1px solid #ddd', paddingBottom: '4px', color: '#2D3746' };
   const fieldStyle: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '12px' };
   const labelStyle: React.CSSProperties = { fontWeight: 'bold', color: '#555' };
@@ -81,7 +75,7 @@ const PdfContent = React.forwardRef<
       <h3 style={sectionTitleStyle}>Información Urbanística y Catastral</h3>
       <div style={gridStyle}>
         <div>
-          <div style={fieldStyle}><span style={labelStyle}>Código Urbanístico:</span> <span style={valueStyle}>{listing.cur}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Código Urbanístico:</span> <span style={valueStyle}>{listing.codigoUrbanistico}</span></div>
           <div style={fieldStyle}><span style={labelStyle}>CPU:</span> <span style={valueStyle}>{listing.cpu}</span></div>
           <div style={fieldStyle}><span style={labelStyle}>FOT:</span> <span style={valueStyle}>{listing.fot}</span></div>
         </div>
@@ -109,30 +103,26 @@ const PdfContent = React.forwardRef<
         <div style={fieldStyle}><span style={labelStyle}>Fecha de Venta:</span> <span style={valueStyle}>{format(new Date(listing.saleDate), "dd/MM/yyyy")}</span></div>
       )}
 
-      {(currentUser?.rol === 'Administrador' || currentUser?.rol === 'Asesor') && (
-        <>
-          <h3 style={sectionTitleStyle}>Información del Propietario</h3>
-          <div style={gridStyle}>
-            <div>
-              <div style={fieldStyle}><span style={labelStyle}>Propietario:</span> <span style={valueStyle}>{listing.propietario}</span></div>
-              <div style={fieldStyle}><span style={labelStyle}>Dirección Contacto:</span> <span style={valueStyle}>{listing.direccion}</span></div>
-              <div style={fieldStyle}><span style={labelStyle}>Localidad:</span> <span style={valueStyle}>{listing.localidad}</span></div>
-              <div style={fieldStyle}><span style={labelStyle}>Dirección Alternativa:</span> <span style={valueStyle}>{listing.direccionalt}</span></div>
-              <div style={fieldStyle}><span style={labelStyle}>Fallecido:</span> <span style={valueStyle}>{listing.fallecido}</span></div>
-              <div style={fieldStyle}><span style={labelStyle}>Email:</span> <span style={valueStyle}>{listing.mail}</span></div>
-              <div style={fieldStyle}><span style={labelStyle}>Cuit/Cuil:</span> <span style={valueStyle}>{formatCuitCuil(listing.cuitcuil)}</span></div>
-            </div>
-            <div>
-              <div style={fieldStyle}><span style={labelStyle}>Teléfono 1:</span> <span style={valueStyle}>{listing.tel1}</span></div>
-              <div style={fieldStyle}><span style={labelStyle}>Teléfono 2:</span> <span style={valueStyle}>{listing.tel2}</span></div>
-              <div style={fieldStyle}><span style={labelStyle}>Teléfono 3:</span> <span style={valueStyle}>{listing.tel3}</span></div>
-              <div style={fieldStyle}><span style={labelStyle}>Celular 1:</span> <span style={valueStyle}>{listing.cel1}</span></div>
-              <div style={fieldStyle}><span style={labelStyle}>Celular 2:</span> <span style={valueStyle}>{listing.cel2}</span></div>
-              <div style={fieldStyle}><span style={labelStyle}>Celular 3:</span> <span style={valueStyle}>{listing.cel3}</span></div>
-            </div>
-          </div>
-        </>
-      )}
+      <h3 style={sectionTitleStyle}>Información del Propietario</h3>
+      <div style={gridStyle}>
+        <div>
+          <div style={fieldStyle}><span style={labelStyle}>Propietario:</span> <span style={valueStyle}>{listing.propietario}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Dirección Contacto:</span> <span style={valueStyle}>{listing.direccion}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Localidad:</span> <span style={valueStyle}>{listing.localidad}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Dirección Alternativa:</span> <span style={valueStyle}>{listing.direccionalt}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Fallecido:</span> <span style={valueStyle}>{listing.fallecido}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Email:</span> <span style={valueStyle}>{listing.mail}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Cuit/Cuil:</span> <span style={valueStyle}>{formatCuitCuil(listing.cuitcuil)}</span></div>
+        </div>
+        <div>
+          <div style={fieldStyle}><span style={labelStyle}>Teléfono 1:</span> <span style={valueStyle}>{listing.tel1}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Teléfono 2:</span> <span style={valueStyle}>{listing.tel2}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Teléfono 3:</span> <span style={valueStyle}>{listing.tel3}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Celular 1:</span> <span style={valueStyle}>{listing.cel1}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Celular 2:</span> <span style={valueStyle}>{listing.cel2}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Celular 3:</span> <span style={valueStyle}>{listing.cel3}</span></div>
+        </div>
+      </div>
       <div style={{ marginTop: '16px' }}>
           <h3 style={sectionTitleStyle}>Otros Datos</h3>
           <p style={{ fontSize: '12px', color: '#333' }}>Contactar solo por la mañana.</p>
@@ -164,123 +154,41 @@ function formatCuitCuil(cuitcuil: any): string {
   return str;
 }
 
-function formatDecimal(value: any) {
-  if (value == null || value === '') return '';
-  const num = Number(value);
-  if (Number.isNaN(num)) return value;
-  if (Number.isInteger(num)) return num;
-  const str = String(value);
-  const [, decimals] = str.split('.');
-  if (decimals && decimals.replace(/0+$/, '').length > 2) {
-    return num;
-  }
-  return num.toFixed(2).replace(/\.00$/, '');
-}
-
-export default function LoteDetailPage() {
-  const params = useParams<{ smp: string }>();
-  const { user: currentUser } = useUser();
-  const [listing, setListing] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-  
-  // Detectar parámetro de dirección específica
-  const [direccionEspecifica, setDireccionEspecifica] = useState<string | null>(null);
-  
+// Props: todos los datos necesarios para la vista SMP, y numeroEnFoco opcional
+export default function SmpDetailView({
+  listing,
+  agenteUsuario,
+  docs,
+  notes,
+  numeroEnFoco,
+  currentUser,
+  smp,
+  ...rest
+}: {
+  listing: any;
+  agenteUsuario: any;
+  docs: any[];
+  notes: any[];
+  numeroEnFoco?: string;
+  currentUser: any;
+  smp: string;
+  [key: string]: any;
+}) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [currentImageUrl, setCurrentImageUrl] = useState(listing?.imageUrl);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { toast } = useToast();
   
-  const [notes, setNotes] = useState<any[]>([]);
-  const [notesLoading, setNotesLoading] = useState(true);
   const [newNote, setNewNote] = useState("");
   const pdfContentRef = useRef<HTMLDivElement>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const { hide } = useSpinner();
-  const [agenteUsuario, setAgenteUsuario] = useState<any | null>(null);
 
   // --- Archivos adjuntos ---
-  const [docs, setDocs] = useState<any[]>([]);
-  const [docsLoading, setDocsLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Detectar parámetro de dirección en la URL
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const direccion = urlParams.get('direccion');
-      setDireccionEspecifica(direccion);
-    }
-  }, []);
-
-  useEffect(() => {
-    async function fetchLote() {
-      setLoading(true);
-      setNotFound(false);
-      try {
-        const res = await fetch(`/api/lotes/${params.smp}`);
-        if (res.status === 404) {
-          setNotFound(true);
-          setListing(null);
-          setAgenteUsuario(null);
-        } else {
-          const data = await res.json();
-          setListing(data.lote);
-          setAgenteUsuario(data.agenteUsuario || null);
-        }
-      } catch (e) {
-        setNotFound(true);
-        setListing(null);
-        setAgenteUsuario(null);
-      }
-      setLoading(false);
-    }
-    fetchLote();
-  }, [params.smp]);
-
-  // Fetch notas reales
-  useEffect(() => {
-    async function fetchNotas() {
-      setNotesLoading(true);
-      try {
-        const res = await fetch(`/api/lotes/${params.smp}/notas`);
-        if (res.ok) {
-          const data = await res.json();
-          setNotes(data.notas || []);
-        } else {
-          setNotes([]);
-        }
-      } catch {
-        setNotes([]);
-      }
-      setNotesLoading(false);
-    }
-    fetchNotas();
-  }, [params.smp]);
-
-  // Fetch docs
-  useEffect(() => {
-    async function fetchDocs() {
-      setDocsLoading(true);
-      try {
-        const res = await fetch(`/api/lotes/${params.smp}/docs`);
-        if (res.ok) {
-          const data = await res.json();
-          setDocs(data.docs || []);
-        } else {
-          setDocs([]);
-        }
-      } catch {
-        setDocs([]);
-      }
-      setDocsLoading(false);
-    }
-    fetchDocs();
-  }, [params.smp]);
 
   useEffect(() => {
     hide();
@@ -289,14 +197,15 @@ export default function LoteDetailPage() {
   const handleAddNote = async () => {
     if (newNote.trim() === "" || !listing || !currentUser) return;
     try {
-      const res = await fetch(`/api/lotes/${params.smp}/notas`, {
+      const res = await fetch(`/api/lotes/${smp}/notas`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nota: newNote })
       });
       if (res.ok) {
         const data = await res.json();
-        setNotes([data.nota, ...notes]);
+        // Refrescar notas
+        window.location.reload();
         setNewNote("");
         toast({
           title: "Nota Agregada",
@@ -428,15 +337,14 @@ export default function LoteDetailPage() {
     const formData = new FormData();
     formData.append("file", file);
     try {
-      const res = await fetch(`/api/lotes/${params.smp}/docs`, {
+      const res = await fetch(`/api/lotes/${smp}/docs`, {
         method: "POST",
         body: formData,
       });
       if (res.ok) {
         setUploadError(null);
         // Refrescar lista
-        const data = await fetch(`/api/lotes/${params.smp}/docs`).then(r => r.json());
-        setDocs(data.docs || []);
+        window.location.reload();
         toast({ title: "Archivo subido", description: "El PDF fue adjuntado correctamente." });
       } else {
         const data = await res.json();
@@ -453,11 +361,11 @@ export default function LoteDetailPage() {
   const handleDeleteDoc = async (ruta: string) => {
     if (!window.confirm("¿Seguro que deseas eliminar este archivo?")) return;
     try {
-      const res = await fetch(`/api/lotes/${params.smp}/docs/${encodeURIComponent(ruta.replace('uploads/docs/', ''))}`, {
+      const res = await fetch(`/api/lotes/${smp}/docs/${encodeURIComponent(ruta.replace('uploads/docs/', ''))}`, {
         method: "DELETE",
       });
       if (res.ok) {
-        setDocs(docs.filter(doc => doc.ruta !== ruta));
+        window.location.reload();
         toast({ title: "Archivo eliminado", description: "El PDF fue eliminado correctamente." });
       } else {
         const data = await res.json();
@@ -468,23 +376,10 @@ export default function LoteDetailPage() {
     }
   };
 
-  if (loading) {
-    return <div>Cargando...</div>;
-  }
-
-  if (notFound || !listing) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-center">
-        <h1 className="text-4xl font-bold">Lote no encontrado</h1>
-        <p className="text-muted-foreground mt-2">
-          El lote con SMP "{params.smp}" no pudo ser encontrado.
-        </p>
-        <Link href="/lotes">
-          <Button>Volver a Lotes</Button>
-        </Link>
-      </div>
-    );
-  }
+  // Construir la dirección con el número en foco si está presente
+  const direccionMostrada = numeroEnFoco 
+    ? listing.address.replace(/\d+$/, numeroEnFoco)
+    : listing.address;
 
   // LOGS para depuración de datos de tasación
   console.log('DEBUG listing:', listing);
@@ -505,13 +400,13 @@ export default function LoteDetailPage() {
                 </Button>
             </Link>
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">
-                  {direccionEspecifica 
-                    ? listing.address.replace(/\d+$/, direccionEspecifica)
-                    : listing.address}
-                </h1>
+                <h1 className="text-3xl font-bold tracking-tight">{direccionMostrada}</h1>
                 <p className="text-muted-foreground">{listing.neighborhood}</p>
-                
+                {numeroEnFoco && (
+                  <div className="mt-2 p-2 bg-blue-100 rounded text-blue-800 font-semibold text-sm">
+                    Dirección específica seleccionada: {numeroEnFoco}
+                  </div>
+                )}
             </div>
         </div>
         <Link href={`/lotes/${listing.smp}/editar`}>
@@ -644,9 +539,7 @@ export default function LoteDetailPage() {
                         </Button>
                         {uploadError && <div className="text-red-500 text-sm mt-1">{uploadError}</div>}
                         <div className="mt-4">
-                            {docsLoading ? (
-                                <div className="text-muted-foreground text-sm">Cargando archivos...</div>
-                            ) : docs.length === 0 ? (
+                            {docs.length === 0 ? (
                                 <div className="text-muted-foreground text-sm">No hay archivos adjuntos.</div>
                             ) : (
                                 <ul className="space-y-2">
@@ -704,7 +597,7 @@ export default function LoteDetailPage() {
                       <div className="flex items-center">
                         <Library className="h-5 w-5 mr-3 text-muted-foreground" />
                         <span className="font-medium">Código Urbanístico:</span>
-                        <span className="ml-auto text-muted-foreground">{listing.cur}</span>
+                        <span className="ml-auto text-muted-foreground">{listing.codigoUrbanistico}</span>
                       </div>
                       <div className="flex items-center">
                         <Ruler className="h-5 w-5 mr-3 text-muted-foreground" />
@@ -714,12 +607,12 @@ export default function LoteDetailPage() {
                       <div className="flex items-center">
                         <Scaling className="h-5 w-5 mr-3 text-muted-foreground" />
                         <span className="font-medium">Incidencia UVA:</span>
-                        <span className="ml-auto text-muted-foreground">{formatDecimal(listing.incidenciaUVA)}</span>
+                        <span className="ml-auto text-muted-foreground">{listing.incidenciaUVA}</span>
                       </div>
                       <div className="flex items-center">
                         <FileText className="h-5 w-5 mr-3 text-muted-foreground" />
                         <span className="font-medium">FOT:</span>
-                        <span className="ml-auto text-muted-foreground">{formatDecimal(listing.fot)}</span>
+                        <span className="ml-auto text-muted-foreground">{listing.fot}</span>
                       </div>
                     </div>
                     <div className="space-y-4">
@@ -741,14 +634,13 @@ export default function LoteDetailPage() {
                       <div className="flex items-center">
                         <Percent className="h-5 w-5 mr-3 text-muted-foreground" />
                         <span className="font-medium">Alícuota:</span>
-                        <span className="ml-auto text-muted-foreground">{formatDecimal(listing.alicuota)}%</span>
+                        <span className="ml-auto text-muted-foreground">{listing.alicuota}%</span>
                       </div>
                     </div>
                   </div>
                 </CardContent>
             </Card>
 
-            {currentUser?.rol === 'Administrador' || currentUser?.rol === 'Asesor' ? (
             <Card>
                 <CardHeader>
                     <CardTitle>Información del propietario</CardTitle>
@@ -832,7 +724,6 @@ export default function LoteDetailPage() {
                   </div>
                 </CardContent>
             </Card>
-            ) : null}
 
             <Card>
               <CardHeader>
@@ -892,38 +783,34 @@ export default function LoteDetailPage() {
                         value={newNote}
                         onChange={(e) => setNewNote(e.target.value)}
                       />
-                      <Button onClick={handleAddNote} disabled={!newNote.trim() || notesLoading}>
+                      <Button onClick={handleAddNote} disabled={!newNote.trim()}>
                         <MessageSquare className="mr-2 h-4 w-4" /> Agregar Nota
                       </Button>
                     </div>
                   </div>
                   <Separator />
-                  {notesLoading ? (
-                    <div className="text-center text-muted-foreground">Cargando notas...</div>
-                  ) : (
-                    <div className="space-y-4">
-                      {notes.length === 0 && <div className="text-center text-muted-foreground">No hay notas aún.</div>}
-                      {notes.map((note, index) => (
-                        <div key={index} className="flex gap-4">
-                          <Avatar>
-                            <AvatarImage src={note.agente?.avatarUrl || "https://placehold.co/100x100.png"} data-ai-hint={note.agente?.aiHint || "person"} />
-                            <AvatarFallback>
-                              {note.agente?.initials || (note.agente?.nombre ? `${note.agente.nombre[0] || ''}${note.agente.apellido?.[0] || ''}`.toUpperCase() : (note.agente || "?"))}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <p className="text-sm font-medium">{note.agente?.nombre ? `${note.agente.nombre} ${note.agente.apellido}` : note.agente || "-"}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {note.fecha ? format(parseISO(note.fecha), "dd/MM/yyyy") : ""}
-                              </p>
-                            </div>
-                            <p className="text-base text-muted-foreground">{note.notas}</p>
+                  <div className="space-y-4">
+                    {notes.length === 0 && <div className="text-center text-muted-foreground">No hay notas aún.</div>}
+                    {notes.map((note, index) => (
+                      <div key={index} className="flex gap-4">
+                        <Avatar>
+                          <AvatarImage src={note.agente?.avatarUrl || "https://placehold.co/100x100.png"} data-ai-hint={note.agente?.aiHint || "person"} />
+                          <AvatarFallback>
+                            {note.agente?.initials || (note.agente?.nombre ? `${note.agente.nombre[0] || ''}${note.agente.apellido?.[0] || ''}`.toUpperCase() : (note.agente || "?"))}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium">{note.agente?.nombre ? `${note.agente.nombre} ${note.agente.apellido}` : note.agente || "-"}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {note.fecha ? format(parseISO(note.fecha), "dd/MM/yyyy") : ""}
+                            </p>
                           </div>
+                          <p className="text-base text-muted-foreground">{note.notas}</p>
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -931,9 +818,9 @@ export default function LoteDetailPage() {
       </div>
       <div className="absolute -left-[9999px] -top-[9999px]">
         <div ref={pdfContentRef}>
-          {listing && <PdfContent ref={pdfContentRef} listing={listing} imageUrl={currentImageUrl} agenteUsuario={agenteUsuario} currentUser={currentUser} />}
+          {listing && <PdfContent ref={pdfContentRef} listing={listing} imageUrl={currentImageUrl} agenteUsuario={agenteUsuario} />}
         </div>
       </div>
     </div>
   );
-}
+} 

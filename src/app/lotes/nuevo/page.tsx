@@ -28,6 +28,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
+import { useUser } from "@/context/UserContext"
 
 // Hook personalizado para detectar cuando el usuario termina de escribir
 function useTypingComplete<T>(value: T, minLength: number = 3): { value: T; triggerSearch: () => void } {
@@ -91,7 +92,7 @@ const newLoteFormSchema = z.object({
   // Informacion Normativa
   codigoUrbanistico: z.string().optional(),
   neighborhood: z.string(), 
-  area: z.number(), 
+  m2aprox: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
   cpu: z.string().optional(),
   partida: z.string().optional(),
   incidenciaUVA: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
@@ -128,6 +129,7 @@ type NewLoteFormValues = z.infer<typeof newLoteFormSchema>;
 export default function NuevoLotePage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { user } = useUser();
 
   // Estados para datos dinámicos
   const [agentes, setAgentes] = useState<any[]>([]);
@@ -157,11 +159,11 @@ export default function NuevoLotePage() {
       numero: "",
       smp: "",
       agent: "",
-      status: "",
+      status: "Tomar Acción",
       origen: "",
       codigoUrbanistico: "",
       neighborhood: "",
-      area: 0,
+      m2aprox: 0,
       cpu: "",
       partida: "",
       incidenciaUVA: 0,
@@ -271,7 +273,7 @@ export default function NuevoLotePage() {
             form.setValue('smp', lote.smp || '', { shouldValidate: true });
             form.setValue('neighborhood', lote.neighborhood || '', { shouldValidate: true });
             form.setValue('partida', lote.partida || '', { shouldValidate: true });
-            form.setValue('area', lote.area || 0, { shouldValidate: true });
+            form.setValue('m2aprox', lote.area || 0, { shouldValidate: true });
             form.setValue('codigoUrbanistico', lote.codigoUrbanistico || '', { shouldValidate: true });
             form.setValue('cpu', lote.cpu || '', { shouldValidate: true });
             form.setValue('incidenciaUVA', lote.incidenciaUVA || 0, { shouldValidate: true });
@@ -513,7 +515,16 @@ export default function NuevoLotePage() {
                           <SelectTrigger><SelectValue placeholder="Seleccionar agente..." /></SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {agentes.map(user => <SelectItem key={user.user || user.email} value={user.name || user.user}>{user.name || user.user}</SelectItem>)}
+                          {agentes.map(agente => {
+                            const nombreCompleto = agente.nombre && agente.apellido 
+                              ? `${agente.nombre} ${agente.apellido}` 
+                              : agente.user || 'Sin nombre';
+                            return (
+                              <SelectItem key={agente.user} value={agente.user}>
+                                {nombreCompleto}
+                              </SelectItem>
+                            );
+                          })}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -563,7 +574,7 @@ export default function NuevoLotePage() {
                         <FormField control={form.control} name="neighborhood" render={({ field }) => (
                           <FormItem><FormLabel>Barrio</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
                         )}/>
-                        <FormField control={form.control} name="area" render={({ field }) => (
+                        <FormField control={form.control} name="m2aprox" render={({ field }) => (
                           <FormItem><FormLabel>M² Estimados (Superficie de Parcela)</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
                         )}/>
                         <FormField control={form.control} name="cpu" render={({ field }) => (
@@ -584,56 +595,58 @@ export default function NuevoLotePage() {
                     </div>
                 </CardContent>
             </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Información del propietario</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                  <FormField control={form.control} name="propietario" render={({ field }) => (
-                    <FormItem><FormLabel>Propietario</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                  )}/>
-                  <FormField control={form.control} name="fallecido" render={({ field }) => (
-                      <FormItem><FormLabel>Fallecido</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger></FormControl>
-                        <SelectContent><SelectItem value="Si">Sí</SelectItem><SelectItem value="No">No</SelectItem></SelectContent>
-                      </Select>
-                      <FormMessage /></FormItem>
-                  )}/>
-                  <FormField control={form.control} name="direccionContacto" render={({ field }) => (
-                    <FormItem><FormLabel>Dirección Contacto</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                  )}/>
-                  <FormField control={form.control} name="direccionAlternativa" render={({ field }) => (
-                    <FormItem><FormLabel>Dirección Alternativa</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                  )}/>
-                   <FormField control={form.control} name="localidad" render={({ field }) => (
-                    <FormItem><FormLabel>Localidad</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                  )}/>
-                  <FormField control={form.control} name="codigoPostal" render={({ field }) => (
-                    <FormItem><FormLabel>Código Postal</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                  )}/>
-                   <FormField control={form.control} name="email" render={({ field }) => (
-                    <FormItem><FormLabel>Correo Electrónico</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
-                  )}/>
-                   <FormField control={form.control} name="telefono1" render={({ field }) => (
-                    <FormItem><FormLabel>Teléfono 1</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                  )}/>
-                  <FormField control={form.control} name="telefono2" render={({ field }) => (
-                    <FormItem><FormLabel>Teléfono 2</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                  )}/>
-                   <FormField control={form.control} name="celular1" render={({ field }) => (
-                    <FormItem><FormLabel>Celular 1</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                  )}/>
-                  <FormField control={form.control} name="celular2" render={({ field }) => (
-                    <FormItem><FormLabel>Celular 2</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                  )}/>
-                  <FormField control={form.control} name="otrosDatos" render={({ field }) => (
-                    <FormItem className="md:col-span-2"><FormLabel>Otros Datos</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
-                  )}/>
-                </div>
-              </CardContent>
-            </Card>
+            {user?.rol === 'Administrador' || user?.rol === 'Asesor' ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Información del propietario</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                    <FormField control={form.control} name="propietario" render={({ field }) => (
+                      <FormItem><FormLabel>Propietario</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={form.control} name="fallecido" render={({ field }) => (
+                        <FormItem><FormLabel>Fallecido</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger></FormControl>
+                          <SelectContent><SelectItem value="Si">Sí</SelectItem><SelectItem value="No">No</SelectItem></SelectContent>
+                        </Select>
+                        <FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={form.control} name="direccionContacto" render={({ field }) => (
+                      <FormItem><FormLabel>Dirección Contacto</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={form.control} name="direccionAlternativa" render={({ field }) => (
+                      <FormItem><FormLabel>Dirección Alternativa</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="localidad" render={({ field }) => (
+                      <FormItem><FormLabel>Localidad</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={form.control} name="codigoPostal" render={({ field }) => (
+                      <FormItem><FormLabel>Código Postal</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="email" render={({ field }) => (
+                      <FormItem><FormLabel>Correo Electrónico</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="telefono1" render={({ field }) => (
+                      <FormItem><FormLabel>Teléfono 1</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={form.control} name="telefono2" render={({ field }) => (
+                      <FormItem><FormLabel>Teléfono 2</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="celular1" render={({ field }) => (
+                      <FormItem><FormLabel>Celular 1</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={form.control} name="celular2" render={({ field }) => (
+                      <FormItem><FormLabel>Celular 2</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={form.control} name="otrosDatos" render={({ field }) => (
+                      <FormItem className="md:col-span-2"><FormLabel>Otros Datos</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : null}
             <Card className="lg:col-span-2">
               <CardHeader>
                 <CardTitle>Datos de Tasación</CardTitle>
