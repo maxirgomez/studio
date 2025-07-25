@@ -35,6 +35,7 @@ import { Activity, TrendingUp, X, ArrowUpNarrowWide, Loader2 } from "lucide-reac
 import { format, subMonths, differenceInMonths, startOfQuarter, subQuarters } from "date-fns"
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils"
+import { useUser } from "@/context/UserContext"
 import {
   Pagination,
   PaginationContent,
@@ -162,6 +163,7 @@ export default function DashboardClientPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { user } = useUser();
 
   const agentFilter = searchParams.get('agent') || 'todos';
   const statusFilter = searchParams.get('status') || '';
@@ -344,11 +346,17 @@ export default function DashboardClientPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos los agentes</SelectItem>
-              {users.map((user: any) => (
-                <SelectItem key={user.user} value={user.user}>
-                  {user.nombre && user.apellido ? `${user.nombre} ${user.apellido}` : user.nombre || user.apellido || user.user}
-                </SelectItem>
-              ))}
+              {users.map((userItem: any) => {
+                const isCurrentUser = user?.user === userItem.user;
+                const displayName = userItem.nombre && userItem.apellido 
+                  ? `${userItem.nombre} ${userItem.apellido}${isCurrentUser ? ' (yo)' : ''}` 
+                  : userItem.nombre || userItem.apellido || userItem.user;
+                return (
+                  <SelectItem key={userItem.user} value={userItem.user}>
+                    {displayName}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>

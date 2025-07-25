@@ -3,11 +3,10 @@ import pool from '@/lib/db';
 
 export async function GET() {
   try {
+    // Traer todos los usuarios que pueden ser agentes (todos los usuarios)
     const { rows } = await pool.query(`
-      SELECT DISTINCT u.user, u.nombre, u.apellido
-      FROM public.prefapp_lotes l
-      JOIN public.prefapp_users u ON LOWER(l.agente) = LOWER(u.user)
-      WHERE l.agente IS NOT NULL AND u.user IS NOT NULL
+      SELECT u.user, u.nombre, u.apellido
+      FROM public.prefapp_users u
       ORDER BY u.nombre, u.apellido
     `);
     const agentes = rows.map(r => ({

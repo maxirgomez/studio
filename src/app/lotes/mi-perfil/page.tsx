@@ -58,7 +58,10 @@ const profileFormSchema = z.object({
   mail: z.string().email({
     message: "Por favor, introduce una dirección de correo electrónico válida.",
   }),
-  password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }).optional().or(z.literal('')),
+  user: z.string().min(2, {
+    message: "El nombre de usuario debe tener al menos 2 caracteres.",
+  }),
+  password: z.string().optional().or(z.literal('')),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -78,6 +81,7 @@ export default function MyProfilePage() {
       nombre: "",
       apellido: "",
       mail: "",
+      user: "",
       password: "",
     },
     mode: "onChange",
@@ -85,10 +89,18 @@ export default function MyProfilePage() {
 
   useEffect(() => {
     if (user) {
+      console.log('DEBUG: Cargando datos del usuario:', {
+        nombre: user.nombre,
+        apellido: user.apellido,
+        mail: user.mail,
+        user: user.user,
+        foto_perfil: user.foto_perfil
+      });
       form.reset({
         nombre: user.nombre || "",
         apellido: user.apellido || "",
         mail: user.mail || "",
+        user: user.user || "",
         password: "",
       });
       setPreviewUrl(user.foto_perfil || null);
@@ -103,6 +115,7 @@ export default function MyProfilePage() {
       const changed =
         values.nombre !== (user?.nombre || "") ||
         values.apellido !== (user?.apellido || "") ||
+        values.user !== (user?.user || "") ||
         values.mail !== (user?.mail || "") ||
         values.password !== "" ||
         !!selectedFile;
@@ -130,15 +143,17 @@ export default function MyProfilePage() {
   };
 
   async function onSubmit(data: ProfileFormValues) {
+    console.log('DEBUG: Enviando datos del formulario:', data);
     if (!hasChanges) return;
     if (!user) return;
-    // PATCH al backend para actualizar nombre, apellido, mail y contraseña
+    // PATCH al backend para actualizar nombre, apellido, user, mail y contraseña
     const res = await fetch("/api/me", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         nombre: data.nombre,
         apellido: data.apellido,
+        user: data.user,
         mail: data.mail,
         password: data.password || undefined,
       }),
@@ -153,6 +168,7 @@ export default function MyProfilePage() {
         form.reset({
           nombre: updatedUser.nombre || "",
           apellido: updatedUser.apellido || "",
+          user: updatedUser.user || "",
           mail: updatedUser.mail || "",
           password: "",
         });
@@ -261,6 +277,25 @@ export default function MyProfilePage() {
                   )}
                 />
               </div>
+
+                             <FormField
+                 control={form.control}
+                 name="user"
+                 render={({ field }) => (
+                   <FormItem>
+                     <FormLabel>Nombre de Usuario</FormLabel>
+                     <FormControl>
+                       <Input 
+                         placeholder="tu_usuario" 
+                         {...field} 
+                         disabled={!editMode}
+                         value={field.value || ''}
+                       />
+                     </FormControl>
+                     <FormMessage />
+                   </FormItem>
+                 )}
+               />
 
               <FormField
                 control={form.control}

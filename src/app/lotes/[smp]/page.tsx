@@ -109,7 +109,7 @@ const PdfContent = React.forwardRef<
         <div style={fieldStyle}><span style={labelStyle}>Fecha de Venta:</span> <span style={valueStyle}>{format(new Date(listing.saleDate), "dd/MM/yyyy")}</span></div>
       )}
 
-      {(currentUser?.rol === 'Administrador' || currentUser?.rol === 'Asesor') && (
+      {canViewOwnerInfo(currentUser, listing) && (
         <>
           <h3 style={sectionTitleStyle}>Información del Propietario</h3>
           <div style={gridStyle}>
@@ -150,18 +150,59 @@ function getAgenteNombre(agenteUsuario: any, agente: string) {
 }
 
 function formatCuitCuil(cuitcuil: any): string {
-  if (!cuitcuil) return 'N/A';
-  
-  // Convertir a string y limpiar
+  if (!cuitcuil) return '';
   const str = String(cuitcuil).replace(/\.0+$/, ''); // Eliminar .0000000000
-  
-  // Si es un número válido, formatearlo como CUIT/CUIL
   if (/^\d{11}$/.test(str)) {
     return `${str.slice(0, 2)}-${str.slice(2, 10)}-${str.slice(10)}`;
   }
-  
-  // Si ya tiene formato o es otro tipo de dato, devolverlo tal como está
   return str;
+}
+
+// Función helper para verificar si el usuario puede ver información del propietario
+function canViewOwnerInfo(currentUser: any, listing: any): boolean {
+  // Debug logs para entender qué está pasando
+  console.log('DEBUG canViewOwnerInfo:', {
+    currentUser: currentUser,
+    currentUserRol: currentUser?.rol,
+    currentUserUser: currentUser?.user,
+    listing: listing,
+    listingAgente: listing?.agente,
+    listingAgentUser: listing?.agent?.user
+  });
+
+  // Solo los administradores tienen acceso total
+  const isAdmin = currentUser?.rol === 'Administrador';
+  console.log('DEBUG: ¿Es administrador?', isAdmin, 'Rol:', currentUser?.rol);
+
+  if (isAdmin) {
+    console.log('DEBUG: Usuario es Administrador, permitiendo acceso total');
+    return true;
+  }
+
+  // El usuario asignado al lote también puede ver la información
+  const agenteValue = listing?.agente;
+  const currentUserValue = currentUser?.user;
+
+  console.log('DEBUG: Comparando usuarios:', {
+    currentUserValue: currentUserValue,
+    agenteValue: agenteValue,
+    currentUserValueLower: currentUserValue?.toLowerCase(),
+    agenteValueLower: agenteValue?.toLowerCase(),
+    areEqual: currentUserValue && agenteValue && currentUserValue.toLowerCase() === agenteValue.toLowerCase()
+  });
+
+  const isAssignedAgent = currentUserValue && agenteValue &&
+      currentUserValue.toLowerCase() === agenteValue.toLowerCase();
+
+  console.log('DEBUG: ¿Es el agente asignado?', isAssignedAgent);
+
+  if (isAssignedAgent) {
+    console.log('DEBUG: Usuario coincide con el agente asignado, permitiendo acceso');
+    return true;
+  }
+
+  console.log('DEBUG: Usuario NO tiene permisos para ver información del propietario');
+  return false;
 }
 
 function formatDecimal(value: any) {
@@ -229,6 +270,13 @@ export default function LoteDetailPage() {
           setAgenteUsuario(null);
         } else {
           const data = await res.json();
+          console.log('DEBUG Frontend recibió datos:', {
+            lote: data.lote,
+            agenteUsuario: data.agenteUsuario,
+            loteAgente: data.lote?.agente,
+            agenteUsuarioUser: data.agenteUsuario?.user,
+            currentUser: currentUser
+          });
           setListing(data.lote);
           setAgenteUsuario(data.agenteUsuario || null);
         }
@@ -240,7 +288,7 @@ export default function LoteDetailPage() {
       setLoading(false);
     }
     fetchLote();
-  }, [params.smp]);
+  }, [params.smp, currentUser]);
 
   // Fetch notas reales
   useEffect(() => {
@@ -747,8 +795,8 @@ export default function LoteDetailPage() {
                   </div>
                 </CardContent>
             </Card>
-
-            {currentUser?.rol === 'Administrador' || currentUser?.rol === 'Asesor' ? (
+            
+            {canViewOwnerInfo(currentUser, listing) ? (
             <Card>
                 <CardHeader>
                     <CardTitle>Información del propietario</CardTitle>

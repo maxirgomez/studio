@@ -37,8 +37,8 @@ import { useSpinner } from "@/components/ui/SpinnerProvider";
 
 const PdfContent = React.forwardRef<
   HTMLDivElement,
-  { listing: any; imageUrl: string | null | undefined; agenteUsuario?: any }
->(({ listing, imageUrl, agenteUsuario }, ref) => {
+  { listing: any; imageUrl: string | null | undefined; agenteUsuario?: any; currentUser?: any }
+>(({ listing, imageUrl, agenteUsuario, currentUser }, ref) => {
   const sectionTitleStyle: React.CSSProperties = { fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '8px', borderBottom: '1px solid #ddd', paddingBottom: '4px', color: '#2D3746' };
   const fieldStyle: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '12px' };
   const labelStyle: React.CSSProperties = { fontWeight: 'bold', color: '#555' };
@@ -103,8 +103,10 @@ const PdfContent = React.forwardRef<
         <div style={fieldStyle}><span style={labelStyle}>Fecha de Venta:</span> <span style={valueStyle}>{format(new Date(listing.saleDate), "dd/MM/yyyy")}</span></div>
       )}
 
-      <h3 style={sectionTitleStyle}>Información del Propietario</h3>
-      <div style={gridStyle}>
+      {canViewOwnerInfo(currentUser, listing) && (
+        <>
+          <h3 style={sectionTitleStyle}>Información del Propietario</h3>
+          <div style={gridStyle}>
         <div>
           <div style={fieldStyle}><span style={labelStyle}>Propietario:</span> <span style={valueStyle}>{listing.propietario}</span></div>
           <div style={fieldStyle}><span style={labelStyle}>Dirección Contacto:</span> <span style={valueStyle}>{listing.direccion}</span></div>
@@ -123,6 +125,8 @@ const PdfContent = React.forwardRef<
           <div style={fieldStyle}><span style={labelStyle}>Celular 3:</span> <span style={valueStyle}>{listing.cel3}</span></div>
         </div>
       </div>
+        </>
+      )}
       <div style={{ marginTop: '16px' }}>
           <h3 style={sectionTitleStyle}>Otros Datos</h3>
           <p style={{ fontSize: '12px', color: '#333' }}>Contactar solo por la mañana.</p>
@@ -140,18 +144,59 @@ function getAgenteNombre(agenteUsuario: any, agente: string) {
 }
 
 function formatCuitCuil(cuitcuil: any): string {
-  if (!cuitcuil) return 'N/A';
-  
-  // Convertir a string y limpiar
+  if (!cuitcuil) return '';
   const str = String(cuitcuil).replace(/\.0+$/, ''); // Eliminar .0000000000
-  
-  // Si es un número válido, formatearlo como CUIT/CUIL
   if (/^\d{11}$/.test(str)) {
     return `${str.slice(0, 2)}-${str.slice(2, 10)}-${str.slice(10)}`;
   }
-  
-  // Si ya tiene formato o es otro tipo de dato, devolverlo tal como está
   return str;
+}
+
+// Función helper para verificar si el usuario puede ver información del propietario
+function canViewOwnerInfo(currentUser: any, listing: any): boolean {
+  // Debug logs para entender qué está pasando
+  console.log('DEBUG SmpDetailView canViewOwnerInfo:', {
+    currentUser: currentUser,
+    currentUserRol: currentUser?.rol,
+    currentUserUser: currentUser?.user,
+    listing: listing,
+    listingAgente: listing?.agente,
+    listingAgentUser: listing?.agent?.user
+  });
+
+  // Solo los administradores tienen acceso total
+  const isAdmin = currentUser?.rol === 'Administrador';
+  console.log('DEBUG SmpDetailView: ¿Es administrador?', isAdmin, 'Rol:', currentUser?.rol);
+
+  if (isAdmin) {
+    console.log('DEBUG SmpDetailView: Usuario es Administrador, permitiendo acceso total');
+    return true;
+  }
+
+  // El usuario asignado al lote también puede ver la información (incluyendo asesores si son el agente asignado)
+  const agenteValue = listing?.agente;
+  const currentUserValue = currentUser?.user;
+
+  console.log('DEBUG SmpDetailView: Comparando usuarios:', {
+    currentUserValue: currentUserValue,
+    agenteValue: agenteValue,
+    currentUserValueLower: currentUserValue?.toLowerCase(),
+    agenteValueLower: agenteValue?.toLowerCase(),
+    areEqual: currentUserValue && agenteValue && currentUserValue.toLowerCase() === agenteValue.toLowerCase()
+  });
+
+  const isAssignedAgent = currentUserValue && agenteValue &&
+      currentUserValue.toLowerCase() === agenteValue.toLowerCase();
+
+  console.log('DEBUG SmpDetailView: ¿Es el agente asignado?', isAssignedAgent);
+
+  if (isAssignedAgent) {
+    console.log('DEBUG SmpDetailView: Usuario coincide con el agente asignado, permitiendo acceso');
+    return true;
+  }
+
+  console.log('DEBUG SmpDetailView: Usuario NO tiene permisos para ver información del propietario');
+  return false;
 }
 
 // Props: todos los datos necesarios para la vista SMP, y numeroEnFoco opcional
@@ -641,6 +686,24 @@ export default function SmpDetailView({
                 </CardContent>
             </Card>
 
+            {/* Debug info - temporal */}
+            <Card className="mb-4 bg-yellow-50 border-yellow-200">
+                <CardHeader>
+                    <CardTitle className="text-yellow-800">DEBUG - Información de Permisos</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm">
+                    <div className="space-y-2">
+                        <div><strong>Usuario actual:</strong> {currentUser?.user}</div>
+                        <div><strong>Rol del usuario:</strong> {currentUser?.rol}</div>
+                        <div><strong>Agente asignado al lote:</strong> {listing?.agente}</div>
+                        <div><strong>¿Es administrador?</strong> {currentUser?.rol === 'Administrador' ? 'SÍ' : 'NO'}</div>
+                        <div><strong>¿Es el agente asignado?</strong> {(currentUser?.user && listing?.agente && currentUser.user.toLowerCase() === listing.agente.toLowerCase()) ? 'SÍ' : 'NO'}</div>
+                        <div><strong>¿Puede ver info del propietario?</strong> {canViewOwnerInfo(currentUser, listing) ? 'SÍ' : 'NO'}</div>
+                    </div>
+                </CardContent>
+            </Card>
+            
+            {canViewOwnerInfo(currentUser, listing) && (
             <Card>
                 <CardHeader>
                     <CardTitle>Información del propietario</CardTitle>
@@ -724,6 +787,7 @@ export default function SmpDetailView({
                   </div>
                 </CardContent>
             </Card>
+            )}
 
             <Card>
               <CardHeader>
@@ -818,7 +882,7 @@ export default function SmpDetailView({
       </div>
       <div className="absolute -left-[9999px] -top-[9999px]">
         <div ref={pdfContentRef}>
-          {listing && <PdfContent ref={pdfContentRef} listing={listing} imageUrl={currentImageUrl} agenteUsuario={agenteUsuario} />}
+          {listing && <PdfContent ref={pdfContentRef} listing={listing} imageUrl={currentImageUrl} agenteUsuario={agenteUsuario} currentUser={currentUser} />}
         </div>
       </div>
     </div>

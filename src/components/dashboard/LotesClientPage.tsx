@@ -51,6 +51,7 @@ import LotesGrid from "@/components/lotes/LotesGrid";
 import { Listing } from "@/components/lotes/ListingCard";
 import LotesPagination from "@/components/lotes/LotesPagination";
 import ListingCardSkeleton from "@/components/lotes/ListingCardSkeleton";
+import { useUser } from "@/context/UserContext";
 
 function capitalizeWords(str: string) {
   return str.replace(/\b\w+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
@@ -60,6 +61,7 @@ export default function LotesClientPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { user: currentUser } = useUser();
 
   const [minArea, setMinArea] = useState(0);
   const [maxArea, setMaxArea] = useState(1000);
@@ -352,6 +354,7 @@ export default function LotesClientPage() {
           handleRemoveFilter={handleRemoveFilter}
           sortOrder={sortOrder}
           onSortOrderToggle={handleSortOrderToggle}
+          currentUser={currentUser}
         />
       </div>
              {/* Botón '+ Nuevo Lote' y buscador arriba de la grilla */}

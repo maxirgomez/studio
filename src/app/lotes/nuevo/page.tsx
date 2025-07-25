@@ -126,6 +126,12 @@ const newLoteFormSchema = z.object({
 
 type NewLoteFormValues = z.infer<typeof newLoteFormSchema>;
 
+// Función helper para verificar si el usuario puede ver información del propietario
+function canViewOwnerInfo(currentUser: any): boolean {
+  // Solo administradores pueden crear lotes con información del propietario
+  return currentUser?.rol === 'Administrador';
+}
+
 export default function NuevoLotePage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -516,8 +522,9 @@ export default function NuevoLotePage() {
                         </FormControl>
                         <SelectContent>
                           {agentes.map(agente => {
+                            const isCurrentUser = user?.user === agente.user;
                             const nombreCompleto = agente.nombre && agente.apellido 
-                              ? `${agente.nombre} ${agente.apellido}` 
+                              ? `${agente.nombre} ${agente.apellido}${isCurrentUser ? ' (yo)' : ''}` 
                               : agente.user || 'Sin nombre';
                             return (
                               <SelectItem key={agente.user} value={agente.user}>
@@ -595,7 +602,7 @@ export default function NuevoLotePage() {
                     </div>
                 </CardContent>
             </Card>
-            {user?.rol === 'Administrador' || user?.rol === 'Asesor' ? (
+            {canViewOwnerInfo(user) ? (
               <Card>
                 <CardHeader>
                   <CardTitle>Información del propietario</CardTitle>

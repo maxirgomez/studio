@@ -74,6 +74,32 @@ function formatCuitCuil(cuitcuil: any): string {
   return str;
 }
 
+// Función helper para verificar si el usuario puede ver información del propietario
+function canViewOwnerInfo(currentUser: any, listing: any): boolean {
+  // Solo los administradores tienen acceso total
+  if (currentUser?.rol === 'Administrador') {
+    return true;
+  }
+
+  // El usuario asignado al lote también puede ver la información (incluyendo asesores si son el agente asignado)
+  // Manejar diferentes estructuras del campo agente
+  let agenteValue = null;
+  if (listing?.agente) {
+    // Si es un string directo
+    agenteValue = listing.agente;
+  } else if (listing?.agent?.user) {
+    // Si es un objeto con propiedad user
+    agenteValue = listing.agent.user;
+  }
+
+  if (currentUser?.user && agenteValue &&
+      currentUser.user.toLowerCase() === agenteValue.toLowerCase()) {
+    return true;
+  }
+
+  return false;
+}
+
 export default function LoteEditPage() {
   const params = useParams<{ smp: string }>();
   const router = useRouter();
@@ -420,8 +446,9 @@ export default function LoteEditPage() {
                         </SelectTrigger>
                         <SelectContent>
                           {agentes.map(agente => {
+                            const isCurrentUser = user?.user === agente.user;
                             const nombreCompleto = agente.nombre && agente.apellido 
-                              ? `${agente.nombre} ${agente.apellido}` 
+                              ? `${agente.nombre} ${agente.apellido}${isCurrentUser ? ' (yo)' : ''}` 
                               : agente.user || 'Sin nombre';
                             return (
                               <SelectItem key={agente.user} value={agente.user}>
@@ -468,7 +495,7 @@ export default function LoteEditPage() {
           </div>
           
           <div className="space-y-6 lg:col-span-2">
-            {user?.rol === 'Administrador' || user?.rol === 'Asesor' ? (
+            {canViewOwnerInfo(user, listing) ? (
              <Card>
               <CardHeader>
                 <CardTitle>Información del propietario</CardTitle>

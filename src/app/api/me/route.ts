@@ -18,13 +18,14 @@ export async function GET(req: NextRequest) {
     }
     // Consultar la base de datos para obtener los datos actuales
     const { rows } = await pool.query(
-      'SELECT nombre, mail, user, apellido, rol, foto_perfil FROM public.prefapp_users WHERE "user" = $1',
+      'SELECT nombre, mail, "user", apellido, rol, foto_perfil FROM public.prefapp_users WHERE "user" = $1',
       [userId]
     );
     if (rows.length === 0) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
     const user = rows[0];
+    console.log('DEBUG API: Datos del usuario obtenidos de la BD:', user);
     // Si no hay apellido, intentar separar del nombre
     let nombre = user.nombre || "";
     let apellido = user.apellido || "";
@@ -78,7 +79,7 @@ export async function PATCH(req: NextRequest) {
   if (!userId) {
     return NextResponse.json({ error: "Token inválido" }, { status: 401 });
   }
-  const { nombre, apellido, mail, password } = await req.json();
+  const { nombre, apellido, user, mail, password } = await req.json();
   const updates = [];
   const values = [];
   if (nombre && typeof nombre === 'string' && nombre.trim()) {
@@ -88,6 +89,10 @@ export async function PATCH(req: NextRequest) {
   if (apellido && typeof apellido === 'string' && apellido.trim()) {
     updates.push('apellido = $' + (values.length + 1));
     values.push(apellido.trim());
+  }
+  if (user && typeof user === 'string' && user.trim()) {
+    updates.push('"user" = $' + (values.length + 1));
+    values.push(user.trim());
   }
   if (mail && typeof mail === 'string' && mail.trim()) {
     updates.push('mail = $' + (values.length + 1));

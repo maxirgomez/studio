@@ -38,6 +38,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       const res = await fetch("/api/me");
       if (res.ok) {
         const data = await res.json();
+        console.log('DEBUG UserContext: Usuario obtenido:', {
+          user: data.user,
+          rol: data.user?.rol,
+          userField: data.user?.user
+        });
         setUser(data.user || null);
       } else {
         setUser(null);

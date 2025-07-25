@@ -45,6 +45,8 @@ interface LotesFiltersProps {
   // Nuevas props para ordenamiento
   sortOrder?: 'asc' | 'desc';
   onSortOrderToggle?: () => void;
+  // Prop para el usuario actual
+  currentUser?: any;
 }
 
 const LotesFilters: React.FC<LotesFiltersProps> = ({
@@ -71,6 +73,8 @@ const LotesFilters: React.FC<LotesFiltersProps> = ({
   // Nuevas props para ordenamiento
   sortOrder,
   onSortOrderToggle,
+  // Prop para el usuario actual
+  currentUser,
 }) => (
   <Card>
     <CardHeader>
@@ -161,15 +165,19 @@ const LotesFilters: React.FC<LotesFiltersProps> = ({
           <DropdownMenuContent className="w-[250px]">
             <DropdownMenuLabel>Filtrar por Agente</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {uniqueAgents.map((agente) => (
-              <DropdownMenuCheckboxItem
-                key={agente.user}
-                checked={agentFilters.includes(agente.user)}
-                onCheckedChange={() => handleMultiSelectFilterChange('agent', agente.user)}
-              >
-                {agente.nombre} {agente.apellido} ({agente.iniciales})
-              </DropdownMenuCheckboxItem>
-            ))}
+            {uniqueAgents.map((agente) => {
+              const isCurrentUser = currentUser?.user === agente.user;
+              const displayName = `${agente.nombre} ${agente.apellido}${isCurrentUser ? ' (yo)' : ''}`;
+              return (
+                <DropdownMenuCheckboxItem
+                  key={agente.user}
+                  checked={agentFilters.includes(agente.user)}
+                  onCheckedChange={() => handleMultiSelectFilterChange('agent', agente.user)}
+                >
+                  {displayName} ({agente.iniciales})
+                </DropdownMenuCheckboxItem>
+              );
+            })}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

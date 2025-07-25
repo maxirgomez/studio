@@ -104,6 +104,15 @@ export async function GET(req: Request, context: any) {
         };
       }
     }
+    
+    // Debug log para ver qué datos se están devolviendo
+    console.log('DEBUG API /api/lotes/[smp]:', {
+      loteAgente: lote.agente,
+      agenteUsuario: agenteUsuario,
+      agenteUsuarioUser: agenteUsuario?.user,
+      loteCompleto: lote
+    });
+    
     return NextResponse.json({ lote, agenteUsuario });
   } catch (error) {
     return NextResponse.json(
