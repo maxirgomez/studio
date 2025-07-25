@@ -685,23 +685,6 @@ export default function SmpDetailView({
                   </div>
                 </CardContent>
             </Card>
-
-            {/* Debug info - temporal */}
-            <Card className="mb-4 bg-yellow-50 border-yellow-200">
-                <CardHeader>
-                    <CardTitle className="text-yellow-800">DEBUG - Información de Permisos</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm">
-                    <div className="space-y-2">
-                        <div><strong>Usuario actual:</strong> {currentUser?.user}</div>
-                        <div><strong>Rol del usuario:</strong> {currentUser?.rol}</div>
-                        <div><strong>Agente asignado al lote:</strong> {listing?.agente}</div>
-                        <div><strong>¿Es administrador?</strong> {currentUser?.rol === 'Administrador' ? 'SÍ' : 'NO'}</div>
-                        <div><strong>¿Es el agente asignado?</strong> {(currentUser?.user && listing?.agente && currentUser.user.toLowerCase() === listing.agente.toLowerCase()) ? 'SÍ' : 'NO'}</div>
-                        <div><strong>¿Puede ver info del propietario?</strong> {canViewOwnerInfo(currentUser, listing) ? 'SÍ' : 'NO'}</div>
-                    </div>
-                </CardContent>
-            </Card>
             
             {canViewOwnerInfo(currentUser, listing) && (
             <Card>
