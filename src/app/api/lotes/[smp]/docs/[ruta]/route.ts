@@ -21,6 +21,7 @@ export async function DELETE(req: NextRequest, { params }: any) {
     return NextResponse.json({ error: "Token inválido o expirado" }, { status: 401 });
   }
   const agente = typeof payload === 'object' && 'user' in payload ? payload.user : null;
+  const rol = typeof payload === 'object' && 'rol' in payload ? payload.rol : null;
   if (!agente) return NextResponse.json({ error: "Usuario no encontrado en el token" }, { status: 401 });
 
   // Buscar el registro
@@ -32,8 +33,23 @@ export async function DELETE(req: NextRequest, { params }: any) {
     );
     if (rows.length === 0) return NextResponse.json({ error: "Documento no encontrado" }, { status: 404 });
     doc = rows[0];
-    if (doc.agente !== agente) {
-      return NextResponse.json({ error: "No tienes permiso para eliminar este archivo" }, { status: 403 });
+    
+    // Validación de permisos: solo el propietario del documento o un administrador pueden eliminarlo
+    const isAdmin = rol === 'Administrador';
+    const isOwner = doc.agente === agente;
+    
+    console.log('[DELETE /api/lotes/[smp]/docs/[ruta]] Validación de permisos:', {
+      currentUser: agente,
+      currentUserRol: rol,
+      docOwner: doc.agente,
+      isAdmin: isAdmin,
+      isOwner: isOwner
+    });
+    
+    if (!isAdmin && !isOwner) {
+      return NextResponse.json({ 
+        error: "No tienes permiso para eliminar este archivo. Solo el propietario del documento o un administrador pueden eliminarlo." 
+      }, { status: 403 });
     }
   } catch (error) {
     return NextResponse.json({ error: "Error al buscar el documento", details: (error as Error).message }, { status: 500 });

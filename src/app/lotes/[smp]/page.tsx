@@ -205,6 +205,52 @@ function canViewOwnerInfo(currentUser: any, listing: any): boolean {
   return false;
 }
 
+// Función helper para verificar si el usuario puede editar el lote
+function canEditLote(currentUser: any, listing: any): boolean {
+  // Debug logs para entender qué está pasando
+  console.log('DEBUG canEditLote:', {
+    currentUser: currentUser,
+    currentUserRol: currentUser?.rol,
+    currentUserUser: currentUser?.user,
+    listing: listing,
+    listingAgente: listing?.agente
+  });
+
+  // Solo los administradores tienen acceso total
+  const isAdmin = currentUser?.rol === 'Administrador';
+  console.log('DEBUG: ¿Es administrador?', isAdmin, 'Rol:', currentUser?.rol);
+
+  if (isAdmin) {
+    console.log('DEBUG: Usuario es Administrador, permitiendo edición');
+    return true;
+  }
+
+  // El usuario asignado al lote también puede editarlo
+  const agenteValue = listing?.agente;
+  const currentUserValue = currentUser?.user;
+
+  console.log('DEBUG: Comparando usuarios para edición:', {
+    currentUserValue: currentUserValue,
+    agenteValue: agenteValue,
+    currentUserValueLower: currentUserValue?.toLowerCase(),
+    agenteValueLower: agenteValue?.toLowerCase(),
+    areEqual: currentUserValue && agenteValue && currentUserValue.toLowerCase() === agenteValue.toLowerCase()
+  });
+
+  const isAssignedAgent = currentUserValue && agenteValue &&
+      currentUserValue.toLowerCase() === agenteValue.toLowerCase();
+
+  console.log('DEBUG: ¿Es el agente asignado?', isAssignedAgent);
+
+  if (isAssignedAgent) {
+    console.log('DEBUG: Usuario coincide con el agente asignado, permitiendo edición');
+    return true;
+  }
+
+  console.log('DEBUG: Usuario NO tiene permisos para editar el lote');
+  return false;
+}
+
 function formatDecimal(value: any) {
   if (value == null || value === '') return '';
   const num = Number(value);
@@ -562,9 +608,11 @@ export default function LoteDetailPage() {
                 
             </div>
         </div>
-        <Link href={`/lotes/${listing.smp}/editar`}>
-            <Button variant="default"><Edit className="mr-2 h-4 w-4"/> Editar lote</Button>
-        </Link>
+        {canEditLote(currentUser, listing) && (
+          <Link href={`/lotes/${listing.smp}/editar`}>
+              <Button variant="default"><Edit className="mr-2 h-4 w-4"/> Editar lote</Button>
+          </Link>
+        )}
       </div>
       
       <div className="grid gap-8 lg:grid-cols-3">

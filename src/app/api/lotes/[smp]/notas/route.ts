@@ -56,9 +56,57 @@ export async function POST(req: NextRequest, { params }: any) {
   const avatarUrl = typeof payload === 'object' && 'avatarUrl' in payload ? payload.avatarUrl : null;
   const aiHint = typeof payload === 'object' && 'aiHint' in payload ? payload.aiHint : null;
   const initials = typeof payload === 'object' && 'initials' in payload ? payload.initials : null;
+  const rol = typeof payload === 'object' && 'rol' in payload ? payload.rol : null;
+  
   if (!agente) {
     console.log("[NOTAS][POST] Usuario no encontrado en el token");
     return NextResponse.json({ error: "Usuario no encontrado en el token" }, { status: 401 });
+  }
+
+  // Validación de seguridad: verificar que el usuario tenga permisos para agregar notas a este lote
+  try {
+    // Obtener información del lote para verificar permisos
+    const { rows: loteRows } = await pool.query(
+      `SELECT agente FROM public.prefapp_lotes WHERE smp = $1 LIMIT 1`,
+      [smp]
+    );
+    
+    if (loteRows.length === 0) {
+      console.log(`[NOTAS][POST] Lote no encontrado: ${smp}`);
+      return NextResponse.json({ error: 'Lote no encontrado' }, { status: 404 });
+    }
+    
+    const lote = loteRows[0];
+    const loteAgente = lote.agente;
+    
+    console.log('[NOTAS][POST] Validación de permisos:', {
+      currentUser: agente,
+      currentUserRol: rol,
+      loteAgente: loteAgente,
+      isAdmin: rol === 'Administrador',
+      isAssignedAgent: agente && loteAgente && 
+        agente.toLowerCase() === loteAgente.toLowerCase()
+    });
+
+    // Solo los administradores tienen acceso total
+    const isAdmin = rol === 'Administrador';
+    
+    // El usuario asignado al lote también puede agregar notas
+    const isAssignedAgent = agente && loteAgente &&
+        agente.toLowerCase() === loteAgente.toLowerCase();
+    
+    if (!isAdmin && !isAssignedAgent) {
+      console.log(`[NOTAS][POST] Acceso denegado - Usuario no autorizado para lote ${smp}`);
+      return NextResponse.json({ 
+        error: 'Acceso denegado. Solo el agente asignado o un administrador pueden agregar notas a este lote.' 
+      }, { status: 403 });
+    }
+    
+  } catch (error) {
+    console.error('[NOTAS][POST] Error en validación de permisos:', error);
+    return NextResponse.json({ 
+      error: 'Error al validar permisos de usuario' 
+    }, { status: 500 });
   }
   let body;
   try {
