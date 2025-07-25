@@ -8,6 +8,7 @@ export interface DashboardStats {
   previousQuarterSales: number;
   quarterlySalesChange: number;
   monthlySales: Array<{ name: string; total: number }>;
+  allSales: Array<{ saleDate: string; [key: string]: any }>;
 }
 
 export interface DashboardTableData {
@@ -28,8 +29,7 @@ export const useDashboardOptimized = (
   agentFilter: string = 'todos',
   statusFilter: string = '',
   currentPage: number = 1,
-  pageSize: number = 10,
-  salesChartRange: string = '12m'
+  pageSize: number = 10
 ): DashboardData => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [tableData, setTableData] = useState<DashboardTableData | null>(null);
@@ -61,11 +61,10 @@ export const useDashboardOptimized = (
         setUsers(usersData.users || usersData || []);
         setEstados(estadosData.estados || []);
 
-        // Cargar estadísticas del dashboard
+        // Cargar estadísticas del dashboard (sin filtro de tiempo)
         const statsParams = new URLSearchParams();
         if (agentFilter !== 'todos') statsParams.set('agent', agentFilter);
         if (statusFilter) statsParams.set('status', statusFilter);
-        statsParams.set('salesChartRange', salesChartRange);
 
         const statsRes = await fetch(`/api/dashboard/stats?${statsParams.toString()}`);
         if (!statsRes.ok) throw new Error('Error al cargar estadísticas');
@@ -73,13 +72,12 @@ export const useDashboardOptimized = (
         const statsData = await statsRes.json();
         setStats(statsData);
 
-        // Cargar datos de la tabla (paginados)
+        // Cargar datos de la tabla (paginados, sin filtro de tiempo)
         const tableParams = new URLSearchParams();
         tableParams.set('limit', String(pageSize));
         tableParams.set('offset', String((currentPage - 1) * pageSize));
         if (agentFilter !== 'todos') tableParams.set('agent', agentFilter);
         if (statusFilter) tableParams.set('status', statusFilter);
-        tableParams.set('salesChartRange', salesChartRange);
 
         const tableRes = await fetch(`/api/dashboard/lotes?${tableParams.toString()}`);
         if (!tableRes.ok) throw new Error('Error al cargar lotes');
@@ -96,7 +94,7 @@ export const useDashboardOptimized = (
     };
 
     fetchData();
-  }, [agentFilter, statusFilter, currentPage, pageSize, salesChartRange]);
+  }, [agentFilter, statusFilter, currentPage, pageSize]);
 
   return {
     stats,

@@ -159,7 +159,8 @@ export async function PUT(req: Request, context: any) {
     const fields = [
       'propietario', 'direccion', 'localidad', 'cp', 'direccionalt', 'fallecido', 'email', 'cuitcuil',
       'tel1', 'tel2', 'tel3', 'cel1', 'cel2', 'cel3',
-      'm2vendibles', 'vventa', 'inctasada', 'fpago', 'fventa'
+      'm2vendibles', 'vventa', 'inctasada', 'fpago', 'fventa',
+      'agente', 'estado' // Agregar campos agente y estado
     ];
     const updates = [];
     const values = [];

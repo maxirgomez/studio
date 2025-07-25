@@ -244,6 +244,8 @@ export default function LoteEditPage() {
           inctasada: safeData.incidenciaTasadaUSD,
           fpago: safeData.formaDePago,
           fventa: safeData.fechaVenta ? safeData.fechaVenta.toISOString().split('T')[0] : null, // CAMBIO fechaventa -> fventa
+          agente: listing?.agente, // Agregar campo agente
+          estado: listing?.status, // Agregar campo estado (mapeado desde status)
         }),
       });
       if (res.ok) {

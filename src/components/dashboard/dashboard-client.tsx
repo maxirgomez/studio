@@ -169,13 +169,12 @@ export default function DashboardClientPage() {
   const listingsPerPage = Number(searchParams.get('pageSize')) || 10;
   const salesChartRange = searchParams.get('salesChartRange') || "12m";
 
-  // Usar el hook optimizado para obtener datos reales
+  // Usar el hook optimizado para obtener datos reales (sin el filtro de tiempo para el dashboard general)
   const { stats, tableData, users, estados, loading, error } = useDashboardOptimized(
     agentFilter,
     statusFilter,
     currentPage,
-    listingsPerPage,
-    salesChartRange // pasar el rango de tiempo al hook
+    listingsPerPage
   );
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
@@ -231,22 +230,48 @@ export default function DashboardClientPage() {
     });
   }, [estados, stats?.lotsByStatus]);
 
-  // Datos para el gráfico de ventas mensuales
+  // Datos para el gráfico de ventas mensuales - procesado localmente
   const salesByMonthChartData = useMemo(() => {
-    console.log('Stats recibidos:', stats);
-    console.log('Monthly sales:', stats?.monthlySales);
+    if (!stats?.allSales || !Array.isArray(stats.allSales)) return [];
     
-    if (!stats?.monthlySales) return [];
+    const monthsToShowMap: Record<typeof salesChartRange, number> = {
+      '12m': 12, '6m': 6, '3m': 3,
+    };
+    const monthsToShow = monthsToShowMap[salesChartRange];
     
-    // Usar directamente los datos del servidor
-    const chartData = stats.monthlySales.map((sale: any) => ({
-      name: sale.name,
-      total: sale.total
-    }));
+    // Crear array de meses para el gráfico
+    const chartData = Array.from({ length: monthsToShow }).map((_, i) => {
+      const date = subMonths(new Date(), monthsToShow - 1 - i);
+      return {
+        name: format(date, 'MMM', { locale: es }),
+        total: 0,
+      };
+    });
+
+    // Filtrar ventas según el rango seleccionado
+    const salesCutoffDate = subMonths(new Date(), monthsToShow);
+    const filteredSales = stats.allSales.filter((sale: any) => {
+      if (!sale.saleDate) return false;
+      const saleDate = new Date(sale.saleDate);
+      return saleDate >= salesCutoffDate;
+    });
+
+    // Contar ventas por mes
+    filteredSales.forEach((sale: any) => {
+      if (sale.saleDate) {
+        const saleDate = new Date(sale.saleDate);
+        const monthIndex = differenceInMonths(new Date(), saleDate);
+        if (monthIndex < monthsToShow) {
+          const chartIndex = chartData.length - 1 - monthIndex;
+          if (chartIndex >= 0) {
+            chartData[chartIndex].total += 1;
+          }
+        }
+      }
+    });
     
-    console.log('Chart data procesado:', chartData);
     return chartData;
-  }, [stats?.monthlySales, salesChartRange]);
+  }, [stats?.allSales, salesChartRange]);
 
   // returns condicionales DESPUÉS de todos los hooks
   if (loading) {
@@ -460,7 +485,7 @@ export default function DashboardClientPage() {
               <div>
                 <CardTitle>Total de Lotes por Barrio</CardTitle>
                 <CardDescription>
-                  Cantidad total de lotes registrados en cada barrio en los últimos {salesChartRange === "12m" ? "12" : salesChartRange === "6m" ? "6" : "3"} meses.
+                  Cantidad total de lotes registrados en cada barrio.
                 </CardDescription>
               </div>
               <Button 
@@ -514,7 +539,7 @@ export default function DashboardClientPage() {
                   <div>
                       <CardTitle>Listado de Lotes</CardTitle>
                       <CardDescription>
-                          Una tabla detallada de los lotes según los filtros aplicados en los últimos {salesChartRange === "12m" ? "12" : salesChartRange === "6m" ? "6" : "3"} meses.
+                          Una tabla detallada de los lotes según los filtros aplicados.
                       </CardDescription>
                   </div>
                   <div className="w-48">

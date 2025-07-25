@@ -553,7 +553,7 @@ export default function LoteDetailPage() {
                     <div className="flex items-center pt-2">
                         <Avatar className="h-10 w-10 mr-4">
                             {agenteUsuario && agenteUsuario.foto_perfil ? (
-                                <AvatarImage src={agenteUsuario.foto_perfil} />
+                                <AvatarImage src={agenteUsuario.foto_perfil} alt={`Foto de perfil de ${agenteUsuario.nombre} ${agenteUsuario.apellido}`} />
                             ) : null}
                             <AvatarFallback>
                                 {agenteUsuario
@@ -883,7 +883,7 @@ export default function LoteDetailPage() {
                 <div className="space-y-6">
                   <div className="flex gap-4">
                     <Avatar>
-                      <AvatarImage src={currentUser?.foto_perfil || "https://placehold.co/100x100.png"} data-ai-hint="person" />
+                      <AvatarImage src={currentUser?.foto_perfil || "https://placehold.co/100x100.png"} alt={`Foto de perfil de ${currentUser?.nombre || 'usuario'}`} data-ai-hint="person" />
                       <AvatarFallback>{currentUser ? `${currentUser.nombre?.[0] || ''}${currentUser.apellido?.[0] || ''}`.toUpperCase() : "?"}</AvatarFallback>
                     </Avatar>
                     <div className="w-full space-y-2">
@@ -906,7 +906,7 @@ export default function LoteDetailPage() {
                       {notes.map((note, index) => (
                         <div key={index} className="flex gap-4">
                           <Avatar>
-                            <AvatarImage src={note.agente?.avatarUrl || "https://placehold.co/100x100.png"} data-ai-hint={note.agente?.aiHint || "person"} />
+                            <AvatarImage src={note.agente?.avatarUrl || "https://placehold.co/100x100.png"} alt={`Foto de perfil de ${note.agente?.nombre || 'agente'}`} data-ai-hint={note.agente?.aiHint || "person"} />
                             <AvatarFallback>
                               {note.agente?.initials || (note.agente?.nombre ? `${note.agente.nombre[0] || ''}${note.agente.apellido?.[0] || ''}`.toUpperCase() : (note.agente || "?"))}
                             </AvatarFallback>

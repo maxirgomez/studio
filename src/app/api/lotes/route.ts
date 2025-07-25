@@ -53,6 +53,8 @@ export async function GET(req: Request) {
   const minArea = searchParams.get('minArea');
   const maxArea = searchParams.get('maxArea');
   const search = searchParams.get('search');
+  const sortBy = searchParams.get('sortBy') || 'gid';
+  const sortOrder = searchParams.get('sortOrder') || 'asc';
 
   // Construir query dinámica
   let whereClauses = [];
@@ -92,12 +94,12 @@ export async function GET(req: Request) {
     }
   }
   if (minArea) {
-    whereClauses.push(`m2aprox >= $${idx}`);
+    whereClauses.push(`m2aprox IS NOT NULL AND CAST(m2aprox AS DECIMAL) >= $${idx}`);
     values.push(Number(minArea));
     idx++;
   }
   if (maxArea) {
-    whereClauses.push(`m2aprox <= $${idx}`);
+    whereClauses.push(`m2aprox IS NOT NULL AND CAST(m2aprox AS DECIMAL) <= $${idx}`);
     values.push(Number(maxArea));
     idx++;
   }
@@ -115,9 +117,25 @@ export async function GET(req: Request) {
   // Query para el total
   const countQuery = `SELECT COUNT(*) FROM public.prefapp_lotes ${where}`;
 
+  // Validar y mapear el campo de ordenamiento
+  const validSortFields = ['gid', 'm2aprox', 'smp', 'dir_lote', 'barrio', 'estado', 'agente', 'origen'];
+  const sortField = validSortFields.includes(sortBy) ? sortBy : 'gid';
+  const validSortOrders = ['asc', 'desc'];
+  const orderDirection = validSortOrders.includes(sortOrder.toLowerCase()) ? sortOrder.toUpperCase() : 'ASC';
+
+  // Manejar ordenamiento especial para m2aprox (valores nulos al final)
+  let orderClause = `${sortField} ${orderDirection}`;
+  if (sortField === 'm2aprox') {
+    if (orderDirection === 'ASC') {
+      orderClause = `CASE WHEN m2aprox IS NULL OR m2aprox = '0' OR m2aprox = '0.00' THEN 1 ELSE 0 END, CAST(m2aprox AS DECIMAL) ASC`;
+    } else {
+      orderClause = `CASE WHEN m2aprox IS NULL OR m2aprox = '0' OR m2aprox = '0.00' THEN 1 ELSE 0 END, CAST(m2aprox AS DECIMAL) DESC`;
+    }
+  }
+
   // Agregar paginación
   const pagValues = [...values, limit, offset];
-  const query = `SELECT * FROM public.prefapp_lotes ${where} ORDER BY gid LIMIT $${idx} OFFSET $${idx + 1}`;
+  const query = `SELECT * FROM public.prefapp_lotes ${where} ORDER BY ${orderClause} LIMIT $${idx} OFFSET $${idx + 1}`;
 
   try {
     // Obtener el total

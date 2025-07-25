@@ -17,6 +17,9 @@ interface LotesPaginationProps {
 
 const LotesPagination: React.FC<LotesPaginationProps> = ({ currentPage, totalPages, createQueryString, pathname }) => {
   if (totalPages <= 1) return null;
+  
+  // Si la página actual es mayor que el total de páginas, no mostrar paginación
+  if (currentPage > totalPages) return null;
 
   // Calcular las páginas a mostrar
   const pages = [];

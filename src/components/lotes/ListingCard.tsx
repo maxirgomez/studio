@@ -64,6 +64,11 @@ const ListingCard = ({ listing }: ListingCardProps) => (
       <div className="p-4 space-y-2">
         <h3 className="font-semibold text-lg">
           {(() => {
+            // Validar que listing.address existe y no es null
+            if (!listing.address) {
+              return 'Dirección no disponible';
+            }
+            
             // Detectar si la dirección tiene formato "CALLE 1155.1157.1159..."
             const match = listing.address.match(/^(\D+)([\d.]+)$/);
             if (match) {
@@ -91,28 +96,28 @@ const ListingCard = ({ listing }: ListingCardProps) => (
         </h3>
         <div className="flex items-center text-sm text-muted-foreground">
           <MapPin className="h-4 w-4 mr-2" />
-          <span>{capitalizeWords(listing.neighborhood)}</span>
+          <span>{listing.neighborhood ? capitalizeWords(listing.neighborhood) : 'Barrio no disponible'}</span>
         </div>
         <div className="flex items-center text-sm text-muted-foreground">
           <Scan className="h-4 w-4 mr-2" />
-          <span>SMP: {listing.smp}</span>
+          <span>SMP: {listing.smp || 'No disponible'}</span>
         </div>
         <div className="flex items-center text-sm text-muted-foreground">
           <Ruler className="h-4 w-4 mr-2" />
-          <span>{listing.area} m² estimados</span>
+          <span>{listing.area ? `${listing.area} m² estimados` : 'Área no disponible'}</span>
         </div>
       </div>
     </CardContent>
     <CardFooter className="bg-card p-4 flex justify-between items-center">
-        <Badge style={getStatusStyles(listing.status)}>{listing.status}</Badge>
+        <Badge style={getStatusStyles(listing.status || 'Sin estado')}>{listing.status || 'Sin estado'}</Badge>
         <div className="flex items-center gap-2">
             <Avatar className="h-6 w-6">
-                <AvatarFallback>{listing.agent.initials}</AvatarFallback>
+                <AvatarFallback>{listing.agent?.initials || 'NA'}</AvatarFallback>
             </Avatar>
             <span className="text-xs text-muted-foreground">
-  {listing.agent.nombre && listing.agent.apellido
+  {listing.agent?.nombre && listing.agent?.apellido
     ? `${listing.agent.nombre} ${listing.agent.apellido}`
-    : listing.agent.user}
+    : listing.agent?.user || 'Agente no disponible'}
 </span>
         </div>
     </CardFooter>

@@ -64,34 +64,31 @@ export async function GET(req: Request) {
     console.log('Base values:', baseValues);
     console.log('Date cutoff:', dateCutoff);
 
-    // Consultas simplificadas y más robustas
+    // Consultas simplificadas y más robustas (sin filtro de tiempo para el dashboard general)
     const queries = [
-      // Total de lotes (SIEMPRE total global, sin filtro de estado)
+      // Total de lotes (total global, sin filtro de tiempo)
       pool.query(`
         SELECT COUNT(*) as total 
         FROM public.prefapp_lotes 
         WHERE fventa IS NOT NULL
-        AND fventa::date >= CURRENT_DATE - INTERVAL '${salesChartRange === "12m" ? "12" : salesChartRange === "6m" ? "6" : "3"} months'
         ${agentFilter !== 'todos' ? 'AND agente = $1' : ''}
       `, agentFilter !== 'todos' ? [agentFilter] : []),
       
-      // Lotes por estado (SIEMPRE total global, sin filtro de estado)
+      // Lotes por estado (total global, sin filtro de tiempo)
       pool.query(`
         SELECT estado, COUNT(*) as count 
         FROM public.prefapp_lotes 
         WHERE fventa IS NOT NULL
-        AND fventa::date >= CURRENT_DATE - INTERVAL '${salesChartRange === "12m" ? "12" : salesChartRange === "6m" ? "6" : "3"} months'
         ${agentFilter !== 'todos' ? 'AND agente = $1' : ''}
         GROUP BY estado 
         ORDER BY count DESC
       `, agentFilter !== 'todos' ? [agentFilter] : []),
       
-      // Lotes por barrio (con filtro de fecha y estado)
+      // Lotes por barrio (sin filtro de tiempo)
       pool.query(`
         SELECT barrio as name, COUNT(*) as total 
         FROM public.prefapp_lotes 
         WHERE fventa IS NOT NULL
-        AND fventa::date >= CURRENT_DATE - INTERVAL '${salesChartRange === "12m" ? "12" : salesChartRange === "6m" ? "6" : "3"} months'
         ${agentFilter !== 'todos' ? 'AND agente = $1' : ''}
         ${statusFilter ? `AND estado = $${agentFilter !== 'todos' ? '2' : '1'}` : ''}
         AND barrio IS NOT NULL
@@ -124,19 +121,15 @@ export async function GET(req: Request) {
         ${statusFilter ? `AND estado = $${agentFilter !== 'todos' ? '2' : '1'}` : ''}
       `, statusFilter ? (agentFilter !== 'todos' ? [agentFilter, statusFilter] : [statusFilter]) : (agentFilter !== 'todos' ? [agentFilter] : [])),
       
-      // Ventas por mes (dinámico según el rango seleccionado)
+      // Todas las ventas (sin filtro de tiempo para procesamiento local)
       pool.query(`
-        SELECT 
-          TO_CHAR(DATE_TRUNC('month', fventa), 'YYYY-MM') as month,
-          COUNT(*) as total
+        SELECT fventa
         FROM public.prefapp_lotes 
         WHERE fventa IS NOT NULL
-        AND fventa::date >= CURRENT_DATE - INTERVAL '${salesChartRange === "12m" ? "12" : salesChartRange === "6m" ? "6" : "3"} months'
         AND estado = 'Vendido'
         ${agentFilter !== 'todos' ? 'AND agente = $1' : ''}
         ${statusFilter ? `AND estado = $${agentFilter !== 'todos' ? '2' : '1'}` : ''}
-        GROUP BY DATE_TRUNC('month', fventa)
-        ORDER BY month
+        ORDER BY fventa DESC
       `, statusFilter ? (agentFilter !== 'todos' ? [agentFilter, statusFilter] : [statusFilter]) : (agentFilter !== 'todos' ? [agentFilter] : []))
     ];
 
@@ -147,7 +140,7 @@ export async function GET(req: Request) {
       barriosResult,
       currentQuarterResult,
       previousQuarterResult,
-      monthlySalesResult
+      allSalesResult
     ] = await Promise.all(queries);
 
     console.log('Queries completed successfully');
@@ -173,22 +166,10 @@ export async function GET(req: Request) {
       ? ((currentQuarterSales - previousQuarterSales) / previousQuarterSales) * 100 
       : currentQuarterSales > 0 ? 100 : 0;
 
-    // Procesar ventas mensuales con validación
-    const monthlySales = monthlySalesResult.rows.map((row: any) => {
-      try {
-        const monthName = new Date(row.month + '-01').toLocaleDateString('es', { month: 'short' });
-        return {
-          name: monthName,
-          total: parseInt(row.total) || 0
-        };
-      } catch (error) {
-        console.error('Error processing month:', row.month, error);
-        return {
-          name: row.month || 'Unknown',
-          total: parseInt(row.total) || 0
-        };
-      }
-    });
+    // Procesar todas las ventas para el gráfico local
+    const allSales = allSalesResult.rows.map((row: any) => ({
+      saleDate: row.fventa
+    }));
 
     const result = {
       totalLots,
@@ -197,7 +178,7 @@ export async function GET(req: Request) {
       currentQuarterSales,
       previousQuarterSales,
       quarterlySalesChange,
-      monthlySales
+      allSales
     };
 
     console.log('Dashboard stats result:', result);

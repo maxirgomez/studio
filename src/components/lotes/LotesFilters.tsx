@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { X, ChevronDown } from "lucide-react";
+import { X, ChevronDown, ArrowUp, ArrowDown } from "lucide-react";
 import React from "react";
 
 interface LotesFiltersProps {
@@ -42,6 +42,9 @@ interface LotesFiltersProps {
   handleSliderFilterCommit: (newRange: [number, number]) => void;
   activeFilters: { type: string; value: string; key: string }[];
   handleRemoveFilter: (key: string, value: string) => void;
+  // Nuevas props para ordenamiento
+  sortOrder?: 'asc' | 'desc';
+  onSortOrderToggle?: () => void;
 }
 
 const LotesFilters: React.FC<LotesFiltersProps> = ({
@@ -65,6 +68,9 @@ const LotesFilters: React.FC<LotesFiltersProps> = ({
   handleSliderFilterCommit,
   activeFilters,
   handleRemoveFilter,
+  // Nuevas props para ordenamiento
+  sortOrder,
+  onSortOrderToggle,
 }) => (
   <Card>
     <CardHeader>
@@ -128,7 +134,7 @@ const LotesFilters: React.FC<LotesFiltersProps> = ({
               <ChevronDown className="h-4 w-4 opacity-50" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-[250px]">
+          <DropdownMenuContent className="w-[250px] max-h-[200px] overflow-y-auto">
             <DropdownMenuLabel>Filtrar por Barrio</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {uniqueNeighborhoods.map((neighborhood) => (
@@ -168,7 +174,22 @@ const LotesFilters: React.FC<LotesFiltersProps> = ({
         </DropdownMenu>
       </div>
       <div className="space-y-4">
-        <Label>M² Estimados: {sliderValue[0]} - {sliderValue[1]}m²</Label>
+        <div className="flex items-center justify-between">
+          <Label>M² Estimados: {sliderValue[0]} - {sliderValue[1]}m²</Label>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onSortOrderToggle}
+            className="h-8 w-8 p-0"
+            title={sortOrder === 'asc' ? 'Ordenar de menor a mayor' : 'Ordenar de mayor a menor'}
+          >
+            {sortOrder === 'asc' ? (
+              <ArrowUp className="h-4 w-4" />
+            ) : (
+              <ArrowDown className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
         <div className="flex gap-2">
           <Input
             type="number"

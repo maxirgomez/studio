@@ -44,7 +44,7 @@ import {
   X,
   ChevronDown
 } from "lucide-react";
-import { users, listings, getStatusStyles } from "@/lib/data";
+import { users, getStatusStyles } from "@/lib/data";
 import ListingCard from "@/components/lotes/ListingCard";
 import LotesFilters from "@/components/lotes/LotesFilters";
 import LotesGrid from "@/components/lotes/LotesGrid";
@@ -61,9 +61,8 @@ export default function LotesClientPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const allAreas = useMemo(() => listings.map(l => l.area), []);
-  const minArea = useMemo(() => Math.min(...allAreas), [allAreas]);
-  const maxArea = useMemo(() => Math.max(...allAreas), [allAreas]);
+  const [minArea, setMinArea] = useState(0);
+  const [maxArea, setMaxArea] = useState(1000);
   
   const currentPage = Number(searchParams.get('page')) || 1;
   const listingsPerPage = 8;
@@ -73,6 +72,8 @@ export default function LotesClientPage() {
   const statusFilters = useMemo(() => searchParams.get('status')?.split(',') || [], [searchParams]);
   const origenFilters = useMemo(() => searchParams.get('origen')?.split(',') || [], [searchParams]);
   const searchFilter = useMemo(() => searchParams.get('search') || '', [searchParams]);
+  const sortBy = useMemo(() => searchParams.get('sortBy') || 'gid', [searchParams]);
+  const sortOrder = useMemo(() => (searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc', [searchParams]);
 
   const minAreaFilter = useMemo(() => searchParams.get('minArea') ? Number(searchParams.get('minArea')) : minArea, [searchParams, minArea]);
   const maxAreaFilter = useMemo(() => searchParams.get('maxArea') ? Number(searchParams.get('maxArea')) : maxArea, [searchParams, maxArea]);
@@ -120,11 +121,32 @@ export default function LotesClientPage() {
     }
     fetchAgentes();
   }, []);
+
+  useEffect(() => {
+    async function fetchAreaRange() {
+      try {
+        const res = await fetch('/api/lotes/area-range');
+        const data = await res.json();
+        setMinArea(data.minArea || 0);
+        setMaxArea(data.maxArea || 1000);
+      } catch (error) {
+        console.error('Error al cargar rango de áreas:', error);
+      }
+    }
+    fetchAreaRange();
+  }, []);
   
   useEffect(() => {
-    setAreaInput([String(minAreaFilter), String(maxAreaFilter)]);
-    setSliderValue([minAreaFilter, maxAreaFilter]);
-  }, [minAreaFilter, maxAreaFilter]);
+    // Solo mostrar valores en los inputs si hay un filtro activo (no es el rango completo)
+    if (minAreaFilter > minArea || maxAreaFilter < maxArea) {
+      setAreaInput([String(minAreaFilter), String(maxAreaFilter)]);
+      setSliderValue([minAreaFilter, maxAreaFilter]);
+    } else {
+      // Si no hay filtro activo, dejar los inputs vacíos
+      setAreaInput(['', '']);
+      setSliderValue([minArea, maxArea]);
+    }
+  }, [minAreaFilter, maxAreaFilter, minArea, maxArea]);
   
   const createQueryString = useCallback(
     (paramsToUpdate: Record<string, string | null | number>) => {
@@ -192,6 +214,11 @@ export default function LotesClientPage() {
      router.push(`${pathname}?${createQueryString({ minArea: String(newRange[0]), maxArea: String(newRange[1]), page: 1 })}`, { scroll: false });
   };
 
+  const handleSortOrderToggle = () => {
+    const newOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+    router.push(`${pathname}?${createQueryString({ sortBy: 'm2aprox', sortOrder: newOrder, page: 1 })}`, { scroll: false });
+  };
+
   // Hook de debounce para el buscador
   const [searchInput, setSearchInput] = useState(searchFilter);
   
@@ -216,23 +243,15 @@ export default function LotesClientPage() {
     }
   };
 
-  const filteredListings = useMemo(() => {
-    return listings.filter(listing => {
-      const agentMatch = agentFilters.length === 0 || agentFilters.includes(listing.agent.name);
-      const neighborhoodMatch = neighborhoodFilters.length === 0 || neighborhoodFilters.includes(listing.neighborhood);
-      const areaMatch = listing.area >= minAreaFilter && listing.area <= maxAreaFilter;
-      const statusMatch = statusFilters.length === 0 || statusFilters.includes(listing.status);
-      const origenMatch = origenFilters.length === 0 || origenFilters.includes(listing.origen);
-      return agentMatch && neighborhoodMatch && areaMatch && statusMatch && origenMatch;
-    });
-  }, [agentFilters, neighborhoodFilters, minAreaFilter, maxAreaFilter, statusFilters, origenFilters]);
+  // Los filtros se aplican directamente en la API, no necesitamos filtrar aquí
 
   const activeFilters: { type: string; value: string; key: string }[] = [];
   agentFilters.forEach(value => activeFilters.push({ type: 'Agente', value, key: 'agent' }));
   neighborhoodFilters.forEach(value => activeFilters.push({ type: 'Barrio', value, key: 'neighborhood' }));
   origenFilters.forEach(value => activeFilters.push({ type: 'Origen', value, key: 'origen' }));
   statusFilters.forEach(value => activeFilters.push({ type: 'Estado', value, key: 'status' }));
-  if (minAreaFilter !== minArea || maxAreaFilter !== maxArea) {
+  // Solo mostrar filtro de área si realmente está aplicado (no es el rango completo)
+  if (minAreaFilter > minArea || maxAreaFilter < maxArea) {
       activeFilters.push({
           type: 'M²',
           value: `${minAreaFilter} - ${maxAreaFilter}`,
@@ -282,10 +301,12 @@ export default function LotesClientPage() {
       if (agentFilters.length > 0) params.set('agent', agentFilters.join(','));
       if (neighborhoodFilters.length > 0) params.set('neighborhood', neighborhoodFilters.join(','));
       if (statusFilters.length > 0) params.set('status', statusFilters.join(','));
-      if (origenFilters.length > 0) params.set('origen', origenFilters.join(','));
-      if (minAreaFilter !== minArea) params.set('minArea', String(minAreaFilter));
-      if (maxAreaFilter !== maxArea) params.set('maxArea', String(maxAreaFilter));
-      if (searchFilter) params.set('search', searchFilter);
+             if (origenFilters.length > 0) params.set('origen', origenFilters.join(','));
+       if (minAreaFilter !== minArea) params.set('minArea', String(minAreaFilter));
+       if (maxAreaFilter !== maxArea) params.set('maxArea', String(maxAreaFilter));
+       if (searchFilter) params.set('search', searchFilter);
+       if (sortBy !== 'gid') params.set('sortBy', sortBy);
+       if (sortOrder !== 'asc') params.set('sortOrder', sortOrder);
       const res = await fetch(`/api/lotes?${params.toString()}`);
       const data = await res.json();
       const lotes = (data.lotes || []).map((lote: any) => ({
@@ -296,9 +317,14 @@ export default function LotesClientPage() {
       setRealListings(lotes);
       setTotal(data.total || 0);
       setLoadingRealListings(false);
+      
+      // Si no hay lotes en esta página y no es la página 1, redirigir a la página 1
+      if (lotes.length === 0 && currentPage > 1) {
+        router.push(`${pathname}?${createQueryString({ page: 1 })}`, { scroll: false });
+      }
     };
     fetchLotes();
-  }, [currentPage, agentFilters, neighborhoodFilters, statusFilters, origenFilters, minAreaFilter, maxAreaFilter, searchFilter]);
+     }, [currentPage, agentFilters, neighborhoodFilters, statusFilters, origenFilters, minAreaFilter, maxAreaFilter, searchFilter, sortBy, sortOrder, router, pathname, createQueryString]);
 
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 lg:grid-cols-[280px_1fr]">
@@ -324,30 +350,34 @@ export default function LotesClientPage() {
           handleSliderFilterCommit={handleSliderFilterCommit}
           activeFilters={activeFilters}
           handleRemoveFilter={handleRemoveFilter}
+          sortOrder={sortOrder}
+          onSortOrderToggle={handleSortOrderToggle}
         />
       </div>
-      {/* Botón '+ Nuevo Lote' y buscador arriba de la grilla */}
-      <div className="lg:col-span-1 flex flex-col gap-4">
-        <div className="flex justify-between items-center mb-2 gap-4">
-          <div className="flex-1 max-w-md">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por SMP, dirección o barrio..."
-                value={searchInput}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                onKeyDown={handleSearchKeyDown}
-                className="pl-10"
-              />
-            </div>
-          </div>
-          <Link href="/lotes/nuevo">
-            <Button className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Nuevo Lote
-            </Button>
-          </Link>
-        </div>
+             {/* Botón '+ Nuevo Lote' y buscador arriba de la grilla */}
+       <div className="lg:col-span-1 flex flex-col gap-4">
+         <div className="flex justify-between items-center mb-2 gap-4">
+           <div className="flex-1 max-w-md">
+             <div className="relative">
+               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+               <Input
+                 placeholder="Buscar por SMP, dirección o barrio..."
+                 value={searchInput}
+                 onChange={(e) => handleSearchChange(e.target.value)}
+                 onKeyDown={handleSearchKeyDown}
+                 className="pl-10"
+               />
+             </div>
+           </div>
+           <div className="flex items-center gap-4">
+             <Link href="/lotes/nuevo">
+               <Button className="flex items-center gap-2">
+                 <Plus className="h-4 w-4" />
+                 Nuevo Lote
+               </Button>
+             </Link>
+           </div>
+         </div>
         <LotesGrid listings={realListings} loading={loadingRealListings} />
         <LotesPagination
           currentPage={currentPage}
