@@ -70,16 +70,14 @@ export async function GET(req: Request) {
       pool.query(`
         SELECT COUNT(*) as total 
         FROM public.prefapp_lotes 
-        WHERE fventa IS NOT NULL
-        ${agentFilter !== 'todos' ? 'AND agente = $1' : ''}
+        ${agentFilter !== 'todos' ? 'WHERE agente = $1' : ''}
       `, agentFilter !== 'todos' ? [agentFilter] : []),
       
       // Lotes por estado (total global, sin filtro de tiempo)
       pool.query(`
         SELECT estado, COUNT(*) as count 
         FROM public.prefapp_lotes 
-        WHERE fventa IS NOT NULL
-        ${agentFilter !== 'todos' ? 'AND agente = $1' : ''}
+        ${agentFilter !== 'todos' ? 'WHERE agente = $1' : ''}
         GROUP BY estado 
         ORDER BY count DESC
       `, agentFilter !== 'todos' ? [agentFilter] : []),
@@ -88,8 +86,7 @@ export async function GET(req: Request) {
       pool.query(`
         SELECT barrio as name, COUNT(*) as total 
         FROM public.prefapp_lotes 
-        WHERE fventa IS NOT NULL
-        ${agentFilter !== 'todos' ? 'AND agente = $1' : ''}
+        ${agentFilter !== 'todos' ? 'WHERE agente = $1' : 'WHERE 1=1'}
         ${statusFilter ? `AND estado = $${agentFilter !== 'todos' ? '2' : '1'}` : ''}
         AND barrio IS NOT NULL
         GROUP BY barrio 
@@ -106,8 +103,7 @@ export async function GET(req: Request) {
         AND fventa::date >= DATE_TRUNC('quarter', CURRENT_DATE)
         AND fventa::date < DATE_TRUNC('quarter', CURRENT_DATE) + INTERVAL '3 months'
         ${agentFilter !== 'todos' ? 'AND agente = $1' : ''}
-        ${statusFilter ? `AND estado = $${agentFilter !== 'todos' ? '2' : '1'}` : ''}
-      `, statusFilter ? (agentFilter !== 'todos' ? [agentFilter, statusFilter] : [statusFilter]) : (agentFilter !== 'todos' ? [agentFilter] : [])),
+      `, agentFilter !== 'todos' ? [agentFilter] : []),
       
       // Ventas del trimestre anterior
       pool.query(`
@@ -118,8 +114,7 @@ export async function GET(req: Request) {
         AND fventa::date >= DATE_TRUNC('quarter', CURRENT_DATE) - INTERVAL '3 months'
         AND fventa::date < DATE_TRUNC('quarter', CURRENT_DATE)
         ${agentFilter !== 'todos' ? 'AND agente = $1' : ''}
-        ${statusFilter ? `AND estado = $${agentFilter !== 'todos' ? '2' : '1'}` : ''}
-      `, statusFilter ? (agentFilter !== 'todos' ? [agentFilter, statusFilter] : [statusFilter]) : (agentFilter !== 'todos' ? [agentFilter] : [])),
+      `, agentFilter !== 'todos' ? [agentFilter] : []),
       
       // Todas las ventas (sin filtro de tiempo para procesamiento local)
       pool.query(`
@@ -128,9 +123,8 @@ export async function GET(req: Request) {
         WHERE fventa IS NOT NULL
         AND estado = 'Vendido'
         ${agentFilter !== 'todos' ? 'AND agente = $1' : ''}
-        ${statusFilter ? `AND estado = $${agentFilter !== 'todos' ? '2' : '1'}` : ''}
         ORDER BY fventa DESC
-      `, statusFilter ? (agentFilter !== 'todos' ? [agentFilter, statusFilter] : [statusFilter]) : (agentFilter !== 'todos' ? [agentFilter] : []))
+      `, agentFilter !== 'todos' ? [agentFilter] : [])
     ];
 
     console.log('Executing queries...');
