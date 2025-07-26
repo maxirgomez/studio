@@ -66,7 +66,7 @@ const PdfContent = React.forwardRef<
       </div>
 
       {imageUrl && <img src={imageUrl} crossOrigin="anonymous" style={{ width: '100%', height: 'auto', marginBottom: '20px', borderRadius: '4px' }} alt={listing.address} />}
-      
+
       <h3 style={sectionTitleStyle}>Datos Principales</h3>
       <div style={gridStyle}>
         <div style={fieldStyle}><span style={labelStyle}>Estado:</span> <span style={valueStyle}>{listing.status}</span></div>
@@ -77,7 +77,7 @@ const PdfContent = React.forwardRef<
         <div style={fieldStyle}><span style={labelStyle}>Origen:</span> <span style={valueStyle}>{listing.origen}</span></div>
         <div style={fieldStyle}><span style={labelStyle}>SMP:</span> <span style={valueStyle}>{listing.smp}</span></div>
       </div>
-      
+
       <h3 style={sectionTitleStyle}>Información Urbanística y Catastral</h3>
       <div style={gridStyle}>
         <div>
@@ -91,7 +91,7 @@ const PdfContent = React.forwardRef<
           <div style={fieldStyle}><span style={labelStyle}>Alícuota:</span> <span style={valueStyle}>{listing.alicuota}%</span></div>
         </div>
       </div>
-      <div style={{...fieldStyle, gridColumn: 'span 2'}}><span style={labelStyle}>Partida:</span> <span style={valueStyle}>{listing.partida}</span></div>
+      <div style={{ ...fieldStyle, gridColumn: 'span 2' }}><span style={labelStyle}>Partida:</span> <span style={valueStyle}>{listing.partida}</span></div>
 
 
       <h3 style={sectionTitleStyle}>Datos de Tasación</h3>
@@ -134,9 +134,9 @@ const PdfContent = React.forwardRef<
         </>
       )}
       <div style={{ marginTop: '16px' }}>
-          <h3 style={sectionTitleStyle}>Otros Datos</h3>
-          <p style={{ fontSize: '12px', color: '#333' }}>Contactar solo por la mañana.</p>
-        </div>
+        <h3 style={sectionTitleStyle}>Otros Datos</h3>
+        <p style={{ fontSize: '12px', color: '#333' }}>Contactar solo por la mañana.</p>
+      </div>
     </div>
   );
 });
@@ -192,7 +192,7 @@ function canViewOwnerInfo(currentUser: any, listing: any): boolean {
   });
 
   const isAssignedAgent = currentUserValue && agenteValue &&
-      currentUserValue.toLowerCase() === agenteValue.toLowerCase();
+    currentUserValue.toLowerCase() === agenteValue.toLowerCase();
 
   console.log('DEBUG: ¿Es el agente asignado?', isAssignedAgent);
 
@@ -238,7 +238,7 @@ function canEditLote(currentUser: any, listing: any): boolean {
   });
 
   const isAssignedAgent = currentUserValue && agenteValue &&
-      currentUserValue.toLowerCase() === agenteValue.toLowerCase();
+    currentUserValue.toLowerCase() === agenteValue.toLowerCase();
 
   console.log('DEBUG: ¿Es el agente asignado?', isAssignedAgent);
 
@@ -270,16 +270,16 @@ export default function LoteDetailPage() {
   const [listing, setListing] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  
+
   // Detectar parámetro de dirección específica
   const [direccionEspecifica, setDireccionEspecifica] = useState<string | null>(null);
-  
+
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [currentImageUrl, setCurrentImageUrl] = useState(listing?.imageUrl);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { toast } = useToast();
-  
+
   const [notes, setNotes] = useState<any[]>([]);
   const [notesLoading, setNotesLoading] = useState(true);
   const [newNote, setNewNote] = useState("");
@@ -451,57 +451,57 @@ export default function LoteDetailPage() {
 
     setIsGeneratingPdf(true);
     toast({
-        title: "Generando PDF...",
-        description: "Por favor, espera un momento.",
+      title: "Generando PDF...",
+      description: "Por favor, espera un momento.",
     });
 
     try {
-        const canvas = await html2canvas(pdfContentRef.current, {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: '#ffffff'
-        });
+      const canvas = await html2canvas(pdfContentRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.8);
-        const pdf = new jsPDF({
-            orientation: 'portrait',
-            unit: 'mm',
-            format: 'a4'
-        });
+      const imgData = canvas.toDataURL('image/jpeg', 0.8);
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
 
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
-        const canvasAspectRatio = canvasWidth / canvasHeight;
-        
-        let renderWidth = pdfWidth - 20;
-        let renderHeight = renderWidth / canvasAspectRatio;
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const canvasAspectRatio = canvasWidth / canvasHeight;
 
-        if (renderHeight > pdfHeight - 20) {
-            renderHeight = pdfHeight - 20;
-            renderWidth = renderHeight * canvasAspectRatio;
-        }
+      let renderWidth = pdfWidth - 20;
+      let renderHeight = renderWidth / canvasAspectRatio;
 
-        const xOffset = (pdfWidth - renderWidth) / 2;
-        const yOffset = 10;
+      if (renderHeight > pdfHeight - 20) {
+        renderHeight = pdfHeight - 20;
+        renderWidth = renderHeight * canvasAspectRatio;
+      }
 
-        pdf.addImage(imgData, 'JPEG', xOffset, yOffset, renderWidth, renderHeight);
-        pdf.save(`ficha-lote-${listing.smp}.pdf`);
-        
-        toast({
-            title: "PDF Generado",
-            description: `La ficha del lote ${listing.address} se ha descargado.`,
-        });
+      const xOffset = (pdfWidth - renderWidth) / 2;
+      const yOffset = 10;
+
+      pdf.addImage(imgData, 'JPEG', xOffset, yOffset, renderWidth, renderHeight);
+      pdf.save(`ficha-lote-${listing.smp}.pdf`);
+
+      toast({
+        title: "PDF Generado",
+        description: `La ficha del lote ${listing.address} se ha descargado.`,
+      });
     } catch (error) {
-        console.error("Error al generar PDF:", error);
-        toast({
-            variant: "destructive",
-            title: "Error al generar PDF",
-            description: "No se pudo crear el archivo. Inténtalo de nuevo.",
-        });
+      console.error("Error al generar PDF:", error);
+      toast({
+        variant: "destructive",
+        title: "Error al generar PDF",
+        description: "No se pudo crear el archivo. Inténtalo de nuevo.",
+      });
     } finally {
-        setIsGeneratingPdf(false);
+      setIsGeneratingPdf(false);
     }
   };
 
@@ -593,436 +593,438 @@ export default function LoteDetailPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-            <Link href="/lotes">
-                <Button variant="outline" size="icon">
-                    <ArrowLeft className="h-4 w-4" />
-                </Button>
-            </Link>
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">
-                  {direccionEspecifica 
-                    ? listing.address.replace(/\d+$/, direccionEspecifica)
-                    : listing.address}
-                </h1>
-                <p className="text-muted-foreground">{listing.neighborhood}</p>
-                
-            </div>
+          <Link href="/lotes">
+            <Button variant="outline" size="icon">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">
+              {direccionEspecifica
+                ? listing.address.replace(/\d+$/, direccionEspecifica)
+                : listing.address}
+            </h1>
+            <p className="text-muted-foreground">{listing.neighborhood}</p>
+
+          </div>
         </div>
         {canEditLote(currentUser, listing) && (
           <Link href={`/lotes/${listing.smp}/editar`}>
-              <Button variant="default"><Edit className="mr-2 h-4 w-4"/> Editar lote</Button>
+            <Button variant="default"><Edit className="mr-2 h-4 w-4" /> Editar lote</Button>
           </Link>
         )}
       </div>
-      
+
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Left Column */}
         <div className="space-y-6 lg:col-span-1">
-            <Card>
-                <CardContent className="p-0">
-  {listing.foto_lote ? (
-    <Image
-      src={listing.foto_lote}
-      alt={listing.address}
-      width={600}
-      height={400}
-      className="aspect-video object-cover rounded-lg"
-      data-ai-hint={listing.aiHint}
-    />
-  ) : (
-    <div className="aspect-video bg-muted flex items-center justify-center rounded-lg">
-      <p className="text-muted-foreground">Imagen no disponible</p>
-    </div>
-  )}
-                </CardContent>
-            </Card>
+          <Card>
+            <CardContent className="p-0">
+              {listing.foto_lote ? (
+                <Image
+                  src={listing.foto_lote}
+                  alt={listing.address}
+                  width={600}
+                  height={400}
+                  className="aspect-video object-cover rounded-lg"
+                  data-ai-hint={listing.aiHint}
+                />
+              ) : (
+                <div className="aspect-video bg-muted flex items-center justify-center rounded-lg">
+                  <p className="text-muted-foreground">Imagen no disponible</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Estado y Agente</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 text-sm">
-                    <div className="flex justify-between items-center">
-                        <span className="font-medium">Estado</span>
-                        <Badge style={getStatusStyles(listing.status)}>{listing.status}</Badge>
-                    </div>
-                    <div className="flex items-center pt-2">
-                        <Avatar className="h-10 w-10 mr-4">
-                            {agenteUsuario && agenteUsuario.foto_perfil ? (
-                                <AvatarImage src={agenteUsuario.foto_perfil} alt={`Foto de perfil de ${agenteUsuario.nombre} ${agenteUsuario.apellido}`} />
-                            ) : null}
-                            <AvatarFallback>
-                                {agenteUsuario
-                                  ? agenteUsuario.iniciales
-                                  : (listing.agente && listing.agente.length > 0
-                                      ? listing.agente[0].toUpperCase()
-                                      : "-")}
-                            </AvatarFallback>
-                        </Avatar>
-                        <div className="space-y-1">
-                            <p className="font-medium">
-                                {getAgenteNombre(agenteUsuario, listing.agente)}
-                            </p>
-                            <p className="text-sm text-muted-foreground">Agente a cargo</p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Estado y Agente</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="font-medium">Estado</span>
+                <Badge style={getStatusStyles(listing.status)}>{listing.status}</Badge>
+              </div>
+              <div className="flex items-center pt-2">
+                <Avatar className="h-10 w-10 mr-4">
+                  {agenteUsuario && agenteUsuario.foto_perfil ? (
+                    <AvatarImage src={agenteUsuario.foto_perfil} alt={`Foto de perfil de ${agenteUsuario.nombre} ${agenteUsuario.apellido}`} />
+                  ) : null}
+                  <AvatarFallback>
+                    {agenteUsuario
+                      ? agenteUsuario.iniciales
+                      : (listing.agente && listing.agente.length > 0
+                        ? listing.agente[0].toUpperCase()
+                        : "-")}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="space-y-1">
+                  <p className="font-medium">
+                    {getAgenteNombre(agenteUsuario, listing.agente)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Agente a cargo</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-            <div className="flex flex-col gap-2">
-                <Dialog open={isEditDialogOpen} onOpenChange={onDialogClose}>
-                    <DialogTrigger asChild>
-                        <Button variant="default"><Edit className="mr-2 h-4 w-4"/> Editar foto</Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Editar Foto del Lote</DialogTitle>
-                            <DialogDescription>
-                                Selecciona una nueva imagen para el lote. La imagen se actualizará al guardar los cambios.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                            <div className="grid w-full max-w-sm items-center gap-1.5">
-                                <Label htmlFor="picture">Nueva Foto</Label>
-                                <Input id="picture" type="file" onChange={handleFileChange} accept="image/*" />
-                            </div>
-                            {(previewUrl || currentImageUrl) && (
-                              <div className="mt-4">
-                                <p className="text-sm font-medium mb-2">Vista Previa:</p>
-                                <Image 
-                                  src={previewUrl || currentImageUrl!} 
-                                  alt="Vista previa de la imagen"
-                                  width={400}
-                                  height={300}
-                                  className="rounded-md object-cover aspect-video"
-                                />
-                              </div>
-                            )}
-                        </div>
-                        <DialogFooter>
-                            <DialogClose asChild>
-                                <Button type="button" variant="secondary">Cancelar</Button>
-                            </DialogClose>
-                            <Button type="button" onClick={handleSaveChanges} disabled={!selectedFile}>
-                                Guardar Cambios
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-                <Button variant="secondary" onClick={handleGeneratePdf} disabled={isGeneratingPdf}>
-                  <Download className="mr-2 h-4 w-4"/> 
-                  {isGeneratingPdf ? "Generando..." : "Descargar Ficha PDF"}
+                     <div className="flex flex-col gap-2">
+             {canEditLote(currentUser, listing) && (
+               <Dialog open={isEditDialogOpen} onOpenChange={onDialogClose}>
+                 <DialogTrigger asChild>
+                   <Button variant="default"><Edit className="mr-2 h-4 w-4" /> Editar foto</Button>
+                 </DialogTrigger>
+                 <DialogContent>
+                   <DialogHeader>
+                     <DialogTitle>Editar Foto del Lote</DialogTitle>
+                     <DialogDescription>
+                       Selecciona una nueva imagen para el lote. La imagen se actualizará al guardar los cambios.
+                     </DialogDescription>
+                   </DialogHeader>
+                   <div className="grid gap-4 py-4">
+                     <div className="grid w-full max-w-sm items-center gap-1.5">
+                       <Label htmlFor="picture">Nueva Foto</Label>
+                       <Input id="picture" type="file" onChange={handleFileChange} accept="image/*" />
+                     </div>
+                     {(previewUrl || currentImageUrl) && (
+                       <div className="mt-4">
+                         <p className="text-sm font-medium mb-2">Vista Previa:</p>
+                         <Image
+                           src={previewUrl || currentImageUrl!}
+                           alt="Vista previa de la imagen"
+                           width={400}
+                           height={300}
+                           className="rounded-md object-cover aspect-video"
+                         />
+                       </div>
+                     )}
+                   </div>
+                   <DialogFooter>
+                     <DialogClose asChild>
+                       <Button type="button" variant="secondary">Cancelar</Button>
+                     </DialogClose>
+                     <Button type="button" onClick={handleSaveChanges} disabled={!selectedFile}>
+                       Guardar Cambios
+                     </Button>
+                   </DialogFooter>
+                 </DialogContent>
+               </Dialog>
+             )}
+             <Button variant="secondary" onClick={handleGeneratePdf} disabled={isGeneratingPdf}>
+               <Download className="mr-2 h-4 w-4" />
+               {isGeneratingPdf ? "Generando..." : "Descargar Ficha PDF"}
+             </Button>
+           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Informes adjuntos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  style={{ display: "none" }}
+                  onChange={handleFileChangeDocs}
+                  disabled={uploading}
+                />
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  {uploading ? "Subiendo..." : "Seleccionar PDF"}
                 </Button>
-            </div>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Informes adjuntos</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex flex-col gap-2">
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="application/pdf"
-                            style={{ display: "none" }}
-                            onChange={handleFileChangeDocs}
-                            disabled={uploading}
-                        />
-                        <Button
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={uploading}
-                        >
-                            <Upload className="mr-2 h-4 w-4" />
-                            {uploading ? "Subiendo..." : "Seleccionar PDF"}
-                        </Button>
-                        {uploadError && <div className="text-red-500 text-sm mt-1">{uploadError}</div>}
-                        <div className="mt-4">
-                            {docsLoading ? (
-                                <div className="text-muted-foreground text-sm">Cargando archivos...</div>
-                            ) : docs.length === 0 ? (
-                                <div className="text-muted-foreground text-sm">No hay archivos adjuntos.</div>
-                            ) : (
-                                <ul className="space-y-2">
-                                    {docs.map((doc, idx) => (
-                                        <li key={doc.ruta} className="flex items-center gap-2 border-b pb-1">
-                                            <a
-                                                href={`/${doc.ruta}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-blue-600 hover:underline flex-1 truncate"
-                                                title={doc.ruta.split('/').pop()}
-                                            >
-                                                {doc.ruta.split('/').pop()}
-                                            </a>
-                                            <span className="text-xs text-muted-foreground ml-2">
-                                                {doc.fecha ? format(parseISO(doc.fecha), "dd/MM/yyyy") : ""}
-                                            </span>
-                                            <span className="text-xs text-muted-foreground ml-2">
-                                                {doc.agente}
-                                            </span>
-                                            {currentUser?.user === doc.agente && (
-                                                <Button
-                                                    size="icon"
-                                                    variant="ghost"
-                                                    onClick={() => handleDeleteDoc(doc.ruta)}
-                                                    title="Eliminar archivo"
-                                                >
-                                                    <XCircle className="h-4 w-4 text-red-500" />
-                                                </Button>
-                                            )}
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+                {uploadError && <div className="text-red-500 text-sm mt-1">{uploadError}</div>}
+                <div className="mt-4">
+                  {docsLoading ? (
+                    <div className="text-muted-foreground text-sm">Cargando archivos...</div>
+                  ) : docs.length === 0 ? (
+                    <div className="text-muted-foreground text-sm">No hay archivos adjuntos.</div>
+                  ) : (
+                    <ul className="space-y-2">
+                      {docs.map((doc, idx) => (
+                        <li key={doc.ruta} className="flex items-center gap-2 border-b pb-1">
+                          <a
+                            href={`/${doc.ruta}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline flex-1 truncate"
+                            title={doc.ruta.split('/').pop()}
+                          >
+                            {doc.ruta.split('/').pop()}
+                          </a>
+                          <span className="text-xs text-muted-foreground ml-2">
+                            {doc.fecha ? format(parseISO(doc.fecha), "dd/MM/yyyy") : ""}
+                          </span>
+                          <span className="text-xs text-muted-foreground ml-2">
+                            {doc.agente}
+                          </span>
+                          {currentUser?.user === doc.agente && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleDeleteDoc(doc.ruta)}
+                              title="Eliminar archivo"
+                            >
+                              <XCircle className="h-4 w-4 text-red-500" />
+                            </Button>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Right Column */}
         <div className="space-y-6 lg:col-span-2">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Información Urbanística y Catastral</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                    <div className="space-y-4">
-                      <div className="flex items-center">
-                        <Scan className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">SMP:</span>
-                        <span className="ml-auto text-muted-foreground">{listing.smp}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Library className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Código Urbanístico:</span>
-                        <span className="ml-auto text-muted-foreground">{listing.cur}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Ruler className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">M2 Estimados:</span>
-                        <span className="ml-auto text-muted-foreground">{listing.area} m²</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Scaling className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Incidencia UVA:</span>
-                        <span className="ml-auto text-muted-foreground">{formatDecimal(listing.incidenciaUVA)}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <FileText className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">FOT:</span>
-                        <span className="ml-auto text-muted-foreground">{formatDecimal(listing.fot)}</span>
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                       <div className="flex items-center">
-                        <MapPin className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Barrio:</span>
-                        <span className="ml-auto text-muted-foreground">{listing.neighborhood}</span>
-                      </div>
-                       <div className="flex items-center">
-                        <Building className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">CPU:</span>
-                        <span className="ml-auto text-muted-foreground">{listing.cpu}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <FileText className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Partida:</span>
-                        <span className="ml-auto text-muted-foreground">{listing.partida}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Percent className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Alícuota:</span>
-                        <span className="ml-auto text-muted-foreground">{formatDecimal(listing.alicuota)}%</span>
-                      </div>
-                    </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Información Urbanística y Catastral</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                <div className="space-y-4">
+                  <div className="flex items-center">
+                    <Scan className="h-5 w-5 mr-3 text-muted-foreground" />
+                    <span className="font-medium">SMP:</span>
+                    <span className="ml-auto text-muted-foreground">{listing.smp}</span>
                   </div>
-                </CardContent>
-            </Card>
-            
-            {canViewOwnerInfo(currentUser, listing) ? (
-            <Card>
-                <CardHeader>
-                    <CardTitle>Información del propietario</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                    <div className="space-y-4">
-                      <div className="flex items-center">
-                          <User className="h-5 w-5 mr-3 text-muted-foreground" />
-                          <span className="font-medium">Propietario:</span>
-                          <span className="ml-auto text-muted-foreground">{listing.propietario}</span>
-                      </div>
-                      <div className="flex items-center">
-                          <Home className="h-5 w-5 mr-3 text-muted-foreground" />
-                          <span className="font-medium">Direccion Contacto:</span>
-                          <span className="ml-auto text-muted-foreground">{listing.direccion}</span>
-                      </div>
-                      <div className="flex items-center">
-                          <Mailbox className="h-5 w-5 mr-3 text-muted-foreground" />
-                          <span className="font-medium">Codigo Postal:</span>
-                          <span className="ml-auto text-muted-foreground">{listing.cp}</span>
-                      </div>
-                      <div className="flex items-center">
-                          <Building className="h-5 w-5 mr-3 text-muted-foreground" />
-                          <span className="font-medium">Localidad:</span>
-                          <span className="ml-auto text-muted-foreground">{listing.localidad}</span>
-                      </div>
-                      <div className="flex items-center">
-                          <Home className="h-5 w-5 mr-3 text-muted-foreground" />
-                          <span className="font-medium">Direccion Alternativa:</span>
-                          <span className="ml-auto text-muted-foreground">{listing.direccionalt}</span>
-                      </div>
-                      <div className="flex items-center">
-                          <XCircle className="h-5 w-5 mr-3 text-muted-foreground" />
-                          <span className="font-medium">Fallecido:</span>
-                          <span className="ml-auto text-muted-foreground">{listing.fallecido}</span>
-                      </div>
-                       <div className="flex items-center">
-                          <Mail className="h-5 w-5 mr-3 text-muted-foreground" />
-                          <span className="font-medium">Correo Electrónico:</span>
-                          <span className="ml-auto text-muted-foreground truncate">{listing.mail}</span>
-                      </div>
-                      <div className="flex items-center">
-                          <CreditCardIcon className="h-5 w-5 mr-3 text-muted-foreground" />
-                          <span className="font-medium">CUIT/CUIL:</span>
-                          <span className="ml-auto text-muted-foreground">{formatCuitCuil(listing.cuitcuil)}</span>
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                      <div className="flex items-center">
-                          <Phone className="h-5 w-5 mr-3 text-muted-foreground" />
-                          <span className="font-medium">Teléfono 1:</span>
-                          <span className="ml-auto text-muted-foreground">{listing.tel1}</span>
-                      </div>
-                      <div className="flex items-center">
-                          <Phone className="h-5 w-5 mr-3 text-muted-foreground" />
-                          <span className="font-medium">Teléfono 2:</span>
-                          <span className="ml-auto text-muted-foreground">{listing.tel2}</span>
-                      </div>
-                      <div className="flex items-center">
-                          <Phone className="h-5 w-5 mr-3 text-muted-foreground" />
-                          <span className="font-medium">Teléfono 3:</span>
-                          <span className="ml-auto text-muted-foreground">{listing.tel3}</span>
-                      </div>
-                      <div className="flex items-center">
-                          <Smartphone className="h-5 w-5 mr-3 text-muted-foreground" />
-                          <span className="font-medium">Celular 1:</span>
-                          <span className="ml-auto text-muted-foreground">{listing.cel1}</span>
-                      </div>
-                      <div className="flex items-center">
-                          <Smartphone className="h-5 w-5 mr-3 text-muted-foreground" />
-                          <span className="font-medium">Celular 2:</span>
-                          <span className="ml-auto text-muted-foreground">{listing.cel2}</span>
-                      </div>
-                      <div className="flex items-center">
-                          <Smartphone className="h-5 w-5 mr-3 text-muted-foreground" />
-                          <span className="font-medium">Celular 3:</span>
-                          <span className="ml-auto text-muted-foreground">{listing.cel3}</span>
-                      </div>
-                    </div>
+                  <div className="flex items-center">
+                    <Library className="h-5 w-5 mr-3 text-muted-foreground" />
+                    <span className="font-medium">Código Urbanístico:</span>
+                    <span className="ml-auto text-muted-foreground">{listing.cur}</span>
                   </div>
-                </CardContent>
-            </Card>
-            ) : null}
+                  <div className="flex items-center">
+                    <Ruler className="h-5 w-5 mr-3 text-muted-foreground" />
+                    <span className="font-medium">M2 Estimados:</span>
+                    <span className="ml-auto text-muted-foreground">{listing.area} m²</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Scaling className="h-5 w-5 mr-3 text-muted-foreground" />
+                    <span className="font-medium">Incidencia UVA:</span>
+                    <span className="ml-auto text-muted-foreground">{formatDecimal(listing.incidenciaUVA)}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <FileText className="h-5 w-5 mr-3 text-muted-foreground" />
+                    <span className="font-medium">FOT:</span>
+                    <span className="ml-auto text-muted-foreground">{formatDecimal(listing.fot)}</span>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center">
+                    <MapPin className="h-5 w-5 mr-3 text-muted-foreground" />
+                    <span className="font-medium">Barrio:</span>
+                    <span className="ml-auto text-muted-foreground">{listing.neighborhood}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Building className="h-5 w-5 mr-3 text-muted-foreground" />
+                    <span className="font-medium">CPU:</span>
+                    <span className="ml-auto text-muted-foreground">{listing.cpu}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <FileText className="h-5 w-5 mr-3 text-muted-foreground" />
+                    <span className="font-medium">Partida:</span>
+                    <span className="ml-auto text-muted-foreground">{listing.partida}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Percent className="h-5 w-5 mr-3 text-muted-foreground" />
+                    <span className="font-medium">Alícuota:</span>
+                    <span className="ml-auto text-muted-foreground">{formatDecimal(listing.alicuota)}%</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
+          {canViewOwnerInfo(currentUser, listing) ? (
             <Card>
               <CardHeader>
-                <CardTitle>Datos de Tasación</CardTitle>
+                <CardTitle>Información del propietario</CardTitle>
               </CardHeader>
               <CardContent className="text-sm">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                   <div className="space-y-4">
                     <div className="flex items-center">
-                      <Ruler className="h-5 w-5 mr-3 text-muted-foreground" />
-                      <span className="font-medium">M2 Vendibles:</span>
-                      <span className="ml-auto text-muted-foreground">{listing.m2vendibles != null ? Number(listing.m2vendibles).toLocaleString('es-AR') + ' m²' : 'N/A'}</span>
+                      <User className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium">Propietario:</span>
+                      <span className="ml-auto text-muted-foreground">{listing.propietario}</span>
                     </div>
                     <div className="flex items-center">
-                      <DollarSign className="h-5 w-5 mr-3 text-muted-foreground" />
-                      <span className="font-medium">Valor de Venta (USD):</span>
-                      <span className="ml-auto text-muted-foreground">{listing.vventa != null ? `$ ${Number(listing.vventa).toLocaleString('es-AR')}` : 'N/A'}</span>
+                      <Home className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium">Direccion Contacto:</span>
+                      <span className="ml-auto text-muted-foreground">{listing.direccion}</span>
                     </div>
                     <div className="flex items-center">
-                      <CreditCard className="h-5 w-5 mr-3 text-muted-foreground" />
-                      <span className="font-medium">Forma de Pago:</span>
-                      <span className="ml-auto text-muted-foreground">{listing.fpago || 'N/A'}</span>
+                      <Mailbox className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium">Codigo Postal:</span>
+                      <span className="ml-auto text-muted-foreground">{listing.cp}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Building className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium">Localidad:</span>
+                      <span className="ml-auto text-muted-foreground">{listing.localidad}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Home className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium">Direccion Alternativa:</span>
+                      <span className="ml-auto text-muted-foreground">{listing.direccionalt}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <XCircle className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium">Fallecido:</span>
+                      <span className="ml-auto text-muted-foreground">{listing.fallecido}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Mail className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium">Correo Electrónico:</span>
+                      <span className="ml-auto text-muted-foreground truncate">{listing.mail}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <CreditCardIcon className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium">CUIT/CUIL:</span>
+                      <span className="ml-auto text-muted-foreground">{formatCuitCuil(listing.cuitcuil)}</span>
                     </div>
                   </div>
                   <div className="space-y-4">
                     <div className="flex items-center">
-                      <DollarSign className="h-5 w-5 mr-3 text-muted-foreground" />
-                      <span className="font-medium">Incidencia Tasada (USD/m2):</span>
-                      <span className="ml-auto text-muted-foreground">{listing.inctasada != null ? `$ ${Number(listing.inctasada).toLocaleString('es-AR')}` : 'N/A'}</span>
+                      <Phone className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium">Teléfono 1:</span>
+                      <span className="ml-auto text-muted-foreground">{listing.tel1}</span>
                     </div>
                     <div className="flex items-center">
-                      <Calendar className="h-5 w-5 mr-3 text-muted-foreground" />
-                      <span className="font-medium">Fecha de Venta:</span>
-                      <span className="ml-auto text-muted-foreground">
-                        {listing.fventa ? format(new Date(listing.fventa), 'dd/MM/yyyy') : 'N/A'}
-                      </span>
+                      <Phone className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium">Teléfono 2:</span>
+                      <span className="ml-auto text-muted-foreground">{listing.tel2}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Phone className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium">Teléfono 3:</span>
+                      <span className="ml-auto text-muted-foreground">{listing.tel3}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Smartphone className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium">Celular 1:</span>
+                      <span className="ml-auto text-muted-foreground">{listing.cel1}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Smartphone className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium">Celular 2:</span>
+                      <span className="ml-auto text-muted-foreground">{listing.cel2}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Smartphone className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium">Celular 3:</span>
+                      <span className="ml-auto text-muted-foreground">{listing.cel3}</span>
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Seguimiento del Lote</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="flex gap-4">
-                    <Avatar>
-                      <AvatarImage src={currentUser?.foto_perfil || "https://placehold.co/100x100.png"} alt={`Foto de perfil de ${currentUser?.nombre || 'usuario'}`} data-ai-hint="person" />
-                      <AvatarFallback>{currentUser ? `${currentUser.nombre?.[0] || ''}${currentUser.apellido?.[0] || ''}`.toUpperCase() : "?"}</AvatarFallback>
-                    </Avatar>
-                    <div className="w-full space-y-2">
-                      <Textarea
-                        placeholder="Escribe una nueva nota de seguimiento..."
-                        value={newNote}
-                        onChange={(e) => setNewNote(e.target.value)}
-                      />
-                      <Button onClick={handleAddNote} disabled={!newNote.trim() || notesLoading}>
-                        <MessageSquare className="mr-2 h-4 w-4" /> Agregar Nota
-                      </Button>
-                    </div>
+          ) : null}
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Datos de Tasación</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                <div className="space-y-4">
+                  <div className="flex items-center">
+                    <Ruler className="h-5 w-5 mr-3 text-muted-foreground" />
+                    <span className="font-medium">M2 Vendibles:</span>
+                    <span className="ml-auto text-muted-foreground">{listing.m2vendibles != null ? Number(listing.m2vendibles).toLocaleString('es-AR') + ' m²' : 'N/A'}</span>
                   </div>
-                  <Separator />
-                  {notesLoading ? (
-                    <div className="text-center text-muted-foreground">Cargando notas...</div>
-                  ) : (
-                    <div className="space-y-4">
-                      {notes.length === 0 && <div className="text-center text-muted-foreground">No hay notas aún.</div>}
-                      {notes.map((note, index) => (
-                        <div key={index} className="flex gap-4">
-                          <Avatar>
-                            <AvatarImage src={note.agente?.avatarUrl || "https://placehold.co/100x100.png"} alt={`Foto de perfil de ${note.agente?.nombre || 'agente'}`} data-ai-hint={note.agente?.aiHint || "person"} />
-                            <AvatarFallback>
-                              {note.agente?.initials || (note.agente?.nombre ? `${note.agente.nombre[0] || ''}${note.agente.apellido?.[0] || ''}`.toUpperCase() : (note.agente || "?"))}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <p className="text-sm font-medium">{note.agente?.nombre ? `${note.agente.nombre} ${note.agente.apellido}` : note.agente || "-"}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {note.fecha ? format(parseISO(note.fecha), "dd/MM/yyyy") : ""}
-                              </p>
-                            </div>
-                            <p className="text-base text-muted-foreground">{note.notas}</p>
+                  <div className="flex items-center">
+                    <DollarSign className="h-5 w-5 mr-3 text-muted-foreground" />
+                    <span className="font-medium">Valor de Venta (USD):</span>
+                    <span className="ml-auto text-muted-foreground">{listing.vventa != null ? `$ ${Number(listing.vventa).toLocaleString('es-AR')}` : 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <CreditCard className="h-5 w-5 mr-3 text-muted-foreground" />
+                    <span className="font-medium">Forma de Pago:</span>
+                    <span className="ml-auto text-muted-foreground">{listing.fpago || 'N/A'}</span>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center">
+                    <DollarSign className="h-5 w-5 mr-3 text-muted-foreground" />
+                    <span className="font-medium">Incidencia Tasada (USD/m2):</span>
+                    <span className="ml-auto text-muted-foreground">{listing.inctasada != null ? `$ ${Number(listing.inctasada).toLocaleString('es-AR')}` : 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Calendar className="h-5 w-5 mr-3 text-muted-foreground" />
+                    <span className="font-medium">Fecha de Venta:</span>
+                    <span className="ml-auto text-muted-foreground">
+                      {listing.fventa ? format(new Date(listing.fventa), 'dd/MM/yyyy') : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Seguimiento del Lote</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="flex gap-4">
+                  <Avatar>
+                    <AvatarImage src={currentUser?.foto_perfil || "https://placehold.co/100x100.png"} alt={`Foto de perfil de ${currentUser?.nombre || 'usuario'}`} data-ai-hint="person" />
+                    <AvatarFallback>{currentUser ? `${currentUser.nombre?.[0] || ''}${currentUser.apellido?.[0] || ''}`.toUpperCase() : "?"}</AvatarFallback>
+                  </Avatar>
+                  <div className="w-full space-y-2">
+                    <Textarea
+                      placeholder="Escribe una nueva nota de seguimiento..."
+                      value={newNote}
+                      onChange={(e) => setNewNote(e.target.value)}
+                    />
+                    <Button onClick={handleAddNote} disabled={!newNote.trim() || notesLoading}>
+                      <MessageSquare className="mr-2 h-4 w-4" /> Agregar Nota
+                    </Button>
+                  </div>
+                </div>
+                <Separator />
+                {notesLoading ? (
+                  <div className="text-center text-muted-foreground">Cargando notas...</div>
+                ) : (
+                  <div className="space-y-4">
+                    {notes.length === 0 && <div className="text-center text-muted-foreground">No hay notas aún.</div>}
+                    {notes.map((note, index) => (
+                      <div key={index} className="flex gap-4">
+                        <Avatar>
+                          <AvatarImage src={note.agente?.avatarUrl || "https://placehold.co/100x100.png"} alt={`Foto de perfil de ${note.agente?.nombre || 'agente'}`} data-ai-hint={note.agente?.aiHint || "person"} />
+                          <AvatarFallback>
+                            {note.agente?.initials || (note.agente?.nombre ? `${note.agente.nombre[0] || ''}${note.agente.apellido?.[0] || ''}`.toUpperCase() : (note.agente || "?"))}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium">{note.agente?.nombre ? `${note.agente.nombre} ${note.agente.apellido}` : note.agente || "-"}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {note.fecha ? format(parseISO(note.fecha), "dd/MM/yyyy") : ""}
+                            </p>
                           </div>
+                          <p className="text-base text-muted-foreground">{note.notas}</p>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
       <div className="absolute -left-[9999px] -top-[9999px]">
