@@ -13,26 +13,29 @@ export async function GET() {
     
     const estados = rows.map(r => r.estado);
     
-    // Ordenar en JavaScript para mayor seguridad
-    const statusOrder = [
-      "Tomar Acción",
-      "Tasación", 
-      "Evolucionando",
-      "Disponible",
-      "Reservado",
-      "Vendido",
-      "No vende",
-      "Descartado"
-    ];
+    // Función de normalización simplificada
+    const normalizeEstado = (estado: string): string => {
+      if (!estado) return estado;
+      
+      // Normalizar "Tomar Acción" - basado en los patrones que vemos
+      if (estado.includes("Tomar Acci") || estado.includes("tomar acci") || estado.includes("Tomar acci")) {
+        return 'Tomar Acción';
+      }
+      
+      // Normalizar "Tasación" - basado en los patrones que vemos
+      if (estado.includes("Tasaci")) {
+        return 'Tasación';
+      }
+      
+      // Para otros estados, mantener el original
+      return estado;
+    };
     
-    const sortedEstados = estados.sort((a, b) => {
-      const indexA = statusOrder.indexOf(a);
-      const indexB = statusOrder.indexOf(b);
-      if (indexA === -1 && indexB === -1) return a.localeCompare(b);
-      if (indexA === -1) return 1;
-      if (indexB === -1) return -1;
-      return indexA - indexB;
-    });
+    // Normalizar y eliminar duplicados
+    const normalizedEstados = [...new Set(estados.map(normalizeEstado))];
+    
+    // Ordenar alfabéticamente
+    const sortedEstados = normalizedEstados.sort();
     
     return NextResponse.json({ estados: sortedEstados });
   } catch (error) {

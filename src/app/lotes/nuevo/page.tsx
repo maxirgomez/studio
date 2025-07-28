@@ -30,6 +30,21 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { useUser } from "@/context/UserContext"
 
+// Función helper para formatear altura
+function formatAltura(altura: string | number): string {
+  const str = String(altura);
+  // Si es un número decimal como "913.0", mostrar solo "913"
+  if (str.includes('.0')) {
+    return str.replace(/\.0*$/, '');
+  }
+  return str;
+}
+
+// Función helper para capitalizar la primera letra
+function capitalizeFirst(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
+
 // Hook personalizado para detectar cuando el usuario termina de escribir
 function useTypingComplete<T>(value: T, minLength: number = 3): { value: T; triggerSearch: () => void } {
   const [completedValue, setCompletedValue] = useState<T>(value);
@@ -46,20 +61,20 @@ function useTypingComplete<T>(value: T, minLength: number = 3): { value: T; trig
 
   useEffect(() => {
     const stringValue = String(value).trim();
-    
+
     if (stringValue.length >= minLength) {
       setIsTyping(true);
-      
+
       // Limpiar timeout anterior
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
-      
+
       // Detectar si el usuario terminó de escribir (espacio, punto, coma, etc.)
       const hasEndingPunctuation = /[.,;!?]/.test(stringValue);
       const hasSpace = stringValue.includes(' ');
       const delay = hasEndingPunctuation ? 100 : (hasSpace ? 200 : 600);
-      
+
       timeoutRef.current = setTimeout(() => {
         setCompletedValue(value);
         setIsTyping(false);
@@ -88,17 +103,17 @@ const newLoteFormSchema = z.object({
   agent: z.string().min(1, "El agente es requerido."),
   status: z.string().min(1, "El estado es requerido."),
   origen: z.string().min(1, "El origen es requerido."),
-  
+
   // Informacion Normativa
   codigoUrbanistico: z.string().optional(),
-  neighborhood: z.string(), 
+  neighborhood: z.string(),
   m2aprox: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
   cpu: z.string().optional(),
   partida: z.string().optional(),
   incidenciaUVA: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
   fot: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
   alicuota: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
-  
+
   // Informacion del propietario
   propietario: z.string().min(2, "El nombre es requerido."),
   direccionContacto: z.string(),
@@ -113,6 +128,7 @@ const newLoteFormSchema = z.object({
   celular1: z.string().optional(),
   celular2: z.string().optional(),
   celular3: z.string().optional(),
+  cuitcuil: z.string().optional(),
   email: z.string().email("Email inválido.").or(z.literal("")).optional(),
 
   // Tasacion
@@ -188,11 +204,12 @@ export default function NuevoLotePage() {
       celular1: "",
       celular2: "",
       celular3: "",
+      cuitcuil: "",
       email: "",
       m2Vendibles: 0,
       valorVentaUSD: 0,
       incidenciaTasadaUSD: 0,
-      formaDePago: "",
+      formaDePago: "Efectivo",
       fechaVenta: undefined,
     },
     mode: "onChange",
@@ -200,7 +217,7 @@ export default function NuevoLotePage() {
 
   const frenteValue = form.watch("frente");
   const numeroValue = form.watch("numero");
-  
+
   // Aplicar detección de escritura completa a los valores de búsqueda
   const frenteTyping = useTypingComplete(frenteValue, 3);
   const numeroTyping = useTypingComplete(numeroValue, 1);
@@ -215,10 +232,11 @@ export default function NuevoLotePage() {
       fetch(`/api/lotes/buscar?frente=${encodeURIComponent(query)}`)
         .then(res => res.json())
         .then(data => {
-          const unicas = Array.from(new Set(data.lotes.map((l: any) => l.frente))).filter(Boolean) as string[];
-          setCalleSugerencias(unicas);
+          // La API ahora devuelve directamente las calles únicas para autocompletado
+          const calles = data.lotes || [];
+          setCalleSugerencias(calles);
           // Solo mostrar sugerencias si el valor actual no está en la lista
-          setMostrarCalleSug(unicas.length > 0 && !unicas.includes(completedFrenteValue));
+          setMostrarCalleSug(calles.length > 0 && !calles.includes(completedFrenteValue));
           setLoadingCalle(false);
         })
         .catch(() => setLoadingCalle(false));
@@ -232,36 +250,50 @@ export default function NuevoLotePage() {
   // Actualizar mostrarCalleSug cuando cambie frenteValue
   useEffect(() => {
     if (calleSugerencias.length > 0) {
-      setMostrarCalleSug(!calleSugerencias.includes(completedFrenteValue));
+      // Solo mostrar sugerencias de calle si no hay focus en el campo número
+      const numeroInputHasFocus = document.activeElement === numeroInputRef.current;
+      if (!numeroInputHasFocus) {
+        setMostrarCalleSug(!calleSugerencias.includes(completedFrenteValue));
+      }
     }
   }, [completedFrenteValue, calleSugerencias]);
 
-  // Sugerencias de número - siempre cargar para la calle seleccionada
-  useEffect(() => {
-    const calle = completedFrenteValue.trim();
-    if (calle && calle.length > 0) {
-      setLoadingNumero(true);
-      fetch(`/api/lotes/buscar?frente=${encodeURIComponent(calle)}`)
-        .then(res => res.json())
-        .then(data => {
-          const nums = Array.from(new Set(data.lotes.map((l: any) => l.num_dom))).filter(Boolean) as string[];
-          setNumeroSugerencias(nums);
-          setLoadingNumero(false);
-        })
-        .catch(() => setLoadingNumero(false));
-    } else {
-      setNumeroSugerencias([]);
-      setLoadingNumero(false);
-    }
-  }, [completedFrenteValue]);
+  // Sugerencias de número - DESHABILITADO
+  // useEffect(() => {
+  //   const calle = completedFrenteValue.trim();
+  //   if (calle && calle.length > 0) {
+  //     setLoadingNumero(true);
+  //     // Usar un parámetro especial para indicar que queremos números
+  //     fetch(`/api/lotes/buscar?frente=${encodeURIComponent(calle)}&numero=`)
+  //       .then(res => res.json())
+  //       .then(data => {
+  //         // La API ahora devuelve directamente los números únicos para autocompletado
+  //         const numeros = data.lotes || [];
+  //         setNumeroSugerencias(numeros);
+  //         setLoadingNumero(false);
+  //       })
+  //       .catch(() => setLoadingNumero(false));
+  //   } else {
+  //     setNumeroSugerencias([]);
+  //     setLoadingNumero(false);
+  //   }
+  // }, [completedFrenteValue]);
 
-  // Filtrar sugerencias de número en tiempo real
-  const numeroSugerenciasFiltradas = numeroSugerencias.filter(num => 
-    num.toLowerCase().includes(numeroValue?.toLowerCase() || '')
-  );
+  // Filtrar sugerencias de número en tiempo real - DESHABILITADO
+  // const numeroSugerenciasFiltradas = numeroSugerencias.filter(num => {
+  //   if (!numeroValue) return true;
 
-  // Mostrar sugerencias de número si hay calle seleccionada y hay sugerencias filtradas
-  const mostrarNumeroSugerencias = completedFrenteValue.trim() && numeroSugerenciasFiltradas.length > 0;
+  //   // Normalizar el número ingresado (remover comas y decimales)
+  //   const cleanInput = numeroValue.replace(/,/g, '').replace(/\.0*$/, '');
+
+  //   // Normalizar el número de la sugerencia (remover comas y decimales)
+  //   const cleanSuggestion = String(num).replace(/,/g, '').replace(/\.0*$/, '');
+
+  //   return cleanSuggestion.includes(cleanInput);
+  // });
+
+  // Mostrar sugerencias de número si hay calle seleccionada y hay sugerencias filtradas - DESHABILITADO
+  // const mostrarNumeroSugerencias = completedFrenteValue.trim() && numeroSugerenciasFiltradas.length > 0;
 
   // Autocomplete SMP y datos normativos
   useEffect(() => {
@@ -277,9 +309,9 @@ export default function NuevoLotePage() {
           if (data.found && data.lotes.length > 0) {
             const lote = data.lotes[0];
             form.setValue('smp', lote.smp || '', { shouldValidate: true });
-            form.setValue('neighborhood', lote.neighborhood || '', { shouldValidate: true });
+            form.setValue('neighborhood', lote.barrio || '', { shouldValidate: true });
             form.setValue('partida', lote.partida || '', { shouldValidate: true });
-            form.setValue('m2aprox', lote.area || 0, { shouldValidate: true });
+            form.setValue('m2aprox', lote.m2_estimados || 0, { shouldValidate: true });
             form.setValue('codigoUrbanistico', lote.codigoUrbanistico || '', { shouldValidate: true });
             form.setValue('cpu', lote.cpu || '', { shouldValidate: true });
             form.setValue('incidenciaUVA', lote.incidenciaUVA || 0, { shouldValidate: true });
@@ -300,14 +332,104 @@ export default function NuevoLotePage() {
     }
   }, [completedFrenteValue, completedNumeroValue, form]);
 
-  function onSubmit(data: NewLoteFormValues) {
-    console.log(data);
-    const fullAddress = `${data.frente} ${data.numero || ''}`.trim();
-    toast({
-      title: "Lote Creado",
-      description: `El nuevo lote en ${fullAddress} ha sido creado exitosamente.`,
-    });
-    router.push(`/lotes`);
+  // Función para limpiar campos numéricos
+  function cleanNumericField(value: any): number | null {
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+    const num = Number(value);
+    return isNaN(num) ? null : num;
+  }
+
+  async function onSubmit(data: NewLoteFormValues) {
+    console.log('Datos del formulario:', data);
+    
+    try {
+      // Preparar los datos para la API según el mapeo de campos
+      const loteData = {
+        // Información del Lote
+        smp: data.smp,
+        agente: data.agent,
+        estado: data.status,
+        origen: data.origen,
+        
+        // Información Normativa (viene de la búsqueda automática)
+        cur: data.codigoUrbanistico,
+        barrio: data.neighborhood,
+        m2aprox: cleanNumericField(data.m2aprox),
+        dist_cpu_1: data.cpu,
+        partida: data.partida,
+        inc_uva: cleanNumericField(data.incidenciaUVA),
+        fot: cleanNumericField(data.fot),
+        alicuota: cleanNumericField(data.alicuota),
+        
+        // Información del Propietario
+        propietario: data.propietario,
+        direccion: data.direccionContacto,
+        direccionalt: data.direccionAlternativa,
+        localidad: data.localidad,
+        cp: data.codigoPostal,
+        email: data.email,
+        fallecido: data.fallecido,
+        tel1: cleanNumericField(data.telefono1),
+        tel2: cleanNumericField(data.telefono2),
+        tel3: cleanNumericField(data.telefono3),
+        cel1: cleanNumericField(data.celular1),
+        cel2: cleanNumericField(data.celular2),
+        cel3: cleanNumericField(data.celular3),
+        cuitcuil: cleanNumericField(data.cuitcuil),
+        otros: data.otrosDatos,
+        
+        // Datos de Tasación
+        m2vendibles: cleanNumericField(data.m2Vendibles),
+        vventa: cleanNumericField(data.valorVentaUSD),
+        inctasada: cleanNumericField(data.incidenciaTasadaUSD),
+        fpago: data.formaDePago,
+        fventa: data.fechaVenta ? data.fechaVenta.toISOString().split('T')[0] : null,
+      };
+
+      console.log('Datos a enviar a la API:', loteData);
+      console.log('Campos requeridos verificados:');
+      console.log('- smp:', loteData.smp);
+      console.log('- propietario:', loteData.propietario);
+      console.log('- estado:', loteData.estado);
+      console.log('- agente:', loteData.agente);
+      console.log('- origen:', loteData.origen);
+      console.log('- m2aprox:', loteData.m2aprox);
+      console.log('- direccion:', loteData.direccion);
+      console.log('- barrio:', loteData.barrio);
+
+      const response = await fetch('/api/lotes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(loteData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al crear el lote');
+      }
+
+      const result = await response.json();
+      console.log('Respuesta de la API:', result);
+
+      const fullAddress = `${data.frente} ${data.numero || ''}`.trim();
+      toast({
+        title: "Lote Creado",
+        description: `El nuevo lote en ${fullAddress} ha sido creado exitosamente.`,
+      });
+      
+      router.push(`/lotes`);
+    } catch (error) {
+      console.error('Error al crear el lote:', error);
+      toast({
+        title: "Error al crear el lote",
+        description: error instanceof Error ? error.message : 'No se pudo crear el lote.',
+        variant: 'destructive',
+      });
+    }
   }
 
   return (
@@ -334,14 +456,14 @@ export default function NuevoLotePage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Información del Lote</CardTitle>
-                <CardDescription>Detalles principales y de gestión del lote.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                   <FormField control={form.control} name="frente" render={({ field }) => (
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Información del Lote</CardTitle>
+              <CardDescription>Detalles principales y de gestión del lote.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <FormField control={form.control} name="frente" render={({ field }) => (
                   <FormItem className="lg:col-span-2 relative">
                     <FormLabel>Calle</FormLabel>
                     <FormControl>
@@ -364,7 +486,13 @@ export default function NuevoLotePage() {
                             // No cambiar el estado aquí, ya se maneja en useEffect
                           }}
                           onBlur={() => {
-                            setTimeout(() => setMostrarCalleSug(false), 200);
+                            // Solo ocultar si el focus no va al campo número
+                            setTimeout(() => {
+                              const numeroInputHasFocus = document.activeElement === numeroInputRef.current;
+                              if (!numeroInputHasFocus) {
+                                setMostrarCalleSug(false);
+                              }
+                            }, 200);
                           }}
                         />
                         {loadingCalle && (
@@ -381,20 +509,29 @@ export default function NuevoLotePage() {
                             zIndex: 10,
                             background: 'white',
                             border: '1px solid #e5e7eb',
-                            borderRadius: 4,
+                            borderRadius: 6,
                             marginTop: 2,
-                            maxHeight: 120,
-                            overflowY: calleSugerencias.length > 3 ? 'scroll' : 'auto',
-                            width: '100%'
+                            maxHeight: 300,
+                            overflowY: calleSugerencias.length > 10 ? 'scroll' : 'auto',
+                            width: '100%',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
                           }}>
-                            {calleSugerencias.slice(0, 3).map((calle, idx) => (
+                            {calleSugerencias.slice(0, 10).map((calle, idx) => (
                               <div
                                 key={calle}
                                 style={{
-                                  padding: '8px 12px',
-                                  borderBottom: idx < Math.min(2, calleSugerencias.length - 1) ? '1px solid lightgray' : 'none',
+                                  padding: '6px 12px',
+                                  borderBottom: idx < Math.min(9, calleSugerencias.length - 1) ? '1px solid #f3f4f6' : 'none',
                                   cursor: 'pointer',
-                                  background: frenteValue === calle ? '#f3f4f6' : 'white'
+                                  background: frenteValue === calle ? '#f3f4f6' : 'white',
+                                  fontSize: '14px',
+                                  transition: 'background-color 0.15s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#f9fafb';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = frenteValue === calle ? '#f3f4f6' : 'white';
                                 }}
                                 onClick={() => {
                                   console.log('[CALLE CLICK] Seleccionando calle:', calle);
@@ -402,10 +539,14 @@ export default function NuevoLotePage() {
                                   form.setValue('frente', calle, { shouldValidate: true });
                                   setMostrarCalleSug(false);
                                   console.log('[CALLE CLICK] Sugerencias ocultadas');
-                                  setTimeout(() => numeroInputRef.current?.focus(), 100);
+                                  // Asegurar que el dropdown de calle permanezca oculto
+                                  setTimeout(() => {
+                                    setMostrarCalleSug(false);
+                                    numeroInputRef.current?.focus();
+                                  }, 100);
                                 }}
                               >
-                                {calle}
+                                {capitalizeFirst(calle)}
                               </div>
                             ))}
                           </div>
@@ -414,8 +555,8 @@ export default function NuevoLotePage() {
                     </FormControl>
                     <FormMessage />
                   </FormItem>
-                )}/>
-                  <FormField control={form.control} name="numero" render={({ field }) => (
+                )} />
+                <FormField control={form.control} name="numero" render={({ field }) => (
                   <FormItem className="relative">
                     <FormLabel>Número</FormLabel>
                     <FormControl>
@@ -432,63 +573,17 @@ export default function NuevoLotePage() {
                             }
                           }}
                           onFocus={() => {
-                            if (mostrarNumeroSugerencias) {
-                              setMostrarNumeroSug(true);
-                            }
-                          }}
-                          onBlur={() => {
-                            setTimeout(() => setMostrarNumeroSug(false), 200);
+                            // Ocultar dropdown de calle cuando el campo número tiene focus
+                            setMostrarCalleSug(false);
                           }}
                         />
-                        {loadingNumero && (
-                          <div className="mt-2">
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '100%' }}></div>
-                            </div>
-                            <div className="text-xs text-gray-600 mt-1">Cargando...</div>
-                          </div>
-                        )}
-                        {mostrarNumeroSug && mostrarNumeroSugerencias && (
-                          <div style={{
-                            position: 'absolute',
-                            zIndex: 10,
-                            background: 'white',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: 4,
-                            marginTop: 2,
-                            maxHeight: 120,
-                            overflowY: numeroSugerenciasFiltradas.length > 3 ? 'scroll' : 'auto',
-                            width: '100%'
-                          }}>
-                            {numeroSugerenciasFiltradas.slice(0, 3).map((num, idx) => (
-                              <div
-                                key={num}
-                                style={{
-                                  padding: '8px 12px',
-                                  borderBottom: idx < Math.min(2, numeroSugerenciasFiltradas.length - 1) ? '1px solid lightgray' : 'none',
-                                  cursor: 'pointer',
-                                  background: numeroValue === num ? '#f3f4f6' : 'white'
-                                }}
-                                onMouseDown={() => {
-                                  form.setValue('numero', num, { shouldValidate: true });
-                                  setMostrarNumeroSug(false);
-                                }}
-                                onClick={() => {
-                                  form.setValue('numero', num, { shouldValidate: true });
-                                  setMostrarNumeroSug(false);
-                                }}
-                              >
-                                {num}
-                              </div>
-                            ))}
-                          </div>
-                        )}
+
                       </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
-                )}/>
-                   <FormField control={form.control} name="smp" render={({ field }) => (
+                )} />
+                <FormField control={form.control} name="smp" render={({ field }) => (
                   <FormItem>
                     <FormLabel>SMP</FormLabel>
                     <FormControl>
@@ -512,229 +607,230 @@ export default function NuevoLotePage() {
                     {smpEditable && <div className="text-xs text-yellow-700 mt-1">No existe SMP para esa combinación. Ingrese uno nuevo.</div>}
                     <FormMessage />
                   </FormItem>
-                )}/>
-                  <FormField control={form.control} name="agent" render={({ field }) => (
+                )} />
+                <FormField control={form.control} name="agent" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Agente Asignado</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger><SelectValue placeholder="Seleccionar agente..." /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {agentes.map(agente => {
+                          const isCurrentUser = user?.user === agente.user;
+                          const nombreCompleto = agente.nombre && agente.apellido
+                            ? `${agente.nombre} ${agente.apellido}${isCurrentUser ? ' (yo)' : ''}`
+                            : agente.user || 'Sin nombre';
+                          return (
+                            <SelectItem key={agente.user} value={agente.user}>
+                              {nombreCompleto}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="status" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estado</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger><SelectValue placeholder="Seleccionar estado..." /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {estados.map(status => <SelectItem key={status} value={status}>{status}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="origen" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Origen</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger><SelectValue placeholder="Seleccionar origen..." /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {origens.map(origen => <SelectItem key={origen} value={origen}>{origen}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Información Normativa</CardTitle>
+              <CardDescription>Datos urbanísticos autocompletados a partir del SMP.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                <FormField control={form.control} name="codigoUrbanistico" render={({ field }) => (
+                  <FormItem><FormLabel>Código Urbanístico</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
+                )} />
+                <FormField control={form.control} name="neighborhood" render={({ field }) => (
+                  <FormItem><FormLabel>Barrio</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
+                )} />
+                <FormField control={form.control} name="m2aprox" render={({ field }) => (
+                  <FormItem><FormLabel>M² Estimados (Superficie de Parcela)</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
+                )} />
+                <FormField control={form.control} name="cpu" render={({ field }) => (
+                  <FormItem><FormLabel>CPU</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
+                )} />
+                <FormField control={form.control} name="partida" render={({ field }) => (
+                  <FormItem><FormLabel>Partida</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
+                )} />
+                <FormField control={form.control} name="incidenciaUVA" render={({ field }) => (
+                  <FormItem><FormLabel>Incidencia UVA</FormLabel><FormControl><Input type="number" step="0.01" {...field} readOnly /></FormControl></FormItem>
+                )} />
+                <FormField control={form.control} name="fot" render={({ field }) => (
+                  <FormItem><FormLabel>FOT</FormLabel><FormControl><Input type="number" step="0.1" {...field} readOnly /></FormControl></FormItem>
+                )} />
+                <FormField control={form.control} name="alicuota" render={({ field }) => (
+                  <FormItem><FormLabel>Alícuota (%)</FormLabel><FormControl><Input type="number" step="0.01" {...field} readOnly /></FormControl></FormItem>
+                )} />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Información del propietario</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                <FormField control={form.control} name="propietario" render={({ field }) => (
+                  <FormItem><FormLabel>Propietario</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="fallecido" render={({ field }) => (
+                  <FormItem><FormLabel>Fallecido</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger></FormControl>
+                      <SelectContent><SelectItem value="Si">Sí</SelectItem><SelectItem value="No">No</SelectItem></SelectContent>
+                    </Select>
+                    <FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="direccionContacto" render={({ field }) => (
+                  <FormItem><FormLabel>Dirección Contacto</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="direccionAlternativa" render={({ field }) => (
+                  <FormItem><FormLabel>Dirección Alternativa</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="localidad" render={({ field }) => (
+                  <FormItem><FormLabel>Localidad</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="codigoPostal" render={({ field }) => (
+                  <FormItem><FormLabel>Código Postal</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="email" render={({ field }) => (
+                  <FormItem><FormLabel>Correo Electrónico</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="telefono1" render={({ field }) => (
+                  <FormItem><FormLabel>Teléfono 1</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="telefono2" render={({ field }) => (
+                  <FormItem><FormLabel>Teléfono 2</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="celular1" render={({ field }) => (
+                  <FormItem><FormLabel>Celular 1</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="celular2" render={({ field }) => (
+                  <FormItem><FormLabel>Celular 2</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="cuitcuil" render={({ field }) => (
+                  <FormItem><FormLabel>CUIT/CUIL</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="otrosDatos" render={({ field }) => (
+                  <FormItem className="md:col-span-2"><FormLabel>Otros Datos</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Datos de Tasación</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <FormField control={form.control} name="m2Vendibles" render={({ field }) => (
+                  <FormItem><FormLabel>M2 Vendibles</FormLabel><FormControl><Input type="number" step="1" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="valorVentaUSD" render={({ field }) => (
+                  <FormItem><FormLabel>Valor de Venta (USD)</FormLabel><FormControl><Input type="number" step="1000" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="incidenciaTasadaUSD" render={({ field }) => (
+                  <FormItem><FormLabel>Incidencia Tasada (USD/m2)</FormLabel><FormControl><Input type="number" step="1" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField
+                  control={form.control}
+                  name="formaDePago"
+                  render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Agente Asignado</FormLabel>
-                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger><SelectValue placeholder="Seleccionar agente..." /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {agentes.map(agente => {
-                            const isCurrentUser = user?.user === agente.user;
-                            const nombreCompleto = agente.nombre && agente.apellido 
-                              ? `${agente.nombre} ${agente.apellido}${isCurrentUser ? ' (yo)' : ''}` 
-                              : agente.user || 'Sin nombre';
-                            return (
-                              <SelectItem key={agente.user} value={agente.user}>
-                                {nombreCompleto}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}/>
-                  <FormField control={form.control} name="status" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Estado</FormLabel>
-                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger><SelectValue placeholder="Seleccionar estado..." /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {estados.map(status => <SelectItem key={status} value={status}>{status}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}/>
-                   <FormField control={form.control} name="origen" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Origen</FormLabel>
+                      <FormLabel>Forma de Pago</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
-                          <SelectTrigger><SelectValue placeholder="Seleccionar origen..." /></SelectTrigger>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar forma de pago..." />
+                          </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {origens.map(origen => <SelectItem key={origen} value={origen}>{origen}</SelectItem>)}
+                          <SelectItem value="Cash">Cash</SelectItem>
+                          <SelectItem value="Canje">Canje</SelectItem>
+                          <SelectItem value="Cash/Canje">Cash/Canje</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
                     </FormItem>
-                  )}/>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Información Normativa</CardTitle>
-                    <CardDescription>Datos urbanísticos autocompletados a partir del SMP.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                        <FormField control={form.control} name="codigoUrbanistico" render={({ field }) => (
-                            <FormItem><FormLabel>Código Urbanístico</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
-                        )}/>
-                        <FormField control={form.control} name="neighborhood" render={({ field }) => (
-                          <FormItem><FormLabel>Barrio</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
-                        )}/>
-                        <FormField control={form.control} name="m2aprox" render={({ field }) => (
-                          <FormItem><FormLabel>M² Estimados (Superficie de Parcela)</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
-                        )}/>
-                        <FormField control={form.control} name="cpu" render={({ field }) => (
-                            <FormItem><FormLabel>CPU</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
-                        )}/>
-                        <FormField control={form.control} name="partida" render={({ field }) => (
-                            <FormItem><FormLabel>Partida</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
-                        )}/>
-                        <FormField control={form.control} name="incidenciaUVA" render={({ field }) => (
-                            <FormItem><FormLabel>Incidencia UVA</FormLabel><FormControl><Input type="number" step="0.01" {...field} readOnly /></FormControl></FormItem>
-                        )}/>
-                        <FormField control={form.control} name="fot" render={({ field }) => (
-                            <FormItem><FormLabel>FOT</FormLabel><FormControl><Input type="number" step="0.1" {...field} readOnly /></FormControl></FormItem>
-                        )}/>
-                        <FormField control={form.control} name="alicuota" render={({ field }) => (
-                            <FormItem><FormLabel>Alícuota (%)</FormLabel><FormControl><Input type="number" step="0.01" {...field} readOnly /></FormControl></FormItem>
-                        )}/>
-                    </div>
-                </CardContent>
-            </Card>
-            {canViewOwnerInfo(user) ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Información del propietario</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                    <FormField control={form.control} name="propietario" render={({ field }) => (
-                      <FormItem><FormLabel>Propietario</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
-                    <FormField control={form.control} name="fallecido" render={({ field }) => (
-                        <FormItem><FormLabel>Fallecido</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger></FormControl>
-                          <SelectContent><SelectItem value="Si">Sí</SelectItem><SelectItem value="No">No</SelectItem></SelectContent>
-                        </Select>
-                        <FormMessage /></FormItem>
-                    )}/>
-                    <FormField control={form.control} name="direccionContacto" render={({ field }) => (
-                      <FormItem><FormLabel>Dirección Contacto</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
-                    <FormField control={form.control} name="direccionAlternativa" render={({ field }) => (
-                      <FormItem><FormLabel>Dirección Alternativa</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
-                     <FormField control={form.control} name="localidad" render={({ field }) => (
-                      <FormItem><FormLabel>Localidad</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
-                    <FormField control={form.control} name="codigoPostal" render={({ field }) => (
-                      <FormItem><FormLabel>Código Postal</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
-                     <FormField control={form.control} name="email" render={({ field }) => (
-                      <FormItem><FormLabel>Correo Electrónico</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
-                     <FormField control={form.control} name="telefono1" render={({ field }) => (
-                      <FormItem><FormLabel>Teléfono 1</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
-                    <FormField control={form.control} name="telefono2" render={({ field }) => (
-                      <FormItem><FormLabel>Teléfono 2</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
-                     <FormField control={form.control} name="celular1" render={({ field }) => (
-                      <FormItem><FormLabel>Celular 1</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
-                    <FormField control={form.control} name="celular2" render={({ field }) => (
-                      <FormItem><FormLabel>Celular 2</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
-                    <FormField control={form.control} name="otrosDatos" render={({ field }) => (
-                      <FormItem className="md:col-span-2"><FormLabel>Otros Datos</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : null}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Datos de Tasación</CardTitle>
-              </CardHeader>
-              <CardContent>
-                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                     <FormField control={form.control} name="m2Vendibles" render={({ field }) => (
-                      <FormItem><FormLabel>M2 Vendibles</FormLabel><FormControl><Input type="number" step="1" {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
-                     <FormField control={form.control} name="valorVentaUSD" render={({ field }) => (
-                      <FormItem><FormLabel>Valor de Venta (USD)</FormLabel><FormControl><Input type="number" step="1000" {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
-                     <FormField control={form.control} name="incidenciaTasadaUSD" render={({ field }) => (
-                      <FormItem><FormLabel>Incidencia Tasada (USD/m2)</FormLabel><FormControl><Input type="number" step="1" {...field} /></FormControl><FormMessage /></FormItem>
-                    )}/>
-                    <FormField
-                        control={form.control}
-                        name="formaDePago"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Forma de Pago</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Seleccionar forma de pago..." />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="Cash">Cash</SelectItem>
-                                        <SelectItem value="Canje">Canje</SelectItem>
-                                        <SelectItem value="Cash/Canje">Cash/Canje</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="fechaVenta"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-col pt-2">
-                          <FormLabel>Fecha de Venta</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant={"outline"}
-                                  className={cn(
-                                    "w-full pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                >
-                                  {field.value ? (
-                                    format(field.value, "PPP", { locale: es })
-                                  ) : (
-                                    <span>Seleccionar fecha</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) =>
-                                  date > new Date() || date < new Date("1900-01-01")
-                                }
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                 </div>
-              </CardContent>
-            </Card>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="fechaVenta"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col pt-2">
+                      <FormLabel>Fecha de Venta</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP", { locale: es })
+                              ) : (
+                                <span>Seleccionar fecha</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) =>
+                              date > new Date() || date < new Date("1900-01-01")
+                            }
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </form>
     </Form>

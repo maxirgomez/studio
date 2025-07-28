@@ -14,15 +14,34 @@ export async function testPostgresConnection() {
   try {
     await client.connect();
     console.log('¡Conexión exitosa a la base de datos PostgreSQL!');
-    // Ejemplo: obtener las tablas públicas
-    const res = await client.query(`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'`);
-    console.log('Tablas en el esquema public:', res.rows);
-    // Ejemplo: obtener los primeros 5 registros de alguna tabla (si existe)
-    if (res.rows.length > 0) {
-      const firstTable = res.rows[0].table_name;
-      const data = await client.query(`SELECT * FROM "${firstTable}" LIMIT 5`);
-      console.log(`Primeros 5 registros de la tabla ${firstTable}:`, data.rows);
-    }
+    
+    // Consultar estados únicos de la tabla prefapp_lotes
+    const estadosRes = await client.query(`
+      SELECT DISTINCT estado 
+      FROM public.prefapp_lotes 
+      WHERE estado IS NOT NULL
+      ORDER BY estado
+    `);
+    
+    console.log('Estados únicos en la base de datos:');
+    estadosRes.rows.forEach((row, index) => {
+      console.log(`${index + 1}. "${row.estado}" (longitud: ${row.estado?.length})`);
+    });
+    
+    // También mostrar conteo por estado
+    const conteoRes = await client.query(`
+      SELECT estado, COUNT(*) as cantidad
+      FROM public.prefapp_lotes 
+      WHERE estado IS NOT NULL
+      GROUP BY estado
+      ORDER BY cantidad DESC
+    `);
+    
+    console.log('\nConteo de lotes por estado:');
+    conteoRes.rows.forEach(row => {
+      console.log(`"${row.estado}": ${row.cantidad} lotes`);
+    });
+    
   } catch (err) {
     console.error('Error de conexión o consulta:', err);
     throw err;

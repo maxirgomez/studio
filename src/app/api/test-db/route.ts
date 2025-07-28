@@ -1,11 +1,28 @@
 import { NextResponse } from 'next/server';
-import { testPostgresConnection } from '@/lib/pg-test';
+import pool from '@/lib/db';
 
 export async function GET() {
   try {
-    await testPostgresConnection();
-    return NextResponse.json({ success: true, message: '¡Conexión exitosa a la base de datos PostgreSQL!' });
+    // Verificar la estructura de la tabla prefapp_lotes
+    const { rows: columns } = await pool.query(`
+      SELECT column_name, data_type, is_nullable, column_default
+      FROM information_schema.columns 
+      WHERE table_name = 'prefapp_lotes' 
+      AND table_schema = 'public'
+      ORDER BY ordinal_position
+    `);
+    
+    console.log('Estructura de prefapp_lotes:', columns);
+    
+    return NextResponse.json({ 
+      message: 'Estructura de la tabla prefapp_lotes',
+      columns: columns 
+    });
   } catch (error) {
-    return NextResponse.json({ success: false, message: 'Error de conexión', error: String(error) }, { status: 500 });
+    console.error('Error al verificar estructura de tabla:', error);
+    return NextResponse.json({ 
+      error: 'Error al verificar estructura', 
+      details: (error as Error).message 
+    }, { status: 500 });
   }
 } 
