@@ -97,7 +97,7 @@ function useTypingComplete<T>(value: T, minLength: number = 3): { value: T; trig
 
 const newLoteFormSchema = z.object({
   // Informacion del Lote
-  frente: z.string().min(1, "La calle es requerida."),
+  frente: z.string().optional(), // Ya no es requerido por la API
   numero: z.string().optional(),
   smp: z.string().min(1, "SMP es requerido."),
   agent: z.string().min(1, "El agente es requerido."),
@@ -106,21 +106,21 @@ const newLoteFormSchema = z.object({
 
   // Informacion Normativa
   codigoUrbanistico: z.string().optional(),
-  neighborhood: z.string(),
-  m2aprox: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
+  neighborhood: z.string().optional(), // Ya no es requerido, se asigna valor por defecto
+  m2aprox: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")).optional(),
   cpu: z.string().optional(),
   partida: z.string().optional(),
-  incidenciaUVA: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
-  fot: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
-  alicuota: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
+  incidenciaUVA: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")).optional(),
+  fot: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")).optional(),
+  alicuota: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")).optional(),
 
   // Informacion del propietario
-  propietario: z.string().min(2, "El nombre es requerido."),
-  direccionContacto: z.string(),
-  codigoPostal: z.string(),
-  localidad: z.string(),
+  propietario: z.string().optional(), // Ya no es requerido, se puede editar después
+  direccionContacto: z.string().optional(), // Ya no es requerido, se asigna valor por defecto
+  codigoPostal: z.string().optional(),
+  localidad: z.string().optional(),
   direccionAlternativa: z.string().optional(),
-  fallecido: z.string(),
+  fallecido: z.string().optional(),
   otrosDatos: z.string().max(200, "Máximo 200 caracteres.").optional(),
   telefono1: z.string().optional(),
   telefono2: z.string().optional(),
@@ -132,10 +132,10 @@ const newLoteFormSchema = z.object({
   email: z.string().email("Email inválido.").or(z.literal("")).optional(),
 
   // Tasacion
-  m2Vendibles: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
-  valorVentaUSD: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
-  incidenciaTasadaUSD: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")),
-  formaDePago: z.string().min(1, "La forma de pago es requerida."),
+  m2Vendibles: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")).optional(),
+  valorVentaUSD: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")).optional(),
+  incidenciaTasadaUSD: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")).optional(),
+  formaDePago: z.string().optional(), // Ya no es requerido por la API
   fechaVenta: z.date().optional(),
 });
 
@@ -219,10 +219,10 @@ export default function NuevoLotePage() {
   const numeroValue = form.watch("numero");
 
   // Aplicar detección de escritura completa a los valores de búsqueda
-  const frenteTyping = useTypingComplete(frenteValue, 3);
-  const numeroTyping = useTypingComplete(numeroValue, 1);
-  const completedFrenteValue = frenteTyping.value;
-  const completedNumeroValue = numeroTyping.value;
+  const frenteTyping = useTypingComplete(frenteValue || '', 3);
+  const numeroTyping = useTypingComplete(numeroValue || '', 1);
+  const completedFrenteValue = frenteTyping.value || '';
+  const completedNumeroValue = numeroTyping.value || '';
 
   // Sugerencias de calle con detección de escritura completa
   useEffect(() => {
@@ -236,7 +236,7 @@ export default function NuevoLotePage() {
           const calles = data.lotes || [];
           setCalleSugerencias(calles);
           // Solo mostrar sugerencias si el valor actual no está en la lista
-          setMostrarCalleSug(calles.length > 0 && !calles.includes(completedFrenteValue));
+          setMostrarCalleSug(calles.length > 0 && !calles.includes(query));
           setLoadingCalle(false);
         })
         .catch(() => setLoadingCalle(false));
@@ -298,7 +298,7 @@ export default function NuevoLotePage() {
   // Autocomplete SMP y datos normativos
   useEffect(() => {
     const searchFrente = completedFrenteValue.trim();
-    const searchNumero = completedNumeroValue?.trim() || '';
+    const searchNumero = completedNumeroValue.trim();
     setSmpEditable(false);
     if (searchFrente && searchNumero) {
       setLoadingSMP(true);
@@ -347,30 +347,30 @@ export default function NuevoLotePage() {
     try {
       // Preparar los datos para la API según el mapeo de campos
       const loteData = {
-        // Información del Lote
+        // Información del Lote (solo estos 4 son realmente requeridos)
         smp: data.smp,
         agente: data.agent,
         estado: data.status,
         origen: data.origen,
         
-        // Información Normativa (viene de la búsqueda automática)
-        cur: data.codigoUrbanistico,
-        barrio: data.neighborhood,
-        m2aprox: cleanNumericField(data.m2aprox),
-        dist_cpu_1: data.cpu,
-        partida: data.partida,
-        inc_uva: cleanNumericField(data.incidenciaUVA),
-        fot: cleanNumericField(data.fot),
-        alicuota: cleanNumericField(data.alicuota),
+        // Información Normativa (viene de la búsqueda automática o valores por defecto)
+        cur: data.codigoUrbanistico || null,
+        barrio: data.neighborhood || "Sin especificar", // Valor por defecto si está vacío
+        m2aprox: cleanNumericField(data.m2aprox) || 0, // Valor por defecto si está vacío
+        dist_cpu_1: data.cpu || null,
+        partida: data.partida || null,
+        inc_uva: cleanNumericField(data.incidenciaUVA) || 0,
+        fot: cleanNumericField(data.fot) || 0,
+        alicuota: cleanNumericField(data.alicuota) || 0,
         
-        // Información del Propietario
-        propietario: data.propietario,
-        direccion: data.direccionContacto,
-        direccionalt: data.direccionAlternativa,
-        localidad: data.localidad,
-        cp: data.codigoPostal,
-        email: data.email,
-        fallecido: data.fallecido,
+        // Información del Propietario (se puede editar después)
+        propietario: data.propietario || "Sin especificar", // Valor por defecto si está vacío
+        direccion: data.direccionContacto || "Sin especificar", // Valor por defecto si está vacío
+        direccionalt: data.direccionAlternativa || null,
+        localidad: data.localidad || null,
+        cp: data.codigoPostal || null,
+        email: data.email || null,
+        fallecido: data.fallecido || "No",
         tel1: cleanNumericField(data.telefono1),
         tel2: cleanNumericField(data.telefono2),
         tel3: cleanNumericField(data.telefono3),
@@ -378,13 +378,13 @@ export default function NuevoLotePage() {
         cel2: cleanNumericField(data.celular2),
         cel3: cleanNumericField(data.celular3),
         cuitcuil: cleanNumericField(data.cuitcuil),
-        otros: data.otrosDatos,
+        otros: data.otrosDatos || null,
         
-        // Datos de Tasación
+        // Datos de Tasación (se pueden editar después)
         m2vendibles: cleanNumericField(data.m2Vendibles),
         vventa: cleanNumericField(data.valorVentaUSD),
         inctasada: cleanNumericField(data.incidenciaTasadaUSD),
-        fpago: data.formaDePago,
+        fpago: data.formaDePago || null,
         fventa: data.fechaVenta ? data.fechaVenta.toISOString().split('T')[0] : null,
       };
 
@@ -415,10 +415,10 @@ export default function NuevoLotePage() {
       const result = await response.json();
       console.log('Respuesta de la API:', result);
 
-      const fullAddress = `${data.frente} ${data.numero || ''}`.trim();
+      const fullAddress = `${data.frente || ''} ${data.numero || ''}`.trim();
       toast({
         title: "Lote Creado",
-        description: `El nuevo lote en ${fullAddress} ha sido creado exitosamente.`,
+        description: `El nuevo lote${fullAddress ? ` en ${fullAddress}` : ''} ha sido creado exitosamente.`,
       });
       
       router.push(`/lotes`);
