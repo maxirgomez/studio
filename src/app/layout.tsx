@@ -9,6 +9,7 @@ import { UserProvider } from "@/context/UserContext";
 import SpinnerProvider from "@/components/ui/SpinnerProvider";
 import SpinnerOverlay from "@/components/ui/SpinnerOverlay";
 import NavigationSpinnerHandler from "@/components/ui/NavigationSpinnerHandler";
+import { Analytics } from '@vercel/analytics/next';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -37,6 +38,7 @@ export default function RootLayout({
               <SpinnerOverlay />
               {children}
               <Toaster />
+              <Analytics />
             </SpinnerProvider>
           </ThemeProvider>
         </UserProvider>
