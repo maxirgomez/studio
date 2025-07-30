@@ -80,7 +80,7 @@ export default function MapPage() {
   const [selectedEstados, setSelectedEstados] = useState<string[]>([]);
   const [selectedBarrios, setSelectedBarrios] = useState<string[]>([]);
   const [basemap, setBasemap] = useState('carto');
-  const [showWms, setShowWms] = useState(true);
+
   const [showVolumen, setShowVolumen] = useState(false);
   const [showTejido, setShowTejido] = useState(false);
   const [barrios, setBarrios] = useState<string[]>([]);
@@ -113,47 +113,7 @@ export default function MapPage() {
     fetchBarrios();
   }, []);
 
-  const createWmsSource = (estados: string[] = [], barrios: string[] = []) => {
-    const filters = [];
-    if (estados.length > 0) filters.push(`estado IN (${estados.map(e => `'${e}'`).join(',')})`);
-    if (barrios.length > 0) {
-      // Convertir barrios capitalizados de vuelta al formato original de la BD
-      const barriosOriginales = barrios.map(barrio => 
-        barrio.toUpperCase().replace(/\s+/g, ' ')
-      );
-      filters.push(`barrio IN (${barriosOriginales.map(b => `'${b}'`).join(',')})`);
-    }
-    const cql = filters.length ? `&CQL_FILTER=${encodeURIComponent(filters.join(' AND '))}` : '';
-    return {
-      type: 'raster',
-      tiles: [
-        'https://geo-epesege.com.ar/geoserver/prefapp/wms?' +
-        'service=WMS&version=1.1.0&request=GetMap&layers=prefapp%3Alotes_geoserver&' +
-        'styles=&format=image/png&transparent=true&srs=EPSG%3A3857&' +
-        'bbox={bbox-epsg-3857}&width=256&height=256' + cql
-      ],
-      tileSize: 256
-    };
-  };
 
-  const updateWmsLayer = () => {
-    if (!map.current) return;
-    
-    if (map.current.getLayer('wms-lotes-layer')) {
-      map.current.removeLayer('wms-lotes-layer');
-    }
-    if (map.current.getSource('wms-lotes')) {
-      map.current.removeSource('wms-lotes');
-    }
-    
-    map.current.addSource('wms-lotes', createWmsSource(selectedEstados, selectedBarrios));
-    map.current.addLayer({
-      id: 'wms-lotes-layer',
-      type: 'raster',
-      source: 'wms-lotes',
-      paint: { 'raster-opacity': 1 }
-    }, 'volumen_edificable');
-  };
 
   const handleMapClick = async (e: any) => {
     if (!map.current) return;
@@ -282,7 +242,6 @@ export default function MapPage() {
       });
 
       map.current.on('load', () => {
-        updateWmsLayer();
         map.current.addControl(new window.maplibregl.NavigationControl(), 'bottom-right');
       });
 
@@ -298,9 +257,7 @@ export default function MapPage() {
     };
   }, []);
 
-  useEffect(() => {
-    updateWmsLayer();
-  }, [selectedEstados, selectedBarrios]);
+
 
   useEffect(() => {
     if (!map.current) return;
@@ -310,12 +267,7 @@ export default function MapPage() {
     });
   }, [basemap]);
 
-  useEffect(() => {
-    if (!map.current) return;
-    
-    const visibility = showWms ? 'visible' : 'none';
-    map.current.setLayoutProperty('wms-lotes-layer', 'visibility', visibility);
-  }, [showWms]);
+
 
   useEffect(() => {
     if (!map.current) return;
@@ -397,14 +349,7 @@ export default function MapPage() {
             <div>
               <h4 className="font-semibold mb-3">Capas</h4>
               <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="wms" 
-                    checked={showWms} 
-                    onCheckedChange={(checked) => setShowWms(checked as boolean)}
-                  />
-                  <Label htmlFor="wms">Lotes WMS</Label>
-                </div>
+
                 <div className="flex items-center space-x-2">
                   <Checkbox 
                     id="volumen" 
