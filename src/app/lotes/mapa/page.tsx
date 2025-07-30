@@ -85,6 +85,7 @@ export default function MapPage() {
   const [showTejido, setShowTejido] = useState(false);
   const [showLotes, setShowLotes] = useState(true);
   const [barrios, setBarrios] = useState<string[]>([]);
+  const [barriosOriginales, setBarriosOriginales] = useState<string[]>([]);
   const [loadingBarrios, setLoadingBarrios] = useState(true);
   const [selectedLote, setSelectedLote] = useState<LoteInfo | null>(null);
   const [popupOpen, setPopupOpen] = useState(false);
@@ -97,10 +98,24 @@ export default function MapPage() {
         const response = await fetch('/api/lotes/barrios');
         if (response.ok) {
           const data = await response.json();
-          const barriosCapitalizados = data.barrios.map((barrio: string) => 
+          // Guardar los barrios originales de la base de datos
+          const barriosOriginalesData = data.barrios || [];
+          setBarriosOriginales(barriosOriginalesData);
+          
+          // Capitalizar los barrios para mostrar en la interfaz
+          const barriosCapitalizados = barriosOriginalesData.map((barrio: string) => 
             capitalizeProperNames(barrio)
           );
           setBarrios(barriosCapitalizados);
+          
+          console.log('Barrios originales cargados de la API:', barriosOriginalesData);
+          console.log('Barrios capitalizados para interfaz:', barriosCapitalizados);
+          
+          // Verificar algunos ejemplos de barrios
+          if (barriosOriginalesData.length > 0) {
+            console.log('Ejemplos de barrios originales:', barriosOriginalesData.slice(0, 5));
+            console.log('Ejemplos de barrios capitalizados:', barriosCapitalizados.slice(0, 5));
+          }
         } else {
           console.error('Error al cargar barrios');
         }
@@ -115,11 +130,32 @@ export default function MapPage() {
   }, []);
 
   // Función para crear la fuente WMS de lotes
-  const createWmsSource = (estados: string[] = [], barrios: string[] = []) => {
+  const createWmsSource = (estados: string[] = [], barriosCapitalizados: string[] = []) => {
     const filters = [];
     if (estados.length > 0) filters.push(`estado IN (${estados.map(e => `'${e}'`).join(',')})`);
-    if (barrios.length > 0) filters.push(`barrio IN (${barrios.map(b => `'${b}'`).join(',')})`);
+    
+    // Convertir barrios capitalizados a barrios originales para el filtro
+    if (barriosCapitalizados.length > 0) {
+      const barriosOriginalesParaFiltro = barriosCapitalizados.map(barrioCapitalizado => {
+        // Buscar el índice del barrio capitalizado en el array de barrios capitalizados
+        const index = barrios.findIndex(b => b === barrioCapitalizado);
+        // Si se encuentra, usar el barrio original correspondiente
+        if (index !== -1 && barriosOriginales[index]) {
+          return barriosOriginales[index];
+        }
+        // Si no se encuentra, usar el barrio capitalizado tal como está
+        return barrioCapitalizado;
+      });
+      
+      console.log('Barrios capitalizados seleccionados:', barriosCapitalizados);
+      console.log('Barrios originales para filtro:', barriosOriginalesParaFiltro);
+      
+      filters.push(`barrio IN (${barriosOriginalesParaFiltro.map(b => `'${b}'`).join(',')})`);
+    }
+    
     const cql = filters.length ? `&CQL_FILTER=${encodeURIComponent(filters.join(' AND '))}` : '';
+    
+    console.log('Filtro CQL final:', cql);
     
     return {
       type: 'raster',
