@@ -40,9 +40,43 @@ function formatAltura(altura: string | number): string {
   return str;
 }
 
-// Función helper para capitalizar la primera letra
+// Función helper para capitalizar nombres propios correctamente
 function capitalizeFirst(str: string): string {
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  if (!str) return str;
+  
+  // Lista de palabras que no se capitalizan (excepto al inicio)
+  const lowercaseWords = [
+    'de', 'del', 'la', 'las', 'el', 'los', 'y', 'o', 'con', 'sin', 'por', 'para',
+    'en', 'sobre', 'bajo', 'entre', 'tras', 'ante', 'desde', 'hasta', 'según',
+    'contra', 'durante', 'mediante', 'excepto', 'salvo', 'según', 'vía'
+  ];
+  
+  // Función para capitalizar una sola calle
+  const capitalizeStreet = (street: string) => {
+    return street
+      .toLowerCase()
+      .split(' ')
+      .map((word, index) => {
+        // Siempre capitalizar la primera palabra
+        if (index === 0) {
+          return word.charAt(0).toUpperCase() + word.slice(1);
+        }
+        
+        // Capitalizar si no está en la lista de palabras que van en minúscula
+        if (!lowercaseWords.includes(word)) {
+          return word.charAt(0).toUpperCase() + word.slice(1);
+        }
+        
+        return word;
+      })
+      .join(' ');
+  };
+  
+  // Dividir por comas y capitalizar cada calle por separado
+  return str
+    .split(',')
+    .map(street => capitalizeStreet(street.trim()))
+    .join(', ');
 }
 
 // Hook personalizado para detectar cuando el usuario termina de escribir

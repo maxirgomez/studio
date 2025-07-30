@@ -83,6 +83,7 @@ export default function MapPage() {
 
   const [showVolumen, setShowVolumen] = useState(false);
   const [showTejido, setShowTejido] = useState(false);
+  const [showLotes, setShowLotes] = useState(true);
   const [barrios, setBarrios] = useState<string[]>([]);
   const [loadingBarrios, setLoadingBarrios] = useState(true);
   const [selectedLote, setSelectedLote] = useState<LoteInfo | null>(null);
@@ -113,7 +114,46 @@ export default function MapPage() {
     fetchBarrios();
   }, []);
 
+  // Función para crear la fuente WMS de lotes
+  const createWmsSource = (estados: string[] = [], barrios: string[] = []) => {
+    const filters = [];
+    if (estados.length > 0) filters.push(`estado IN (${estados.map(e => `'${e}'`).join(',')})`);
+    if (barrios.length > 0) filters.push(`barrio IN (${barrios.map(b => `'${b}'`).join(',')})`);
+    const cql = filters.length ? `&CQL_FILTER=${encodeURIComponent(filters.join(' AND '))}` : '';
+    
+    return {
+      type: 'raster',
+      tiles: [
+        'https://geo-epesege.com.ar/geoserver/prefapp/wms?' +
+        'service=WMS&version=1.1.0&request=GetMap&layers=prefapp%3Alotes_geoserver&' +
+        'styles=&format=image/png&transparent=true&srs=EPSG%3A3857&' +
+        'bbox={bbox-epsg-3857}&width=256&height=256' + cql
+      ],
+      tileSize: 256
+    };
+  };
 
+  // Función para actualizar la capa WMS de lotes
+  const updateWmsLayer = () => {
+    if (!map.current) return;
+    
+    if (map.current.getLayer('wms-lotes-layer')) {
+      map.current.removeLayer('wms-lotes-layer');
+    }
+    if (map.current.getSource('wms-lotes')) {
+      map.current.removeSource('wms-lotes');
+    }
+    
+    if (showLotes) {
+      map.current.addSource('wms-lotes', createWmsSource(selectedEstados, selectedBarrios));
+      map.current.addLayer({
+        id: 'wms-lotes-layer',
+        type: 'raster',
+        source: 'wms-lotes',
+        paint: { 'raster-opacity': 1 }
+      }, 'volumen_edificable');
+    }
+  };
 
   const handleMapClick = async (e: any) => {
     if (!map.current) return;
@@ -243,6 +283,8 @@ export default function MapPage() {
 
       map.current.on('load', () => {
         map.current.addControl(new window.maplibregl.NavigationControl(), 'bottom-right');
+        // Inicializar la capa WMS de lotes
+        updateWmsLayer();
       });
 
       // Agregar evento de clic
@@ -257,8 +299,7 @@ export default function MapPage() {
     };
   }, []);
 
-
-
+  // Actualizar mapa base
   useEffect(() => {
     if (!map.current) return;
     
@@ -267,8 +308,7 @@ export default function MapPage() {
     });
   }, [basemap]);
 
-
-
+  // Actualizar capa de volumen
   useEffect(() => {
     if (!map.current) return;
     
@@ -276,12 +316,18 @@ export default function MapPage() {
     map.current.setLayoutProperty('volumen_edificable', 'visibility', visibility);
   }, [showVolumen]);
 
+  // Actualizar capa de tejido
   useEffect(() => {
     if (!map.current) return;
     
     const visibility = showTejido ? 'visible' : 'none';
     map.current.setLayoutProperty('tejido', 'visibility', visibility);
   }, [showTejido]);
+
+  // Actualizar capa WMS de lotes cuando cambien los filtros
+  useEffect(() => {
+    updateWmsLayer();
+  }, [selectedEstados, selectedBarrios, showLotes]);
 
   const handleEstadoChange = (estado: string, checked: boolean) => {
     if (checked) {
@@ -349,7 +395,14 @@ export default function MapPage() {
             <div>
               <h4 className="font-semibold mb-3">Capas</h4>
               <div className="space-y-2">
-
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="lotes" 
+                    checked={showLotes} 
+                    onCheckedChange={(checked) => setShowLotes(checked as boolean)}
+                  />
+                  <Label htmlFor="lotes">Lotes WMS</Label>
+                </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox 
                     id="volumen" 
@@ -366,6 +419,47 @@ export default function MapPage() {
                   />
                   <Label htmlFor="tejido">Tejido 3D</Label>
                 </div>
+              </div>
+            </div>
+
+            {/* Controles de vista 3D */}
+            <div>
+              <h4 className="font-semibold mb-3">Vista 3D</h4>
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      if (map.current) {
+                        map.current.easeTo({
+                          pitch: 0,
+                          bearing: 0,
+                          duration: 1000
+                        });
+                      }
+                    }}
+                  >
+                    Vista 2D
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      if (map.current) {
+                        map.current.easeTo({
+                          pitch: 45,
+                          bearing: 0,
+                          duration: 1000
+                        });
+                      }
+                    }}
+                  >
+                    Vista 3D
+                  </Button>
+                </div>
+                
+
               </div>
             </div>
 
@@ -433,6 +527,26 @@ export default function MapPage() {
               )}
             </div>
 
+            {/* Leyenda */}
+            {selectedEstados.length > 0 && (
+              <div>
+                <h4 className="font-semibold mb-3">Leyenda</h4>
+                <div className="space-y-2">
+                  {selectedEstados.map(estado => (
+                    <div key={estado} className="flex items-center space-x-2">
+                      <div 
+                        className="w-4 h-4 rounded border"
+                        style={{ 
+                          backgroundColor: getStatusStyles(estado).backgroundColor,
+                          borderColor: getStatusStyles(estado).backgroundColor === '#ffffff' ? '#000' : 'transparent'
+                        }}
+                      ></div>
+                      <span className="text-sm">{estado}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
           </CardContent>
         </Card>
