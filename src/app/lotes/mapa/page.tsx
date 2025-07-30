@@ -401,7 +401,7 @@ export default function MapPage() {
                     checked={showLotes} 
                     onCheckedChange={(checked) => setShowLotes(checked as boolean)}
                   />
-                  <Label htmlFor="lotes">Lotes WMS</Label>
+                  <Label htmlFor="lotes">Lotes</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox 
@@ -526,28 +526,6 @@ export default function MapPage() {
                 </div>
               )}
             </div>
-
-            {/* Leyenda */}
-            {selectedEstados.length > 0 && (
-              <div>
-                <h4 className="font-semibold mb-3">Leyenda</h4>
-                <div className="space-y-2">
-                  {selectedEstados.map(estado => (
-                    <div key={estado} className="flex items-center space-x-2">
-                      <div 
-                        className="w-4 h-4 rounded border"
-                        style={{ 
-                          backgroundColor: getStatusStyles(estado).backgroundColor,
-                          borderColor: getStatusStyles(estado).backgroundColor === '#ffffff' ? '#000' : 'transparent'
-                        }}
-                      ></div>
-                      <span className="text-sm">{estado}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
           </CardContent>
         </Card>
 
