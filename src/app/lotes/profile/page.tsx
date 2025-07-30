@@ -8,6 +8,7 @@ import { users } from "@/lib/data";
 import { useUser } from "@/context/UserContext";
 import { Button } from "@/components/ui/button";
 import { Plus, Eye } from "lucide-react";
+import { getStatusStyles } from "@/lib/status-colors";
 
 // Agrupar usuarios por rol
 const usersByRole = users.reduce((acc, user) => {
@@ -15,16 +16,15 @@ const usersByRole = users.reduce((acc, user) => {
   return acc;
 }, {} as Record<string, typeof users>);
 
-const estadoColors: Record<string, string> = {
-  Disponible: "bg-green-200 text-green-800",
-  Vendido: "bg-blue-200 text-blue-800",
-  "Tomar Acción": "bg-yellow-200 text-yellow-800",
-  Tasación: "bg-purple-200 text-purple-800",
-  Evolucionando: "bg-orange-200 text-orange-800",
-  Descartado: "bg-gray-200 text-gray-800",
-  "No vende": "bg-red-200 text-red-800",
-  Reservado: "bg-pink-200 text-pink-800",
-  // Agrega más si es necesario
+const estadoColors: Record<string, any> = {
+  "Tomar acción": getStatusStyles("Tomar acción"),
+  "Tasación": getStatusStyles("Tasación"),
+  "Evolucionando": getStatusStyles("Evolucionando"),
+  "Disponible": getStatusStyles("Disponible"),
+  "Descartado": getStatusStyles("Descartado"),
+  "No vende": getStatusStyles("No vende"),
+  "Reservado": getStatusStyles("Reservado"),
+  "Vendido": getStatusStyles("Vendido"),
 };
 
 export default function ProfilePage() {
@@ -88,7 +88,7 @@ export default function ProfilePage() {
               const email = user?.mail || user?.email || "email@ejemplo.com";
               return (
                 <div key={user.mail || user.email} className="border rounded-lg p-6 bg-white flex flex-col justify-between h-full shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-4 mb-2">
+                  <div className="flex items-center gap-4 mb-4">
                     <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-700 text-lg">
                       {user.nombre?.[0]?.toUpperCase() || "U"}
                     </div>
@@ -98,20 +98,30 @@ export default function ProfilePage() {
                       <div className="text-xs">Rol: {user.rol || user.role || "Rol"}</div>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2 mb-4 mt-2">
-                    {(user.estadosDisponibles || []).map((estado: string) => {
-                      const found = user.estados?.find((e: any) => e.estado === estado);
-                      const count = found ? found.cantidad : 0;
-                      return (
-                        <span
-                          key={estado}
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${estadoColors[estado] || "bg-gray-100 text-gray-700"}`}
-                        >
-                          {estado}: {count}
+                  
+                  {/* Chips de estados con contadores */}
+                  <div className="mb-4">
+                    <div className="flex flex-wrap gap-2">
+                      {(user.estados || [])
+                        .filter((e: any) => e.cantidad > 0)
+                        .sort((a: any, b: any) => b.cantidad - a.cantidad)
+                                                 .map((estadoData: any) => (
+                           <span
+                             key={estadoData.estado}
+                             className="px-3 py-1 rounded-full text-xs font-semibold"
+                             style={estadoColors[estadoData.estado] || { backgroundColor: "#f3f4f6", color: "#374151" }}
+                           >
+                             {estadoData.estado}: {estadoData.cantidad}
+                           </span>
+                         ))}
+                      {(!user.estados || user.estados.length === 0 || user.estados.every((e: any) => e.cantidad === 0)) && (
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500">
+                          Sin lotes asignados
                         </span>
-                      );
-                    })}
+                      )}
+                    </div>
                   </div>
+                  
                   <div className="flex gap-2 mt-auto">
                     <Link href={`/lotes?agent=${encodeURIComponent(user.user)}`}>
                       <Button variant="outline" className="flex items-center gap-2">

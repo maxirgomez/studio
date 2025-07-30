@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Prefapp Mapa 3D</title>
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Readex Pro', sans-serif;
+    }
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+    }
+    .control-panel {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: white;
+      padding: 12px;
+      border-radius: 8px;
+      z-index: 10;
+      max-height: 90vh;
+      overflow-y: auto;
+      width: 280px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      font-size: 14px;
+    }
+    .legend {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      z-index: 10;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      max-height: 200px;
+      overflow-y: auto;
+      line-height: 1.5;
+    }
+    .chip-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin: 8px 0;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      background-color: #f1f1f1;
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .chip input { margin-right: 6px; }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .legend-color {
+      width: 14px;
+      height: 14px;
+      margin-right: 6px;
+      border: 1px solid #000;
+    }
+    #barrio-select {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    .layer-toggle {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #ddd;
+    }
+    .layer-toggle label {
+      display: block;
+      margin: 4px 0;
+    }
+  </style>
+</head>
+<body>
+<div id="map"></div>
+
+<div class="control-panel">
+  <h3 style="margin-top:0;">Capas y Filtros</h3>
+
+  <h4>Mapa base</h4>
+  <label><input type="radio" name="basemap" value="carto" checked> Carto Light</label><br/>
+  <label><input type="radio" name="basemap" value="osm"> OpenStreetMap</label><br/>
+  <label><input type="radio" name="basemap" value="satellite"> Imagen Satelital</label>
+
+  <div class="layer-toggle">
+    <h4>Capas adicionales</h4>
+    <label><input type="checkbox" id="toggle-wms" checked> Lotes WMS</label>
+    <label><input type="checkbox" id="volumen_edif"> Volumen edificable 3D</label>
+    <label><input type="checkbox" id="tejido"> Tejido 3D</label>
+  </div>
+
+  <h4>Estado</h4>
+  <div class="chip-group" id="estado-checkboxes">
+    <label class="chip"><input type="checkbox" value="Descartado"> Descartado</label>
+    <label class="chip"><input type="checkbox" value="Disponible"> Disponible</label>
+    <label class="chip"><input type="checkbox" value="Evolucionando"> Evolucionando</label>
+    <label class="chip"><input type="checkbox" value="No vende"> No vende</label>
+    <label class="chip"><input type="checkbox" value="Reservado"> Reservado</label>
+    <label class="chip"><input type="checkbox" value="Tasación"> Tasación</label>
+    <label class="chip"><input type="checkbox" value="Tomar acción"> Tomar acción</label>
+    <label class="chip"><input type="checkbox" value="Vendido"> Vendido</label>
+  </div>
+
+  <h4>Barrio</h4>
+  <select id="barrio-select" multiple>
+    <option value="ALMAGRO">Almagro</option>
+    <option value="BALVANERA">Balvanera</option>
+    <option value="BARRACAS">Barracas</option>
+    <option value="BELGRANO">Belgrano</option>
+    <option value="BOCA">Boca</option>
+    <option value="BOEDO">Boedo</option>
+    <option value="CABALLITO">Caballito</option>
+    <option value="CHACARITA">Chacarita</option>
+    <option value="COGHLAN">Coghlan</option>
+    <option value="COLEGIALES">Colegiales</option>
+    <option value="CONSTITUCION">Constitución</option>
+    <option value="FLORES">Flores</option>
+    <option value="FLORESTA">Floresta</option>
+    <option value="LA PATERNAL">La Paternal</option>
+    <option value="LINIERS">Liniers</option>
+    <option value="MATADEROS">Mataderos</option>
+    <option value="MONSERRAT">Monserrat</option>
+    <option value="MONTE CASTRO">Monte Castro</option>
+    <option value="NUEVA POMPEYA">Pompeya</option>
+    <option value="NUÑEZ">Nuñez</option>
+    <option value="PALERMO">Palermo</option>
+    <option value="PARQUE AVELLANEDA">Parque Avellaneda</option>
+    <option value="PARQUE CHACABUCO">Parque Chacabuco</option>
+    <option value="PARQUE CHAS">Parque Chas</option>
+    <option value="PARQUE PATRICIOS">Parque Patricios</option>
+    <option value="PUERTO MADERO">Puerto Madero</option>
+    <option value="RECOLETA">Recoleta</option>
+    <option value="RETIRO">Retiro</option>
+    <option value="SAAVEDRA">Saavedra</option>
+    <option value="SAN CRISTOBAL">San Cristobal</option>
+    <option value="SAN NICOLAS">San Nicolás</option>
+    <option value="SAN TELMO">San Telmo</option>
+    <option value="VELEZ SARSFIELD">Vélez Sarsfield</option>
+    <option value="VERSALLES">Versalles</option>
+    <option value="VILLA CRESPO">Villa Crespo</option>
+    <option value="VILLA DEVOTO">Villa Devoto</option>
+    <option value="VILLA GRAL. MITRE">Villa Gral. Mitre</option>
+    <option value="VILLA LUGANO">Villa Lugano</option>
+    <option value="VILLA LURO">Villa Luro</option>
+    <option value="VILLA ORTUZAR">Villa Ortuzar</option>
+    <option value="VILLA PUEYRREDON">Villa Pueyrredón</option>
+    <option value="VILLA REAL">Villa Real</option>
+    <option value="VILLA RIACHUELO">Villa Riachuelo</option>
+    <option value="VILLA SANTA RITA">Villa Santa Rita</option>
+    <option value="VILLA SOLDATI">Villa Soldati</option>
+    <option value="VILLA URQUIZA">Villa Urquiza</option>
+  </select>
+</div>
+
+<div class="legend" id="legend"><strong>Leyenda</strong><br/></div>
+
+<script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+const legendColors = {
+  "Descartado": "black",
+  "Disponible": "white",
+  "Evolucionando": "orange",
+  "No vende": "red",
+  "Reservado": "yellow",
+  "Tasación": "#ccc",
+  "Tomar acción": "#0af",
+  "Vendido": "blue"
+};
+
+const map = new maplibregl.Map({
+  container: 'map',
+  style: {
+    version: 8,
+    sources: {
+      'osm': { type: 'raster', tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256 },
+      'carto': { type: 'raster', tiles: ['https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png'], tileSize: 256 },
+      'satellite': { type: 'raster', tiles: ['https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256 },
+      'volumen_edif': { type: 'vector', tiles: ['https://vectortiles.usig.buenosaires.gob.ar/cur3d/volumen_edif/{z}/{x}/{y}.pbf?optimize=true'] },
+      'tejido': { type: 'vector', tiles: ['https://vectortiles.usig.buenosaires.gob.ar/cur3d/tejido/{z}/{x}/{y}.pbf?optimize=true'] }
+    },
+    layers: [
+      { id: 'carto-layer', type: 'raster', source: 'carto', layout: { visibility: 'visible' } },
+      { id: 'osm-layer', type: 'raster', source: 'osm', layout: { visibility: 'none' } },
+      { id: 'satellite-layer', type: 'raster', source: 'satellite', layout: { visibility: 'none' } },
+      { id: 'volumen_edificable', type: 'fill-extrusion', source: 'volumen_edif', layout: { visibility: 'none' }, 'source-layer': 'default',
+        paint: {
+           'fill-extrusion-color': [
+            'match',
+             ['get', 'edificabil'],
+            'CA', '#667d8a',
+            'CM', '#92aaaf',
+            'USAA', '#d6a083',
+            'USAM', '#e6c294',
+            'USAB2', '#c6c294',
+            'USAB1', '#f3d30c',
+            'USAB0', '#FFD306', 
+            'APH', '#f9bcb4', 
+            'U', '#d1bbd0',      // rojo para CA
+             '#FFFFFF'             // gris para el resto
+            ],
+          'fill-extrusion-height': ['get', 'altura_fin'],
+          'fill-extrusion-opacity': 0.8
+        }
+      },
+      { id: 'tejido', type: 'fill-extrusion', source: 'tejido', layout: { visibility: 'none' }, 'source-layer': 'default','filter': ["all", [">=", ["get", "altura"], 1]],
+        paint: {
+          'fill-extrusion-color': '#ffffff',
+          'fill-extrusion-height': ['get', 'altura'],
+          'fill-extrusion-opacity': 0.8,
+        }
+        
+      }
+    ]
+  },
+  center: [-58.437, -34.61],
+  zoom: 15
+});
+
+function getSelectedBarrios() {
+  return $('#barrio-select').val() || [];
+}
+
+function createWmsSource(estados = [], barrios = []) {
+  const filters = [];
+  if (estados.length > 0) filters.push(`estado IN (${estados.map(e => `'${e}'`).join(',')})`);
+  if (barrios.length > 0) filters.push(`barrio IN (${barrios.map(b => `'${b}'`).join(',')})`);
+  const cql = filters.length ? `&CQL_FILTER=${encodeURIComponent(filters.join(' AND '))}` : '';
+  return {
+    type: 'raster',
+    tiles: [
+      'https://geo-epesege.com.ar/geoserver/prefapp/wms?' +
+      'service=WMS&version=1.1.0&request=GetMap&layers=prefapp%3Alotes_geoserver&' +
+      'styles=&format=image/png&transparent=true&srs=EPSG%3A3857&' +
+      'bbox={bbox-epsg-3857}&width=256&height=256' + cql
+    ],
+    tileSize: 256
+  };
+}
+
+function updateLegend(estados) {
+  const legend = document.getElementById('legend');
+  legend.innerHTML = "<strong>Leyenda</strong><br/>";
+  estados.forEach(estado => {
+    const color = legendColors[estado] || "#999";
+    const border = color === "white" ? "1px solid #000" : "none";
+    legend.innerHTML += `<div class="legend-item"><div class="legend-color" style="background:${color}; border:${border};"></div>${estado}</div>`;
+  });
+}
+
+function updateWmsLayer() {
+  const estados = Array.from(document.querySelectorAll('#estado-checkboxes input:checked')).map(cb => cb.value);
+  const barrios = getSelectedBarrios();
+  updateLegend(estados);
+  if (map.getLayer('wms-lotes-layer')) map.removeLayer('wms-lotes-layer');
+  if (map.getSource('wms-lotes')) map.removeSource('wms-lotes');
+  map.addSource('wms-lotes', createWmsSource(estados, barrios));
+  map.addLayer({
+    id: 'wms-lotes-layer',
+    type: 'raster',
+    source: 'wms-lotes',
+    paint: { 'raster-opacity': 1 }
+  }, 'volumen_edificable');
+}
+
+map.on('load', () => {
+  updateWmsLayer();
+  map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
+});
+
+// ✅ Cambio de mapa base
+document.querySelectorAll('input[name="basemap"]').forEach(radio => {
+  radio.addEventListener('change', e => {
+    const selected = e.target.value;
+    ['carto-layer', 'osm-layer', 'satellite-layer'].forEach(layerId => {
+      map.setLayoutProperty(layerId, 'visibility', layerId.startsWith(selected) ? 'visible' : 'none');
+    });
+  });
+});
+
+document.getElementById('toggle-wms').addEventListener('change', e => {
+  const visible = e.target.checked ? 'visible' : 'none';
+  map.setLayoutProperty('wms-lotes-layer', 'visibility', visible);
+});
+
+document.getElementById('volumen_edif').addEventListener('change', e => {
+  const visible = e.target.checked ? 'visible' : 'none';
+  map.setLayoutProperty('volumen_edificable', 'visibility', visible);
+});
+
+document.getElementById('tejido').addEventListener('change', e => {
+  const visible = e.target.checked ? 'visible' : 'none';
+  map.setLayoutProperty('tejido', 'visibility', visible);
+});
+
+[...document.querySelectorAll('#estado-checkboxes input')].forEach(cb => {
+  cb.addEventListener('change', updateWmsLayer);
+});
+
+$('#barrio-select').on('change', updateWmsLayer);
+
+$(document).ready(() => {
+  $('#barrio-select').select2({ placeholder: 'Seleccioná uno o más barrios', allowClear: true });
+});
+</script>
+</body>
+</html>

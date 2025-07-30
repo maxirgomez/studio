@@ -109,7 +109,14 @@ const ListingCard = ({ listing }: ListingCardProps) => (
       </div>
     </CardContent>
     <CardFooter className="bg-card p-4 flex justify-between items-center">
-        <Badge style={getStatusStyles(listing.status || 'Sin estado')}>{listing.status || 'Sin estado'}</Badge>
+        <Badge 
+          style={{
+            ...getStatusStyles(listing.status || 'Sin estado'),
+            borderColor: 'transparent'
+          }}
+        >
+          {listing.status || 'Sin estado'}
+        </Badge>
         <div className="flex items-center gap-2">
             <Avatar className="h-6 w-6">
                 <AvatarFallback>{listing.agent?.initials || 'NA'}</AvatarFallback>

@@ -17,21 +17,7 @@ export interface StatusStyles {
   };
 }
 
-// Estilos de estados - podríamos mover esto a la base de datos en el futuro
-export const getStatusStyles = (status: string): { backgroundColor: string; color: string } => {
-  const styles: StatusStyles = {
-    "Disponible": { backgroundColor: "#dcfce7", color: "#166534" },
-    "Vendido": { backgroundColor: "#dbeafe", color: "#1e40af" },
-    "Tomar Acción": { backgroundColor: "#fef3c7", color: "#92400e" },
-    "Tasación": { backgroundColor: "#e9d5ff", color: "#7c3aed" },
-    "Evolucionando": { backgroundColor: "#fed7aa", color: "#ea580c" },
-    "Descartado": { backgroundColor: "#f3f4f6", color: "#374151" },
-    "No vende": { backgroundColor: "#fee2e2", color: "#dc2626" },
-    "Reservado": { backgroundColor: "#fce7f3", color: "#be185d" },
-  };
-  
-  return styles[status] || { backgroundColor: "#f3f4f6", color: "#374151" };
-};
+export { getStatusStyles } from '../lib/status-colors';
 
 export const useDashboardData = (): DashboardData => {
   const [listings, setListings] = useState<any[]>([]);

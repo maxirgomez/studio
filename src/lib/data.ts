@@ -619,17 +619,4 @@ export const listings = [
   },
 ];
 
-export const getStatusStyles = (status: string): CSSProperties => {
-  const styles: { [key: string]: { backgroundColor: string; color: string } } = {
-    "Tomar Acción": { backgroundColor: "#669bbc", color: "#ffffff" },
-    "Tasación": { backgroundColor: "#dda15e", color: "#ffffff" },
-    "Evolucionando": { backgroundColor: "#219ebc", color: "#ffffff" },
-    "Disponible": { backgroundColor: "#ffb703", color: "#000000" },
-    "Descartado": { backgroundColor: "#0d1b2a", color: "#ffffff" },
-    "No vende": { backgroundColor: "#c1121f", color: "#ffffff" },
-    "Reservado": { backgroundColor: "#fb8500", color: "#ffffff" },
-    "Vendido": { backgroundColor: "#4f772d", color: "#ffffff" },
-  };
-
-  return styles[status] || {};
-};
+export { getStatusStyles } from './status-colors';

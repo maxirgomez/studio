@@ -51,8 +51,16 @@ export async function GET(req: Request) {
     }
 
     if (statusFilter) {
+      // Normalizar el filtro de estado para que coincida con la BD
+      let normalizedStatusFilter = statusFilter;
+      if (statusFilter === 'Tomar Acción') {
+        normalizedStatusFilter = 'Tomar acción';
+      } else if (statusFilter === 'Tasación') {
+        normalizedStatusFilter = 'Tasación';
+      }
+      
       whereClauses.push(`estado = $${idx}`);
-      values.push(statusFilter);
+      values.push(normalizedStatusFilter);
       idx++;
     }
 

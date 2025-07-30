@@ -46,13 +46,21 @@ export async function GET(req: Request) {
       paramIndex++;
     }
 
+    let normalizedStatusFilter = statusFilter;
     if (statusFilter) {
+      // Normalizar el filtro de estado para que coincida con la BD
+      if (statusFilter === 'Tomar Acción') {
+        normalizedStatusFilter = 'Tomar acción';
+      } else if (statusFilter === 'Tasación') {
+        normalizedStatusFilter = 'Tasación';
+      }
+      
       if (baseWhereClause) {
         baseWhereClause += ` AND estado = $${paramIndex}`;
       } else {
         baseWhereClause = `WHERE estado = $${paramIndex}`;
       }
-      baseValues.push(statusFilter);
+      baseValues.push(normalizedStatusFilter);
       paramIndex++;
     }
 
@@ -63,6 +71,8 @@ export async function GET(req: Request) {
     console.log('Base where clause:', baseWhereClause);
     console.log('Base values:', baseValues);
     console.log('Date cutoff:', dateCutoff);
+    console.log('Status filter:', statusFilter);
+    console.log('Normalized status filter:', normalizedStatusFilter);
 
     // Consultas simplificadas y más robustas (sin filtro de tiempo para el dashboard general)
     const queries = [
@@ -87,12 +97,12 @@ export async function GET(req: Request) {
         SELECT barrio as name, COUNT(*) as total 
         FROM public.prefapp_lotes 
         ${agentFilter !== 'todos' ? 'WHERE agente = $1' : 'WHERE 1=1'}
-        ${statusFilter ? `AND estado = $${agentFilter !== 'todos' ? '2' : '1'}` : ''}
+        ${normalizedStatusFilter ? `AND estado = $${agentFilter !== 'todos' ? '2' : '1'}` : ''}
         AND barrio IS NOT NULL
         GROUP BY barrio 
         ORDER BY total DESC
         LIMIT 20
-      `, statusFilter ? (agentFilter !== 'todos' ? [agentFilter, statusFilter] : [statusFilter]) : (agentFilter !== 'todos' ? [agentFilter] : [])),
+      `, normalizedStatusFilter ? (agentFilter !== 'todos' ? [agentFilter, normalizedStatusFilter] : [normalizedStatusFilter]) : (agentFilter !== 'todos' ? [agentFilter] : [])),
       
       // Ventas del trimestre actual
       pool.query(`
@@ -142,13 +152,32 @@ export async function GET(req: Request) {
     // Procesar resultados con validación
     const totalLots = parseInt(totalResult.rows[0]?.total || '0');
     
+    // Función de normalización de estados
+    const normalizeEstado = (estado: string): string => {
+      if (!estado) return estado;
+      
+      // Normalizar "Tomar acción" a "Tomar Acción"
+      if (estado === "Tomar acción" || estado.includes("Tomar Acci") || estado.includes("tomar acci") || estado.includes("Tomar acci")) {
+        return 'Tomar Acción';
+      }
+      
+      // Normalizar "Tasación"
+      if (estado.includes("Tasaci")) {
+        return 'Tasación';
+      }
+      
+      return estado;
+    };
+
     const lotsByStatus = statusResult.rows.reduce((acc: any, row: any) => {
       if (row.estado) {
-        acc[row.estado] = parseInt(row.count) || 0;
+        const normalizedEstado = normalizeEstado(row.estado);
+        acc[normalizedEstado] = (acc[normalizedEstado] || 0) + parseInt(row.count) || 0;
       }
       return acc;
     }, {});
     
+    console.log('Barrios result rows:', barriosResult.rows);
     const lotsByNeighborhood = barriosResult.rows.map((row: any) => ({
       name: row.name || 'Sin barrio',
       total: parseInt(row.total) || 0

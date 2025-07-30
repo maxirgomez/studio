@@ -75,6 +75,17 @@ export default {
           DEFAULT: "hsl(var(--header-background))",
           foreground: "hsl(var(--header-foreground))",
         },
+        // Colores de estado para lotes
+        status: {
+          'tomar-accion': '#669bbc',
+          'tasacion': '#dda15e',
+          'evolucionando': '#219ebc',
+          'disponible': '#ffb703',
+          'descartado': '#0d1b2a',
+          'no-vende': '#c1121f',
+          'reservado': '#fb8500',
+          'vendido': '#4f772d',
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
