@@ -608,8 +608,8 @@ export default function LoteEditPage() {
                 </div>
                  <div className="mt-4">
                   <FormField control={form.control} name="otrosDatos" render={({ field }) => (
-                    <FormItem><FormLabel>Otros Datos</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
-                  )}/>
+                   <FormItem><FormLabel>Seguimiento/Notas del lote</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+                 )} />
                 </div>
               </CardContent>
             </Card>

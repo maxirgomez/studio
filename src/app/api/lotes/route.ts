@@ -260,7 +260,7 @@ export async function POST(req: Request) {
       'cur', 'dist_cpu_1', 'partida', 'inc_uva', 'fot', 'alicuota',
       'localidad', 'cp', 'direccionalt', 'fallecido', 'email', 'cuitcuil', 'otros',
       'tel1', 'tel2', 'tel3', 'cel1', 'cel2', 'cel3',
-      'm2vendibles', 'vventa', 'inctasada', 'fpago', 'fventa'
+      'm2vendibles', 'vventa', 'inctasada', 'fpago', 'fventa', 'foto_lote'
     ];
     
     const values = insertFields.map(f => {

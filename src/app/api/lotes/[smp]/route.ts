@@ -237,7 +237,7 @@ export async function PUT(req: Request, context: any) {
       'propietario', 'direccion', 'localidad', 'cp', 'direccionalt', 'fallecido', 'email', 'cuitcuil',
       'tel1', 'tel2', 'tel3', 'cel1', 'cel2', 'cel3',
       'm2vendibles', 'vventa', 'inctasada', 'fpago', 'fventa',
-      'agente', 'estado' // Agregar campos agente y estado
+      'agente', 'estado', 'foto_lote' // Agregar campo foto_lote
     ];
     const updates = [];
     const values = [];

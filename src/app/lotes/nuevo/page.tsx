@@ -351,6 +351,14 @@ export default function NuevoLotePage() {
             form.setValue('incidenciaUVA', lote.incidenciaUVA || 0, { shouldValidate: true });
             form.setValue('fot', lote.fot || 0, { shouldValidate: true });
             form.setValue('alicuota', lote.alicuota || 0, { shouldValidate: true });
+            
+            // Asegurar que la dirección se guarde correctamente
+            const direccionReal = `${searchFrente} ${searchNumero}`.trim();
+            form.setValue('direccionContacto', direccionReal, { shouldValidate: false });
+            
+            console.log('✅ SMP encontrado:', lote.smp);
+            console.log('✅ Dirección autocompletada:', direccionReal);
+            
             setSmpEditable(false);
           } else {
             form.setValue('smp', '', { shouldValidate: false });
@@ -379,6 +387,21 @@ export default function NuevoLotePage() {
     console.log('Datos del formulario:', data);
     
     try {
+      // Construir la dirección real a partir de calle y número
+      const direccionReal = `${data.frente || ''} ${data.numero || ''}`.trim();
+      
+      // Validación adicional: asegurar que siempre se use la dirección correcta
+      if (!direccionReal) {
+        toast({
+          title: "Error en la dirección",
+          description: "La dirección no puede estar vacía. Por favor, ingresa calle y número.",
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      console.log('✅ Dirección que se guardará:', direccionReal);
+      
       // Preparar los datos para la API según el mapeo de campos
       const loteData = {
         // Información del Lote (solo estos 4 son realmente requeridos)
@@ -399,7 +422,7 @@ export default function NuevoLotePage() {
         
         // Información del Propietario (se puede editar después)
         propietario: data.propietario || "Sin especificar", // Valor por defecto si está vacío
-        direccion: data.direccionContacto || "Sin especificar", // Valor por defecto si está vacío
+        direccion: direccionReal, // SIEMPRE usar la dirección real
         direccionalt: data.direccionAlternativa || null,
         localidad: data.localidad || null,
         cp: data.codigoPostal || null,
@@ -420,6 +443,9 @@ export default function NuevoLotePage() {
         inctasada: cleanNumericField(data.incidenciaTasadaUSD),
         fpago: data.formaDePago || null,
         fventa: data.fechaVenta ? data.fechaVenta.toISOString().split('T')[0] : null,
+        
+        // Generar automáticamente la URL de la foto del USIG
+        foto_lote: `https://fotos.usig.buenosaires.gob.ar/getFoto?smp=${data.smp}`,
       };
 
       console.log('Datos a enviar a la API:', loteData);
@@ -432,6 +458,7 @@ export default function NuevoLotePage() {
       console.log('- m2aprox:', loteData.m2aprox);
       console.log('- direccion:', loteData.direccion);
       console.log('- barrio:', loteData.barrio);
+      console.log('- foto_lote:', loteData.foto_lote);
 
       const response = await fetch('/api/lotes', {
         method: 'POST',
@@ -779,7 +806,7 @@ export default function NuevoLotePage() {
                   <FormItem><FormLabel>CUIT/CUIL</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="otrosDatos" render={({ field }) => (
-                  <FormItem className="md:col-span-2"><FormLabel>Otros Datos</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem className="md:col-span-2"><FormLabel>Seguimiento/Notas del lote</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
               </div>
             </CardContent>

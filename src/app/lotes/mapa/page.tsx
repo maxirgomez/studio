@@ -396,10 +396,10 @@ export default function MapPage() {
 
   return (
     <div className="space-y-6 p-4 md:p-6 lg:p-8">
-      <div>
+      {/* <div>
         <h1 className="text-3xl font-bold tracking-tight">Mapa de Lotes</h1>
         <p className="text-muted-foreground">Visualiza las propiedades en el mapa. Haz clic en un lote para ver más información.</p>
-      </div>
+      </div> */}
       
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Panel de controles */}
@@ -567,9 +567,6 @@ export default function MapPage() {
 
         {/* Mapa */}
         <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Mapa</CardTitle>
-          </CardHeader>
           <CardContent>
             <div 
               ref={mapContainer} 

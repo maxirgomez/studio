@@ -37,7 +37,6 @@ import {
 } from "@/components/ui/pagination";
 import {
   MapPin,
-  Scan,
   Ruler,
   Search,
   Plus,

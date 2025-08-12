@@ -34,6 +34,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { getStatusStyles } from "@/lib/data";
 import { useSpinner } from "@/components/ui/SpinnerProvider";
+import { useUser } from "@/context/UserContext";
+
+// Función helper para mostrar "Sin información" cuando fallecido sea "No"
+function formatFallecido(value: string | null | undefined): string {
+  if (!value || value === "No") {
+    return "Sin información";
+  }
+  return value;
+}
 
 const PdfContent = React.forwardRef<
   HTMLDivElement,
@@ -112,7 +121,7 @@ const PdfContent = React.forwardRef<
           <div style={fieldStyle}><span style={labelStyle}>Dirección Contacto:</span> <span style={valueStyle}>{listing.direccion}</span></div>
           <div style={fieldStyle}><span style={labelStyle}>Localidad:</span> <span style={valueStyle}>{listing.localidad}</span></div>
           <div style={fieldStyle}><span style={labelStyle}>Dirección Alternativa:</span> <span style={valueStyle}>{listing.direccionalt}</span></div>
-          <div style={fieldStyle}><span style={labelStyle}>Fallecido:</span> <span style={valueStyle}>{listing.fallecido}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Fallecido:</span> <span style={valueStyle}>{formatFallecido(listing.fallecido)}</span></div>
           <div style={fieldStyle}><span style={labelStyle}>Email:</span> <span style={valueStyle}>{listing.mail}</span></div>
           <div style={fieldStyle}><span style={labelStyle}>Cuit/Cuil:</span> <span style={valueStyle}>{formatCuitCuil(listing.cuitcuil)}</span></div>
         </div>
@@ -128,9 +137,13 @@ const PdfContent = React.forwardRef<
         </>
       )}
       <div style={{ marginTop: '16px' }}>
-          <h3 style={sectionTitleStyle}>Otros Datos</h3>
-          <p style={{ fontSize: '12px', color: '#333' }}>Contactar solo por la mañana.</p>
-        </div>
+        <h3 style={sectionTitleStyle}>Seguimiento/Notas del lote</h3>
+        {listing.otros ? (
+          <p style={{ fontSize: '12px', color: '#333' }}>{listing.otros}</p>
+        ) : (
+          <p style={{ fontSize: '12px', color: '#666', fontStyle: 'italic' }}>Sin comentarios adicionales</p>
+        )}
+      </div>
     </div>
   );
 });
@@ -722,7 +735,7 @@ export default function SmpDetailView({
                       <div className="flex items-center">
                           <XCircle className="h-5 w-5 mr-3 text-muted-foreground" />
                           <span className="font-medium">Fallecido:</span>
-                          <span className="ml-auto text-muted-foreground">{listing.fallecido}</span>
+                          <span className="ml-auto text-muted-foreground">{formatFallecido(listing.fallecido)}</span>
                       </div>
                        <div className="flex items-center">
                           <Mail className="h-5 w-5 mr-3 text-muted-foreground" />
