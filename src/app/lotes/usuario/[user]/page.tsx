@@ -72,16 +72,16 @@ export default function UserProfileEditPage() {
 
   useEffect(() => {
     setLoading(true);
-    console.log("[DEBUG] params.user:", params.user);
+    
     const url = `/api/users?user=${encodeURIComponent(params.user)}`;
-    console.log("[DEBUG] Fetching:", url);
+    
     fetch(url)
       .then(res => {
-        console.log("[DEBUG] Response status:", res.status);
+        
         return res.json().then(data => ({ status: res.status, data }));
       })
       .then(({ status, data }) => {
-        console.log("[DEBUG] Response data:", data);
+        
         if (status !== 200 || !data || (!data.user && !data.nombre && !data.apellido)) {
           setUser(null);
           setLoading(false);

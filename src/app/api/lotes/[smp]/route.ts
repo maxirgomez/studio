@@ -17,8 +17,6 @@ function mapLote(row: any) {
   }
   
   // LOG para depuración de m2vendibles
-  console.log('DEBUG row.m2vendibles:', row.m2vendibles);
-  console.log('DEBUG row completo:', row);
   return {
     address: row.direccion,
     neighborhood: row.barrio,
@@ -105,14 +103,6 @@ export async function GET(req: Request, context: any) {
       }
     }
     
-    // Debug log para ver qué datos se están devolviendo
-    console.log('DEBUG API /api/lotes/[smp]:', {
-      loteAgente: lote.agente,
-      agenteUsuario: agenteUsuario,
-      agenteUsuarioUser: agenteUsuario?.user,
-      loteCompleto: lote
-    });
-    
     return NextResponse.json({ lote, agenteUsuario });
   } catch (error) {
     return NextResponse.json(
@@ -136,7 +126,6 @@ export async function PUT(req: Request, context: any) {
     smp = parts[parts.length - 1] || parts[parts.length - 2];
   }
   if (!smp) {
-    console.log('[PUT /api/lotes/[smp]] SMP no especificado');
     return NextResponse.json({ error: 'SMP no especificado' }, { status: 400 });
   }
 
@@ -150,7 +139,6 @@ export async function PUT(req: Request, context: any) {
     });
     
     if (!userResponse.ok) {
-      console.log('[PUT /api/lotes/[smp]] Usuario no autenticado');
       return NextResponse.json({ error: 'Usuario no autenticado' }, { status: 401 });
     }
     
@@ -158,7 +146,6 @@ export async function PUT(req: Request, context: any) {
     const currentUser = userData.user;
     
     if (!currentUser) {
-      console.log('[PUT /api/lotes/[smp]] Usuario no encontrado');
       return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 401 });
     }
 
@@ -169,23 +156,12 @@ export async function PUT(req: Request, context: any) {
     );
     
     if (loteRows.length === 0) {
-      console.log(`[PUT /api/lotes/${smp}] Lote no encontrado`);
       return NextResponse.json({ error: 'Lote no encontrado' }, { status: 404 });
     }
     
     const lote = loteRows[0];
     const agenteValue = lote.agente;
     const currentUserValue = currentUser.user;
-    
-    console.log('[PUT /api/lotes/[smp]] Validación de permisos:', {
-      currentUser: currentUser,
-      currentUserRol: currentUser?.rol,
-      currentUserUser: currentUser?.user,
-      loteAgente: agenteValue,
-      isAdmin: currentUser?.rol === 'Administrador',
-      isAssignedAgent: currentUserValue && agenteValue && 
-        currentUserValue.toLowerCase() === agenteValue.toLowerCase()
-    });
 
     // Solo los administradores tienen acceso total
     const isAdmin = currentUser?.rol === 'Administrador';
@@ -195,14 +171,12 @@ export async function PUT(req: Request, context: any) {
         currentUserValue.toLowerCase() === agenteValue.toLowerCase();
     
     if (!isAdmin && !isAssignedAgent) {
-      console.log(`[PUT /api/lotes/${smp}] Acceso denegado - Usuario no autorizado`);
       return NextResponse.json({ 
         error: 'Acceso denegado. Solo el agente asignado o un administrador pueden editar este lote.' 
       }, { status: 403 });
     }
     
   } catch (error) {
-    console.error('[PUT /api/lotes/[smp]] Error en validación de permisos:', error);
     return NextResponse.json({ 
       error: 'Error al validar permisos de usuario' 
     }, { status: 500 });
@@ -210,7 +184,6 @@ export async function PUT(req: Request, context: any) {
 
   try {
     const body = await req.json();
-    console.log(`[PUT /api/lotes/${smp}] Body recibido:`, body);
     // Normalizar campos numéricos vacíos a null
     const numericFields = ['m2vendibles', 'vventa', 'inctasada'];
     for (const field of numericFields) {
@@ -229,7 +202,6 @@ export async function PUT(req: Request, context: any) {
       [smp]
     );
     if (existingRows.length === 0) {
-      console.log(`[PUT /api/lotes/${smp}] Lote no encontrado`);
       return NextResponse.json({ error: 'Lote no encontrado' }, { status: 404 });
     }
     // Actualizar solo los campos editables
@@ -252,17 +224,13 @@ export async function PUT(req: Request, context: any) {
       }
     }
     if (updates.length === 0) {
-      console.log(`[PUT /api/lotes/${smp}] No hay campos para actualizar`);
       return NextResponse.json({ error: 'No hay campos para actualizar' }, { status: 400 });
     }
     values.push(smp);
     const updateQuery = `UPDATE public.prefapp_lotes SET ${updates.join(', ')} WHERE smp = $${idx}`;
-    console.log(`[PUT /api/lotes/${smp}] Ejecutando query:`, updateQuery, 'con valores:', values);
     await pool.query(updateQuery, values);
-    console.log(`[PUT /api/lotes/${smp}] Actualización exitosa`);
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error(`[PUT /api/lotes/${smp}] Error al actualizar:`, error);
     return NextResponse.json(
       { error: 'Error al actualizar el lote', details: (error as Error).message },
       { status: 500 }

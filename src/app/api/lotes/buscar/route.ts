@@ -128,19 +128,12 @@ export async function GET(req: Request) {
     const frente = searchParams.get('frente'); // Campo frente de frentesparcelas
     const num_dom = searchParams.get('num_dom') || searchParams.get('numero'); // Campo num_dom de frentesparcelas
 
-    console.log('[API buscar] Params:', { smp, frente, num_dom });
+    
 
     // Determinar el tipo de búsqueda
     const isAutocomplete = frente && !num_dom && !smp; // Solo calle para autocompletado
     const isNumberSearch = frente && searchParams.get('numero') !== null && !smp; // Calle + parámetro 'numero' para autocompletado de números
     const isExactSearch = smp || (frente && num_dom && num_dom !== ''); // Búsqueda exacta
-
-    console.log('[API buscar] Search types:', { 
-      isAutocomplete, 
-      isNumberSearch, 
-      isExactSearch,
-      numeroParam: searchParams.get('numero')
-    });
 
     let query = '';
     const values: any[] = [];
@@ -210,7 +203,7 @@ export async function GET(req: Request) {
       query += ' LIMIT 1';
     }
 
-    console.log('[API buscar] Query:', query, values);
+    
     const { rows } = await pool.query(query, values);
     
     if (rows.length === 0) {
@@ -224,26 +217,26 @@ export async function GET(req: Request) {
       return NextResponse.json({ found: true, lotes: calles });
     } else if (isNumberSearch) {
       // Expandir rangos y devolver números únicos para autocompletado
-      console.log('[API buscar] Raw rows from DB:', rows);
+      
       const numerosConRangos = rows.map(row => row.num_dom).filter(Boolean);
-      console.log('[API buscar] Numeros con rangos:', numerosConRangos);
+      
       const numerosExpandidos = new Set<string>();
       
       numerosConRangos.forEach(numDom => {
         const numerosDelRango = expandNumDomRange(numDom);
-        console.log('[API buscar] ExpandNumDomRange for', numDom, '->', numerosDelRango);
+        
         numerosDelRango.forEach(num => numerosExpandidos.add(num));
       });
       
       // Los números ya vienen ordenados de la consulta SQL, pero los expandidos necesitan ordenarse
       const numeros = Array.from(numerosExpandidos).sort((a, b) => parseInt(a) - parseInt(b));
-      console.log('[API buscar] Numeros finales:', numeros);
+      
       return NextResponse.json({ found: true, lotes: numeros });
     } else {
       // Búsqueda exacta - devolver todos los datos del lote con información normativa
-      console.log('[API buscar] Búsqueda exacta - rows encontradas:', rows);
-      console.log('[API buscar] Búsqueda exacta - query ejecutada:', query);
-      console.log('[API buscar] Búsqueda exacta - valores:', values);
+      
+      
+      
       const lotes = rows.map(row => ({
         // Campos principales de frentesparcelas
         smp: row.smp, // SMP desde frentesparcelas

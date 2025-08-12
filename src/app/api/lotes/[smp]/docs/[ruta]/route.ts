@@ -38,14 +38,6 @@ export async function DELETE(req: NextRequest, { params }: any) {
     const isAdmin = rol === 'Administrador';
     const isOwner = doc.agente === agente;
     
-    console.log('[DELETE /api/lotes/[smp]/docs/[ruta]] Validación de permisos:', {
-      currentUser: agente,
-      currentUserRol: rol,
-      docOwner: doc.agente,
-      isAdmin: isAdmin,
-      isOwner: isOwner
-    });
-    
     if (!isAdmin && !isOwner) {
       return NextResponse.json({ 
         error: "No tienes permiso para eliminar este archivo. Solo el propietario del documento o un administrador pueden eliminarlo." 

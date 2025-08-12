@@ -89,13 +89,6 @@ export default function MyProfilePage() {
 
   useEffect(() => {
     if (user) {
-      console.log('DEBUG: Cargando datos del usuario:', {
-        nombre: user.nombre,
-        apellido: user.apellido,
-        mail: user.mail,
-        user: user.user,
-        foto_perfil: user.foto_perfil
-      });
       form.reset({
         nombre: user.nombre || "",
         apellido: user.apellido || "",
@@ -143,7 +136,6 @@ export default function MyProfilePage() {
   };
 
   async function onSubmit(data: ProfileFormValues) {
-    console.log('DEBUG: Enviando datos del formulario:', data);
     if (!hasChanges) return;
     if (!user) return;
     // PATCH al backend para actualizar nombre, apellido, user, mail y contraseña

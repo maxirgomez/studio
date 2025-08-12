@@ -17,7 +17,7 @@ export function SessionGuard() {
       try {
         const res = await fetch("/api/me");
         const now = new Date();
-        console.log('[SessionGuard] checkSession at', now.toLocaleTimeString(), 'status:', res.status);
+        
         if ((res.status === 401 || res.status === 403) && !expired) {
           expired = true;
           toast({
@@ -28,7 +28,7 @@ export function SessionGuard() {
           router.push(`/?next=${encodeURIComponent(pathname)}`);
         }
       } catch (e) {
-        console.log('[SessionGuard] Error en checkSession:', e);
+        
       }
     };
     checkSession();

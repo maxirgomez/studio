@@ -102,21 +102,13 @@ function canViewOwnerInfo(currentUser: any, listing: any): boolean {
 
 // Función helper para verificar si el usuario puede editar el lote
 function canEditLote(currentUser: any, listing: any): boolean {
-  // Debug logs para entender qué está pasando
-  console.log('DEBUG canEditLote:', {
-    currentUser: currentUser,
-    currentUserRol: currentUser?.rol,
-    currentUserUser: currentUser?.user,
-    listing: listing,
-    listingAgente: listing?.agente
-  });
 
   // Solo los administradores tienen acceso total
   const isAdmin = currentUser?.rol === 'Administrador';
-  console.log('DEBUG: ¿Es administrador?', isAdmin, 'Rol:', currentUser?.rol);
+  
 
   if (isAdmin) {
-    console.log('DEBUG: Usuario es Administrador, permitiendo edición');
+    
     return true;
   }
 
@@ -124,25 +116,17 @@ function canEditLote(currentUser: any, listing: any): boolean {
   const agenteValue = listing?.agente;
   const currentUserValue = currentUser?.user;
 
-  console.log('DEBUG: Comparando usuarios para edición:', {
-    currentUserValue: currentUserValue,
-    agenteValue: agenteValue,
-    currentUserValueLower: currentUserValue?.toLowerCase(),
-    agenteValueLower: agenteValue?.toLowerCase(),
-    areEqual: currentUserValue && agenteValue && currentUserValue.toLowerCase() === agenteValue.toLowerCase()
-  });
-
   const isAssignedAgent = currentUserValue && agenteValue &&
       currentUserValue.toLowerCase() === agenteValue.toLowerCase();
 
-  console.log('DEBUG: ¿Es el agente asignado?', isAssignedAgent);
+  
 
   if (isAssignedAgent) {
-    console.log('DEBUG: Usuario coincide con el agente asignado, permitiendo edición');
+    
     return true;
   }
 
-  console.log('DEBUG: Usuario NO tiene permisos para editar el lote');
+  
   return false;
 }
 

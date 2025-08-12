@@ -169,9 +169,7 @@ export async function GET(req: Request) {
     const lotes = rows.map(row => {
       const agenteUsuario = agentesInfo[(row.agente || '').toLowerCase()] || null;
       if (agenteUsuario) {
-        console.log('DEBUG agenteUsuario encontrado:', agenteUsuario);
       } else {
-        console.log('DEBUG agenteUsuario NO encontrado para:', row.agente);
       }
       return mapLote(row, agenteUsuario);
     });
@@ -199,18 +197,14 @@ export async function GET_BARRIOS() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    console.log('[POST /api/lotes] Datos recibidos:', body);
     
     // Validar campos requeridos
     const requiredFields = [
       'smp', 'propietario', 'estado', 'agente', 'origen'
     ];
     
-    console.log('[POST /api/lotes] Validando campos requeridos...');
     for (const field of requiredFields) {
-      console.log(`[POST /api/lotes] Campo ${field}:`, body[field]);
       if (!body[field] || body[field] === "") {
-        console.log(`[POST /api/lotes] Campo requerido faltante: ${field}`);
         return NextResponse.json({ error: `El campo '${field}' es requerido.` }, { status: 400 });
       }
     }
@@ -218,9 +212,7 @@ export async function POST(req: Request) {
     // Validar campos que pueden ser 0 pero no null/undefined
     const numericFields = ['m2aprox'];
     for (const field of numericFields) {
-      console.log(`[POST /api/lotes] Campo numérico ${field}:`, body[field]);
       if (body[field] === null || body[field] === undefined || body[field] === "") {
-        console.log(`[POST /api/lotes] Campo numérico faltante: ${field}`);
         return NextResponse.json({ error: `El campo '${field}' es requerido.` }, { status: 400 });
       }
     }
@@ -228,9 +220,7 @@ export async function POST(req: Request) {
     // Validar campos de texto que pueden estar vacíos pero no null
     const textFields = ['direccion', 'barrio'];
     for (const field of textFields) {
-      console.log(`[POST /api/lotes] Campo texto ${field}:`, body[field]);
       if (body[field] === null || body[field] === undefined) {
-        console.log(`[POST /api/lotes] Campo texto faltante: ${field}`);
         return NextResponse.json({ error: `El campo '${field}' es requerido.` }, { status: 400 });
       }
       // Si está vacío, asignar un valor por defecto
@@ -239,20 +229,16 @@ export async function POST(req: Request) {
       }
     }
     
-    console.log('[POST /api/lotes] Todos los campos requeridos están presentes');
     
     // Chequear si ya existe un lote con ese SMP
-    console.log('[POST /api/lotes] Verificando si existe SMP:', body.smp);
     const { rows: existingRows } = await pool.query(
       `SELECT 1 FROM public.prefapp_lotes WHERE smp = $1 LIMIT 1`,
       [body.smp]
     );
     if (existingRows.length > 0) {
-      console.log('[POST /api/lotes] SMP ya existe:', body.smp);
       return NextResponse.json({ error: 'Ya existe un lote con ese SMP.' }, { status: 409 });
     }
     
-    console.log('[POST /api/lotes] SMP no existe, procediendo con inserción');
     
     // Insertar el nuevo lote
     const insertFields = [
@@ -279,22 +265,17 @@ export async function POST(req: Request) {
         }
       }
       
-      console.log(`[POST /api/lotes] Campo ${f}:`, value);
       return value;
     });
     
     const placeholders = insertFields.map((_, i) => `$${i + 1}`).join(', ');
     const insertQuery = `INSERT INTO public.prefapp_lotes (${insertFields.join(', ')}) VALUES (${placeholders})`;
     
-    console.log('[POST /api/lotes] Query de inserción:', insertQuery);
-    console.log('[POST /api/lotes] Valores a insertar:', values);
     
     const result = await pool.query(insertQuery, values);
-    console.log('[POST /api/lotes] Inserción exitosa, resultado:', result);
     
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[POST /api/lotes] Error al crear lote:', error);
     return NextResponse.json({ error: 'Error al crear el lote', details: (error as Error).message }, { status: 500 });
   }
 } 

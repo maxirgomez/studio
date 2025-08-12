@@ -30,7 +30,6 @@ export async function GET(req: NextRequest, { params }: any) {
 export async function POST(req: NextRequest, { params }: any) {
   const awaitedParams = typeof params?.then === "function" ? await params : params;
   const smp = awaitedParams?.smp;
-  console.log("[DOCS][POST] smp:", smp);
   if (!smp) return NextResponse.json({ error: "SMP no especificado" }, { status: 400 });
   const token = req.cookies.get("token")?.value;
   if (!token) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
@@ -38,12 +37,10 @@ export async function POST(req: NextRequest, { params }: any) {
   try {
     payload = jwt.verify(token, JWT_SECRET);
   } catch {
-    console.log("[DOCS][POST] Token inválido o expirado");
     return NextResponse.json({ error: "Token inválido o expirado" }, { status: 401 });
   }
   const agente = typeof payload === 'object' && 'user' in payload ? payload.user : null;
   const rol = typeof payload === 'object' && 'rol' in payload ? payload.rol : null;
-  console.log("[DOCS][POST] agente:", agente, "rol:", rol);
   if (!agente) return NextResponse.json({ error: "Usuario no encontrado en el token" }, { status: 401 });
 
   // Validación de seguridad: verificar que el usuario tenga permisos para subir documentos a este lote
@@ -55,21 +52,11 @@ export async function POST(req: NextRequest, { params }: any) {
     );
     
     if (loteRows.length === 0) {
-      console.log(`[DOCS][POST] Lote no encontrado: ${smp}`);
       return NextResponse.json({ error: 'Lote no encontrado' }, { status: 404 });
     }
     
     const lote = loteRows[0];
     const loteAgente = lote.agente;
-    
-    console.log('[DOCS][POST] Validación de permisos:', {
-      currentUser: agente,
-      currentUserRol: rol,
-      loteAgente: loteAgente,
-      isAdmin: rol === 'Administrador',
-      isAssignedAgent: agente && loteAgente && 
-        agente.toLowerCase() === loteAgente.toLowerCase()
-    });
 
     // Solo los administradores tienen acceso total
     const isAdmin = rol === 'Administrador';
@@ -79,14 +66,12 @@ export async function POST(req: NextRequest, { params }: any) {
         agente.toLowerCase() === loteAgente.toLowerCase();
     
     if (!isAdmin && !isAssignedAgent) {
-      console.log(`[DOCS][POST] Acceso denegado - Usuario no autorizado para lote ${smp}`);
       return NextResponse.json({ 
         error: 'Acceso denegado. Solo el agente asignado o un administrador pueden subir documentos a este lote.' 
       }, { status: 403 });
     }
     
   } catch (error) {
-    console.error('[DOCS][POST] Error en validación de permisos:', error);
     return NextResponse.json({ 
       error: 'Error al validar permisos de usuario' 
     }, { status: 500 });
@@ -95,16 +80,12 @@ export async function POST(req: NextRequest, { params }: any) {
   const formData = await req.formData();
   const file = formData.get("file");
   if (!file || typeof file === "string") {
-    console.log("[DOCS][POST] No se recibió archivo");
     return NextResponse.json({ error: "No se recibió archivo" }, { status: 400 });
   }
-  console.log("[DOCS][POST] file.type:", file.type, "file.size:", file.size);
   if (file.type !== "application/pdf") {
-    console.log("[DOCS][POST] Tipo de archivo inválido:", file.type);
     return NextResponse.json({ error: "Solo se permiten archivos PDF" }, { status: 400 });
   }
   if (file.size > MAX_SIZE) {
-    console.log("[DOCS][POST] Archivo demasiado grande:", file.size);
     return NextResponse.json({ error: `El archivo supera el tamaño máximo de ${MAX_SIZE / 1024 / 1024}MB` }, { status: 400 });
   }
 
@@ -117,12 +98,10 @@ export async function POST(req: NextRequest, { params }: any) {
   const safeName = `${smp}-${agente}-${dia}${mes}${anio}${ext}`;
   const filePath = path.join(UPLOAD_DIR, safeName);
   const ruta = `uploads/docs/${safeName}`; // Cambiado: no incluye /public
-  console.log("[DOCS][POST] Guardando archivo en:", filePath);
   try {
     const arrayBuffer = await file.arrayBuffer();
     await fs.writeFile(filePath, Buffer.from(arrayBuffer));
   } catch (err) {
-    console.log("[DOCS][POST] Error al guardar archivo:", err);
     return NextResponse.json({ error: "Error al guardar archivo" }, { status: 500 });
   }
 
@@ -133,10 +112,8 @@ export async function POST(req: NextRequest, { params }: any) {
       `INSERT INTO prefapp_docs (smp, ruta, agente, fecha) VALUES ($1, $2, $3, $4)`,
       [smp, ruta, agente, fecha]
     );
-    console.log("[DOCS][POST] Registro insertado en prefapp_docs:", { smp, ruta, agente, fecha });
     return NextResponse.json({ success: true, ruta, agente, fecha });
   } catch (error) {
-    console.log("[DOCS][POST] Error al guardar en la base:", error);
     await fs.unlink(filePath).catch(() => {});
     return NextResponse.json({ error: "Error al guardar en la base", details: (error as Error).message }, { status: 500 });
   }

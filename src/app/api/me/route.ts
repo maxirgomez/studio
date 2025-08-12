@@ -25,7 +25,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
     const user = rows[0];
-    console.log('DEBUG API: Datos del usuario obtenidos de la BD:', user);
     // Si no hay apellido, intentar separar del nombre
     let nombre = user.nombre || "";
     let apellido = user.apellido || "";

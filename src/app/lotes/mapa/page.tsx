@@ -108,13 +108,13 @@ export default function MapPage() {
           );
           setBarrios(barriosCapitalizados);
           
-          console.log('Barrios originales cargados de la API:', barriosOriginalesData);
-          console.log('Barrios capitalizados para interfaz:', barriosCapitalizados);
+          
+          
           
           // Verificar algunos ejemplos de barrios
           if (barriosOriginalesData.length > 0) {
-            console.log('Ejemplos de barrios originales:', barriosOriginalesData.slice(0, 5));
-            console.log('Ejemplos de barrios capitalizados:', barriosCapitalizados.slice(0, 5));
+            
+            
           }
         } else {
           console.error('Error al cargar barrios');
@@ -147,15 +147,15 @@ export default function MapPage() {
         return barrioCapitalizado;
       });
       
-      console.log('Barrios capitalizados seleccionados:', barriosCapitalizados);
-      console.log('Barrios originales para filtro:', barriosOriginalesParaFiltro);
+      
+      
       
       filters.push(`barrio IN (${barriosOriginalesParaFiltro.map(b => `'${b}'`).join(',')})`);
     }
     
     const cql = filters.length ? `&CQL_FILTER=${encodeURIComponent(filters.join(' AND '))}` : '';
     
-    console.log('Filtro CQL final:', cql);
+    
     
     return {
       type: 'raster',

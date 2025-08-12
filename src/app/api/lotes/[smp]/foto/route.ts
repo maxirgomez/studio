@@ -21,7 +21,6 @@ export async function POST(req: NextRequest, { params }: { params: { smp: string
     });
     
     if (!userResponse.ok) {
-      console.log('[POST /api/lotes/[smp]/foto] Usuario no autenticado');
       return NextResponse.json({ error: 'Usuario no autenticado' }, { status: 401 });
     }
     
@@ -29,7 +28,6 @@ export async function POST(req: NextRequest, { params }: { params: { smp: string
     const currentUser = userData.user;
     
     if (!currentUser) {
-      console.log('[POST /api/lotes/[smp]/foto] Usuario no encontrado');
       return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 401 });
     }
 
@@ -40,23 +38,12 @@ export async function POST(req: NextRequest, { params }: { params: { smp: string
     );
     
     if (loteRows.length === 0) {
-      console.log(`[POST /api/lotes/${smp}/foto] Lote no encontrado`);
       return NextResponse.json({ error: 'Lote no encontrado' }, { status: 404 });
     }
     
     const lote = loteRows[0];
     const agenteValue = lote.agente;
     const currentUserValue = currentUser.user;
-    
-    console.log('[POST /api/lotes/[smp]/foto] Validación de permisos:', {
-      currentUser: currentUser,
-      currentUserRol: currentUser?.rol,
-      currentUserUser: currentUser?.user,
-      loteAgente: agenteValue,
-      isAdmin: currentUser?.rol === 'Administrador',
-      isAssignedAgent: currentUserValue && agenteValue && 
-        currentUserValue.toLowerCase() === agenteValue.toLowerCase()
-    });
 
     // Solo los administradores tienen acceso total
     const isAdmin = currentUser?.rol === 'Administrador';
@@ -66,14 +53,12 @@ export async function POST(req: NextRequest, { params }: { params: { smp: string
         currentUserValue.toLowerCase() === agenteValue.toLowerCase();
     
     if (!isAdmin && !isAssignedAgent) {
-      console.log(`[POST /api/lotes/${smp}/foto] Acceso denegado - Usuario no autorizado`);
       return NextResponse.json({ 
         error: 'Acceso denegado. Solo el agente asignado o un administrador pueden editar este lote.' 
       }, { status: 403 });
     }
     
   } catch (error) {
-    console.error('[POST /api/lotes/[smp]/foto] Error en validación de permisos:', error);
     return NextResponse.json({ 
       error: 'Error al validar permisos de usuario' 
     }, { status: 500 });

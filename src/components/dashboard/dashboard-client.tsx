@@ -588,9 +588,9 @@ export default function DashboardClientPage() {
                     <TableBody>
                         {listingsOnPage.map((listing) => {
                           // Logs de debug para identificar el problema
-                          console.log('DEBUG listing completo:', listing);
-                          console.log('DEBUG listing.valorVentaUSD:', listing.valorVentaUSD, typeof listing.valorVentaUSD);
-                          console.log('DEBUG listing.vventa:', listing.vventa, typeof listing.vventa);
+                          
+                          
+                          
                           
                           return (
                             <TableRow key={listing.smp}>

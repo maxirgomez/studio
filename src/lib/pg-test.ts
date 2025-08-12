@@ -13,7 +13,6 @@ export async function testPostgresConnection() {
 
   try {
     await client.connect();
-    console.log('¡Conexión exitosa a la base de datos PostgreSQL!');
     
     // Consultar estados únicos de la tabla prefapp_lotes
     const estadosRes = await client.query(`
@@ -23,7 +22,6 @@ export async function testPostgresConnection() {
       ORDER BY estado
     `);
     
-    console.log('Estados únicos en la base de datos:');
     estadosRes.rows.forEach((row, index) => {
       console.log(`${index + 1}. "${row.estado}" (longitud: ${row.estado?.length})`);
     });
@@ -37,7 +35,6 @@ export async function testPostgresConnection() {
       ORDER BY cantidad DESC
     `);
     
-    console.log('\nConteo de lotes por estado:');
     conteoRes.rows.forEach(row => {
       console.log(`"${row.estado}": ${row.cantidad} lotes`);
     });

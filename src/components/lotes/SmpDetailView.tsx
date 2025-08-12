@@ -54,7 +54,7 @@ const PdfContent = React.forwardRef<
   const valueStyle: React.CSSProperties = { color: '#333', textAlign: 'right' };
   const gridStyle: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 24px' };
 
-  console.log('DEBUG PdfContent:', { agenteUsuario, agente: listing.agente });
+  
 
   return (
     <div ref={ref} style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: '#333', padding: '40px', background: 'white', width: '210mm' }}>
@@ -167,22 +167,13 @@ function formatCuitCuil(cuitcuil: any): string {
 
 // Función helper para verificar si el usuario puede ver información del propietario
 function canViewOwnerInfo(currentUser: any, listing: any): boolean {
-  // Debug logs para entender qué está pasando
-  console.log('DEBUG SmpDetailView canViewOwnerInfo:', {
-    currentUser: currentUser,
-    currentUserRol: currentUser?.rol,
-    currentUserUser: currentUser?.user,
-    listing: listing,
-    listingAgente: listing?.agente,
-    listingAgentUser: listing?.agent?.user
-  });
 
   // Solo los administradores tienen acceso total
   const isAdmin = currentUser?.rol === 'Administrador';
-  console.log('DEBUG SmpDetailView: ¿Es administrador?', isAdmin, 'Rol:', currentUser?.rol);
+  
 
   if (isAdmin) {
-    console.log('DEBUG SmpDetailView: Usuario es Administrador, permitiendo acceso total');
+    
     return true;
   }
 
@@ -190,25 +181,19 @@ function canViewOwnerInfo(currentUser: any, listing: any): boolean {
   const agenteValue = listing?.agente;
   const currentUserValue = currentUser?.user;
 
-  console.log('DEBUG SmpDetailView: Comparando usuarios:', {
-    currentUserValue: currentUserValue,
-    agenteValue: agenteValue,
-    currentUserValueLower: currentUserValue?.toLowerCase(),
-    agenteValueLower: agenteValue?.toLowerCase(),
-    areEqual: currentUserValue && agenteValue && currentUserValue.toLowerCase() === agenteValue.toLowerCase()
-  });
+  ;
 
   const isAssignedAgent = currentUserValue && agenteValue &&
       currentUserValue.toLowerCase() === agenteValue.toLowerCase();
 
-  console.log('DEBUG SmpDetailView: ¿Es el agente asignado?', isAssignedAgent);
+  
 
   if (isAssignedAgent) {
-    console.log('DEBUG SmpDetailView: Usuario coincide con el agente asignado, permitiendo acceso');
+    
     return true;
   }
 
-  console.log('DEBUG SmpDetailView: Usuario NO tiene permisos para ver información del propietario');
+  
   return false;
 }
 
@@ -440,13 +425,13 @@ export default function SmpDetailView({
     : listing.address;
 
   // LOGS para depuración de datos de tasación
-  console.log('DEBUG listing:', listing);
-  console.log('DEBUG vventa:', listing.vventa);
-  console.log('DEBUG inctasada:', listing.inctasada);
-  console.log('DEBUG fventa:', listing.fventa);
-  console.log('DEBUG fpago:', listing.fpago);
+  
+  
+  
+  
+  
 
-  console.log('DEBUG avatar:', { agenteUsuario, agente: listing.agente });
+  
 
   return (
     <div className="space-y-6">

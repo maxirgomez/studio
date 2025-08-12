@@ -10,7 +10,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'SMP y dirección son requeridos' }, { status: 400 });
     }
 
-    console.log(`[POST /api/lotes/update-address] Actualizando lote ${smp} con dirección: ${direccion}`);
+    
 
     // Verificar que el lote existe
     const { rows: existingRows } = await pool.query(
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Lote no encontrado' }, { status: 404 });
     }
 
-    console.log(`[POST /api/lotes/update-address] Dirección actual: ${existingRows[0].direccion}`);
+    
 
     // Actualizar el lote
     const updateQuery = `
@@ -35,9 +35,9 @@ export async function POST(req: Request) {
     
     await pool.query(updateQuery, [direccion, fotoUrl, smp]);
 
-    console.log(`[POST /api/lotes/update-address] Lote ${smp} actualizado exitosamente`);
-    console.log(`[POST /api/lotes/update-address] Nueva dirección: ${direccion}`);
-    console.log(`[POST /api/lotes/update-address] Nueva foto: ${fotoUrl}`);
+    
+    
+    
 
     return NextResponse.json({ 
       success: true, 

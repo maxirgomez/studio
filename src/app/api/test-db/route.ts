@@ -12,7 +12,6 @@ export async function GET() {
       ORDER BY ordinal_position
     `);
     
-    console.log('Estructura de prefapp_lotes:', columns);
     
     return NextResponse.json({ 
       message: 'Estructura de la tabla prefapp_lotes',

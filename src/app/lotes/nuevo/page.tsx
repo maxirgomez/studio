@@ -356,8 +356,6 @@ export default function NuevoLotePage() {
             const direccionReal = `${searchFrente} ${searchNumero}`.trim();
             form.setValue('direccionContacto', direccionReal, { shouldValidate: false });
             
-            console.log('✅ SMP encontrado:', lote.smp);
-            console.log('✅ Dirección autocompletada:', direccionReal);
             
             setSmpEditable(false);
           } else {
@@ -384,7 +382,7 @@ export default function NuevoLotePage() {
   }
 
   async function onSubmit(data: NewLoteFormValues) {
-    console.log('Datos del formulario:', data);
+    
     
     try {
       // Construir la dirección real a partir de calle y número
@@ -400,7 +398,7 @@ export default function NuevoLotePage() {
         return;
       }
       
-      console.log('✅ Dirección que se guardará:', direccionReal);
+      
       
       // Preparar los datos para la API según el mapeo de campos
       const loteData = {
@@ -448,17 +446,17 @@ export default function NuevoLotePage() {
         foto_lote: `https://fotos.usig.buenosaires.gob.ar/getFoto?smp=${data.smp}`,
       };
 
-      console.log('Datos a enviar a la API:', loteData);
-      console.log('Campos requeridos verificados:');
-      console.log('- smp:', loteData.smp);
-      console.log('- propietario:', loteData.propietario);
-      console.log('- estado:', loteData.estado);
-      console.log('- agente:', loteData.agente);
-      console.log('- origen:', loteData.origen);
-      console.log('- m2aprox:', loteData.m2aprox);
-      console.log('- direccion:', loteData.direccion);
-      console.log('- barrio:', loteData.barrio);
-      console.log('- foto_lote:', loteData.foto_lote);
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
 
       const response = await fetch('/api/lotes', {
         method: 'POST',
@@ -474,7 +472,7 @@ export default function NuevoLotePage() {
       }
 
       const result = await response.json();
-      console.log('Respuesta de la API:', result);
+      
 
       const fullAddress = `${data.frente || ''} ${data.numero || ''}`.trim();
       toast({
@@ -541,9 +539,9 @@ export default function NuevoLotePage() {
                             }
                           }}
                           onFocus={() => {
-                            console.log('[CALLE FOCUS] frenteValue:', frenteValue);
-                            console.log('[CALLE FOCUS] calleSugerencias:', calleSugerencias);
-                            console.log('[CALLE FOCUS] mostrarCalleSug:', mostrarCalleSug);
+                            
+                            
+                            
                             // No cambiar el estado aquí, ya se maneja en useEffect
                           }}
                           onBlur={() => {
@@ -595,11 +593,11 @@ export default function NuevoLotePage() {
                                   e.currentTarget.style.backgroundColor = frenteValue === calle ? '#f3f4f6' : 'white';
                                 }}
                                 onClick={() => {
-                                  console.log('[CALLE CLICK] Seleccionando calle:', calle);
-                                  console.log('[CALLE CLICK] frenteValue antes:', frenteValue);
+                                  
+                                  
                                   form.setValue('frente', calle, { shouldValidate: true });
                                   setMostrarCalleSug(false);
-                                  console.log('[CALLE CLICK] Sugerencias ocultadas');
+                                  
                                   // Asegurar que el dropdown de calle permanezca oculto
                                   setTimeout(() => {
                                     setMostrarCalleSug(false);

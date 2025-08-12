@@ -37,7 +37,6 @@ export default function ProfilePage() {
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [usersByRole, setUsersByRole] = useState<Record<string, any[]>>({});
   const { user: currentUser } = useUser();
-  console.log("[DEBUG] currentUser:", currentUser);
 
   useEffect(() => {
     setLoading(true);

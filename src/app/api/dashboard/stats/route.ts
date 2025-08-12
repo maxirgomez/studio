@@ -8,7 +8,6 @@ export async function GET(req: Request) {
     const statusFilter = searchParams.get('status') || '';
     const salesChartRange = searchParams.get('salesChartRange') || '12m';
 
-    console.log('Dashboard stats params:', { agentFilter, statusFilter, salesChartRange });
 
     // Verificar estructura de la tabla para columnas de fecha
     try {
@@ -20,9 +19,8 @@ export async function GET(req: Request) {
         AND (data_type LIKE '%date%' OR data_type LIKE '%timestamp%')
         ORDER BY column_name
       `);
-      console.log('Available date columns:', columnInfo);
     } catch (error) {
-      console.log('Could not check table structure:', error);
+      error;
     }
 
     // Calcular la fecha de corte según el rango
@@ -67,12 +65,7 @@ export async function GET(req: Request) {
     // Agregar filtro de fecha (opcional) - usando una aproximación más segura
     // Por ahora no filtramos por fecha hasta confirmar qué columnas están disponibles
     // TODO: Implementar filtro de fecha cuando se confirme la estructura de la BD
-    
-    console.log('Base where clause:', baseWhereClause);
-    console.log('Base values:', baseValues);
-    console.log('Date cutoff:', dateCutoff);
-    console.log('Status filter:', statusFilter);
-    console.log('Normalized status filter:', normalizedStatusFilter);
+
 
     // Consultas simplificadas y más robustas (sin filtro de tiempo para el dashboard general)
     const queries = [
@@ -137,7 +130,6 @@ export async function GET(req: Request) {
       `, agentFilter !== 'todos' ? [agentFilter] : [])
     ];
 
-    console.log('Executing queries...');
     const [
       totalResult,
       statusResult,
@@ -147,7 +139,6 @@ export async function GET(req: Request) {
       allSalesResult
     ] = await Promise.all(queries);
 
-    console.log('Queries completed successfully');
 
     // Procesar resultados con validación
     const totalLots = parseInt(totalResult.rows[0]?.total || '0');
@@ -177,7 +168,6 @@ export async function GET(req: Request) {
       return acc;
     }, {});
     
-    console.log('Barrios result rows:', barriosResult.rows);
     const lotsByNeighborhood = barriosResult.rows.map((row: any) => ({
       name: row.name || 'Sin barrio',
       total: parseInt(row.total) || 0
@@ -204,11 +194,9 @@ export async function GET(req: Request) {
       allSales
     };
 
-    console.log('Dashboard stats result:', result);
     return NextResponse.json(result);
 
   } catch (error) {
-    console.error('Error en dashboard stats:', error);
     return NextResponse.json(
       { error: 'Error al obtener estadísticas', details: (error as Error).message },
       { status: 500 }
