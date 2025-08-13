@@ -4,6 +4,7 @@ import * as React from "react"
 import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { SafeImage } from "@/components/ui/SafeImage"
 import { useParams } from 'next/navigation'
 import { format, parseISO } from "date-fns"
 import jsPDF from "jspdf"
@@ -599,25 +600,13 @@ export default function LoteDetailPage() {
           <Card>
             <CardContent className="p-0">
               {listing.foto_lote ? (
-                <div className="relative">
-                  <img
-                    src={listing.foto_lote}
-                    alt={listing.address}
-                    className="aspect-video object-cover rounded-lg w-full"
-                    onError={(e) => {
-                      // Si la imagen falla, mostrar mensaje de error
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                      const parent = target.parentElement;
-                      if (parent) {
-                        const errorDiv = document.createElement('div');
-                        errorDiv.className = 'aspect-video bg-muted flex items-center justify-center rounded-lg';
-                        errorDiv.innerHTML = '<p class="text-muted-foreground">Imagen no disponible</p>';
-                        parent.appendChild(errorDiv);
-                      }
-                    }}
-                  />
-                </div>
+                <SafeImage
+                  src={listing.foto_lote}
+                  alt={listing.address}
+                  width={600}
+                  height={400}
+                  className="aspect-video object-cover rounded-lg"
+                />
               ) : (
                 <div className="aspect-video bg-muted flex items-center justify-center rounded-lg">
                   <p className="text-muted-foreground">Imagen no disponible</p>

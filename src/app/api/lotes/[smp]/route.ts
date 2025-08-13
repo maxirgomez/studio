@@ -15,6 +15,25 @@ function mapLote(row: any) {
     }
     return str;
   }
+
+  function generateFotoLoteUrl(smp: string, existingFotoLote: string | null): string | null {
+    // Si ya hay una URL de foto_lote, usarla
+    if (existingFotoLote) {
+      console.log('mapLote: Usando URL existente de foto_lote:', existingFotoLote);
+      return existingFotoLote;
+    }
+    
+    // Si no hay URL existente, generar una nueva
+    if (smp) {
+      const fotoUrl = `https://fotos.usig.buenosaires.gob.ar/getFoto?smp=${smp.toUpperCase()}`;
+      console.log('mapLote: Generando nueva URL de foto_lote:', fotoUrl);
+      return fotoUrl;
+    }
+    
+    return null;
+  }
+  
+  console.log('mapLote: SMP original de la BD:', row.smp);
   
   // LOG para depuración de m2vendibles
   return {
@@ -24,7 +43,7 @@ function mapLote(row: any) {
     area: row.m2aprox, 
     status: row.estado,
     agente: row.agente, 
-    foto_lote: row.foto_lote,
+    foto_lote: generateFotoLoteUrl(row.smp, row.foto_lote),
     origen: row.origen,
     codigoUrbanistico: row.codigo_urbanistico,
     cur: row.cur,

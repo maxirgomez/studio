@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { SafeImage } from "@/components/ui/SafeImage";
 import { format, parseISO } from "date-fns";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -463,7 +464,7 @@ export default function SmpDetailView({
             <Card>
                 <CardContent className="p-0">
   {listing.foto_lote ? (
-    <Image
+    <SafeImage
       src={listing.foto_lote}
       alt={listing.address}
       width={600}

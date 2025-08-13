@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { SafeImage } from "@/components/ui/SafeImage";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { MapPin, Scan, Ruler } from "lucide-react";
@@ -47,7 +48,7 @@ const ListingCard = ({ listing }: ListingCardProps) => (
     <CardContent className="p-0">
       <div className="relative">
         {listing.imageUrl ? (
-          <Image
+          <SafeImage
             src={listing.imageUrl}
             alt={listing.address}
             width={600}
