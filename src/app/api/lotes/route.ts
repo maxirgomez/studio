@@ -64,7 +64,7 @@ export async function GET(req: Request) {
   if (agent) {
     const agents = agent.split(',').map(a => a.trim()).filter(Boolean);
     if (agents.length > 0) {
-      whereClauses.push(`agente = ANY($${idx}::text[])`);
+      whereClauses.push(`l.agente = ANY($${idx}::text[])`);
       values.push(agents);
       idx++;
     }
@@ -72,7 +72,7 @@ export async function GET(req: Request) {
   if (neighborhood) {
     const neighborhoods = neighborhood.split(',').map(b => b.trim().toLowerCase()).filter(Boolean);
     if (neighborhoods.length > 0) {
-      whereClauses.push(`LOWER(TRIM(barrio)) = ANY($${idx}::text[])`);
+      whereClauses.push(`LOWER(TRIM(l.barrio)) = ANY($${idx}::text[])`);
       values.push(neighborhoods);
       idx++;
     }
@@ -90,7 +90,7 @@ export async function GET(req: Request) {
         }
         return s;
       });
-      whereClauses.push(`estado = ANY($${idx}::text[])`);
+      whereClauses.push(`l.estado = ANY($${idx}::text[])`);
       values.push(normalizedStatuses);
       idx++;
     }
@@ -98,23 +98,33 @@ export async function GET(req: Request) {
   if (origen) {
     const origens = origen.split(',').map(o => o.trim()).filter(Boolean);
     if (origens.length > 0) {
-      whereClauses.push(`origen = ANY($${idx}::text[])`);
+      whereClauses.push(`l.origen = ANY($${idx}::text[])`);
       values.push(origens);
       idx++;
     }
   }
   if (minArea) {
-    whereClauses.push(`m2aprox IS NOT NULL AND CAST(m2aprox AS DECIMAL) >= $${idx}`);
+    whereClauses.push(`l.m2aprox IS NOT NULL AND CAST(l.m2aprox AS DECIMAL) >= $${idx}`);
     values.push(Number(minArea));
     idx++;
   }
   if (maxArea) {
-    whereClauses.push(`m2aprox IS NOT NULL AND CAST(m2aprox AS DECIMAL) <= $${idx}`);
+    whereClauses.push(`l.m2aprox IS NOT NULL AND CAST(l.m2aprox AS DECIMAL) <= $${idx}`);
     values.push(Number(maxArea));
     idx++;
   }
   if (search) {
-    whereClauses.push(`(LOWER(smp) LIKE LOWER($${idx}) OR LOWER(dir_lote) LIKE LOWER($${idx}) OR LOWER(barrio) LIKE LOWER($${idx}))`);
+    whereClauses.push(`(
+      LOWER(l.smp) LIKE LOWER($${idx}) OR 
+      LOWER(l.dir_lote) LIKE LOWER($${idx}) OR 
+      LOWER(l.barrio) LIKE LOWER($${idx}) OR 
+      LOWER(l.estado) LIKE LOWER($${idx}) OR 
+      LOWER(l.origen) LIKE LOWER($${idx}) OR 
+      LOWER(l.agente) LIKE LOWER($${idx}) OR
+      LOWER(u.nombre) LIKE LOWER($${idx}) OR
+      LOWER(u.apellido) LIKE LOWER($${idx}) OR
+      LOWER(CONCAT(u.nombre, ' ', u.apellido)) LIKE LOWER($${idx})
+    )`);
     values.push(`%${search.toLowerCase()}%`);
     idx++;
   }
@@ -124,8 +134,13 @@ export async function GET(req: Request) {
     where = 'WHERE ' + whereClauses.join(' AND ');
   }
 
-  // Query para el total
-  const countQuery = `SELECT COUNT(*) FROM public.prefapp_lotes ${where}`;
+  // Query para el total con JOIN
+  const countQuery = `
+    SELECT COUNT(*) 
+    FROM public.prefapp_lotes l
+    LEFT JOIN public.prefapp_users u ON LOWER(l.agente) = LOWER(u.user)
+    ${where}
+  `;
 
   // Validar y mapear el campo de ordenamiento
   const validSortFields = ['gid', 'm2aprox', 'smp', 'dir_lote', 'barrio', 'estado', 'agente', 'origen'];
@@ -134,18 +149,25 @@ export async function GET(req: Request) {
   const orderDirection = validSortOrders.includes(sortOrder.toLowerCase()) ? sortOrder.toUpperCase() : 'ASC';
 
   // Manejar ordenamiento especial para m2aprox (valores nulos al final)
-  let orderClause = `${sortField} ${orderDirection}`;
+  let orderClause = `l.${sortField} ${orderDirection}`;
   if (sortField === 'm2aprox') {
     if (orderDirection === 'ASC') {
-      orderClause = `CASE WHEN m2aprox IS NULL OR m2aprox = '0' OR m2aprox = '0.00' THEN 1 ELSE 0 END, CAST(m2aprox AS DECIMAL) ASC`;
+      orderClause = `CASE WHEN l.m2aprox IS NULL OR l.m2aprox = '0' OR l.m2aprox = '0.00' THEN 1 ELSE 0 END, CAST(l.m2aprox AS DECIMAL) ASC`;
     } else {
-      orderClause = `CASE WHEN m2aprox IS NULL OR m2aprox = '0' OR m2aprox = '0.00' THEN 1 ELSE 0 END, CAST(m2aprox AS DECIMAL) DESC`;
+      orderClause = `CASE WHEN l.m2aprox IS NULL OR l.m2aprox = '0' OR l.m2aprox = '0.00' THEN 1 ELSE 0 END, CAST(l.m2aprox AS DECIMAL) DESC`;
     }
   }
 
   // Agregar paginación
   const pagValues = [...values, limit, offset];
-  const query = `SELECT * FROM public.prefapp_lotes ${where} ORDER BY ${orderClause} LIMIT $${idx} OFFSET $${idx + 1}`;
+  const query = `
+    SELECT l.*, u.nombre, u.apellido
+    FROM public.prefapp_lotes l
+    LEFT JOIN public.prefapp_users u ON LOWER(l.agente) = LOWER(u.user)
+    ${where} 
+    ORDER BY ${orderClause} 
+    LIMIT $${idx} OFFSET $${idx + 1}
+  `;
 
   try {
     // Obtener el total
@@ -154,23 +176,13 @@ export async function GET(req: Request) {
     // Obtener los lotes paginados
     const { rows } = await pool.query(query, pagValues);
 
-    // Obtener info de agentes con JOIN (como en el filtro)
-    const { rows: agentesRows } = await pool.query(`
-      SELECT DISTINCT l.agente, u.user, u.nombre, u.apellido
-      FROM public.prefapp_lotes l
-      JOIN public.prefapp_users u ON LOWER(l.agente) = LOWER(u.user)
-      WHERE l.agente IS NOT NULL AND u.user IS NOT NULL
-    `);
-    let agentesInfo: Record<string, any> = {};
-    agentesRows.forEach(u => {
-      agentesInfo[u.agente.toLowerCase()] = u;
-    });
-
     const lotes = rows.map(row => {
-      const agenteUsuario = agentesInfo[(row.agente || '').toLowerCase()] || null;
-      if (agenteUsuario) {
-      } else {
-      }
+      // La información del agente ya viene del JOIN
+      const agenteUsuario = row.nombre && row.apellido ? {
+        nombre: row.nombre,
+        apellido: row.apellido,
+        user: row.agente
+      } : null;
       return mapLote(row, agenteUsuario);
     });
     return NextResponse.json({ lotes, total });
