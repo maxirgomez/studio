@@ -52,9 +52,7 @@ import LotesPagination from "@/components/lotes/LotesPagination";
 import ListingCardSkeleton from "@/components/lotes/ListingCardSkeleton";
 import { useUser } from "@/context/UserContext";
 
-function capitalizeWords(str: string) {
-  return str.replace(/\b\w+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
-}
+
 
 export default function LotesClientPage() {
   const router = useRouter();

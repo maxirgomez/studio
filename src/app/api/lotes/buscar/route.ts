@@ -1,10 +1,84 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
+// Función para normalizar caracteres especiales (diéresis, acentos, etc.)
+function normalizeSpecialChars(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remover diacríticos (diéresis, acentos)
+    .replace(/[ü]/g, 'u') // Caso específico para ü -> u
+    .replace(/[Ü]/g, 'U') // Caso específico para Ü -> U
+    .replace(/[ñ]/g, 'n') // Caso específico para ñ -> n
+    .replace(/[Ñ]/g, 'N'); // Caso específico para Ñ -> N
+}
+
+// Función para generar variaciones de búsqueda con caracteres especiales
+function generateSearchVariations(text: string): string[] {
+  const variations: string[] = [];
+  const lowerText = text.toLowerCase();
+  
+  // Agregar la versión original
+  variations.push(lowerText);
+  
+  // Generar variaciones con caracteres especiales
+  // Caso específico: guemes -> güemes
+  if (lowerText.includes('guemes')) {
+    variations.push(lowerText.replace(/guemes/g, 'güemes'));
+  }
+  if (lowerText.includes('güemes')) {
+    variations.push(lowerText.replace(/güemes/g, 'guemes'));
+  }
+  
+  // Caso específico: general -> gral
+  if (lowerText.includes('general')) {
+    variations.push(lowerText.replace(/general/g, 'gral'));
+  }
+  if (lowerText.includes('gral')) {
+    variations.push(lowerText.replace(/gral/g, 'general'));
+  }
+  
+  // Caso específico: doctor -> dr
+  if (lowerText.includes('doctor')) {
+    variations.push(lowerText.replace(/doctor/g, 'dr'));
+  }
+  if (lowerText.includes('dr')) {
+    variations.push(lowerText.replace(/dr/g, 'doctor'));
+  }
+  
+  return [...new Set(variations)];
+}
+
+// Función para generar patrones de búsqueda que incluyan caracteres especiales
+function generateSearchPatterns(text: string): string[] {
+  const patterns: string[] = [];
+  const lowerText = text.toLowerCase();
+  
+  // Patrón original
+  patterns.push(`%${lowerText}%`);
+  
+  // Patrón con normalización de caracteres especiales
+  const normalized = normalizeSpecialChars(text);
+  if (normalized !== lowerText) {
+    patterns.push(`%${normalized}%`);
+  }
+  
+  // Patrones específicos para casos comunes
+  if (lowerText.includes('guemes')) {
+    patterns.push(`%güemes%`);
+  }
+  if (lowerText.includes('güemes')) {
+    patterns.push(`%guemes%`);
+  }
+  
+  return [...new Set(patterns)];
+}
+
 // Función para normalizar términos de búsqueda
 function normalizeSearchTerm(term: string): string[] {
   const normalized = term.toLowerCase().trim();
-  const synonyms: string[] = [normalized];
+  const normalizedSpecial = normalizeSpecialChars(term).trim();
+  const synonyms: string[] = [normalized, normalizedSpecial];
   
   // Sinónimos para "Avenida"
   if (normalized.includes('avenida') || normalized.includes('av.') || normalized.includes('av ') || normalized.includes('avda') || normalized.includes('a v d a')) {
@@ -37,12 +111,15 @@ function normalizeSearchTerm(term: string): string[] {
 // Función para crear condiciones de búsqueda con sinónimos
 function createSearchConditions(searchTerm: string): { conditions: string[], values: string[] } {
   const normalized = searchTerm.toLowerCase().trim();
+  const searchPatterns = generateSearchPatterns(searchTerm);
   const conditions: string[] = [];
   const values: string[] = [];
   
-  // Búsqueda original
-  conditions.push(`LOWER(frente) LIKE $1`);
-  values.push(`%${normalized}%`);
+  // Búsqueda con todos los patrones generados
+  searchPatterns.forEach((pattern, index) => {
+    conditions.push(`LOWER(frente) LIKE $${index + 1}`);
+    values.push(pattern);
+  });
   
   // Sinónimos para "Avenida"
   if (normalized.includes('avenida')) {
@@ -146,9 +223,11 @@ export async function GET(req: Request) {
       values.push(...searchValues);
     } else if (isNumberSearch) {
       // Búsqueda para autocompletado de números desde frentesparcelas
-      query = `SELECT DISTINCT num_dom FROM public.frentesparcelas WHERE LOWER(frente) = LOWER($${idx}) AND num_dom IS NOT NULL ORDER BY num_dom`;
+      const normalizedFrente = normalizeSpecialChars(frente);
+             query = `SELECT DISTINCT num_dom FROM public.frentesparcelas WHERE (LOWER(frente) = LOWER($${idx}) OR LOWER(frente) = LOWER($${idx + 1})) AND num_dom IS NOT NULL ORDER BY num_dom`;
       values.push(frente.toLowerCase());
-      idx++;
+      values.push(normalizedFrente);
+      idx += 2;
     } else if (isExactSearch) {
       // Búsqueda exacta: buscar en frentesparcelas y obtener información normativa
       query = `
@@ -175,10 +254,12 @@ export async function GET(req: Request) {
         idx++;
       }
       if (frente) {
-        // Búsqueda exacta por frente
-        query += ` AND LOWER(fp.frente) = LOWER($${idx})`;
+        // Búsqueda exacta por frente con normalización de caracteres especiales
+        const normalizedFrente = normalizeSpecialChars(frente);
+                 query += ` AND (LOWER(fp.frente) = LOWER($${idx}) OR LOWER(fp.frente) = LOWER($${idx + 1}))`;
         values.push(frente.toLowerCase());
-        idx++;
+        values.push(normalizedFrente);
+        idx += 2;
       }
       if (num_dom) {
         // Búsqueda flexible de num_dom que maneje formatos decimales y rangos

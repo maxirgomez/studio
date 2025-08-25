@@ -142,6 +142,7 @@ const newLoteFormSchema = z.object({
   codigoUrbanistico: z.string().optional(),
   neighborhood: z.string().optional(), // Ya no es requerido, se asigna valor por defecto
   m2aprox: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")).optional(),
+  superficieParcela: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")).optional(),
   cpu: z.string().optional(),
   partida: z.string().optional(),
   incidenciaUVA: z.preprocess(val => Number(String(val).replace(",", ".")), z.number().min(0, "Debe ser un número positivo.")).optional(),
@@ -220,6 +221,7 @@ export default function NuevoLotePage() {
       codigoUrbanistico: "",
       neighborhood: "",
       m2aprox: 0,
+      superficieParcela: 0,
       cpu: "",
       partida: "",
       incidenciaUVA: 0,
@@ -346,6 +348,7 @@ export default function NuevoLotePage() {
             form.setValue('neighborhood', lote.barrio || '', { shouldValidate: true });
             form.setValue('partida', lote.partida || '', { shouldValidate: true });
             form.setValue('m2aprox', lote.m2_estimados || 0, { shouldValidate: true });
+            form.setValue('superficieParcela', lote.sup_parcela || 0, { shouldValidate: true });
             form.setValue('codigoUrbanistico', lote.codigoUrbanistico || '', { shouldValidate: true });
             form.setValue('cpu', lote.cpu || '', { shouldValidate: true });
             form.setValue('incidenciaUVA', lote.incidenciaUVA || 0, { shouldValidate: true });
@@ -412,6 +415,7 @@ export default function NuevoLotePage() {
         cur: data.codigoUrbanistico || null,
         barrio: data.neighborhood || "Sin especificar", // Valor por defecto si está vacío
         m2aprox: cleanNumericField(data.m2aprox) || 0, // Valor por defecto si está vacío
+        sup_parcela: cleanNumericField(data.superficieParcela) || 0,
         dist_cpu_1: data.cpu || null,
         partida: data.partida || null,
         inc_uva: cleanNumericField(data.incidenciaUVA) || 0,
@@ -736,7 +740,10 @@ export default function NuevoLotePage() {
                   <FormItem><FormLabel>Barrio</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
                 )} />
                 <FormField control={form.control} name="m2aprox" render={({ field }) => (
-                  <FormItem><FormLabel>M² Estimados (Superficie de Parcela)</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
+                  <FormItem><FormLabel>M² vendibles estimados</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
+                )} />
+                <FormField control={form.control} name="superficieParcela" render={({ field }) => (
+                  <FormItem><FormLabel>Superficie de Parcela</FormLabel><FormControl><Input type="number" step="0.01" {...field} readOnly /></FormControl></FormItem>
                 )} />
                 <FormField control={form.control} name="cpu" render={({ field }) => (
                   <FormItem><FormLabel>CPU</FormLabel><FormControl><Input {...field} readOnly /></FormControl></FormItem>
@@ -816,7 +823,7 @@ export default function NuevoLotePage() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <FormField control={form.control} name="m2Vendibles" render={({ field }) => (
-                  <FormItem><FormLabel>M2 Vendibles</FormLabel><FormControl><Input type="number" step="1" {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>M2 Vendibles Reales</FormLabel><FormControl><Input type="number" step="1" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="valorVentaUSD" render={({ field }) => (
                   <FormItem><FormLabel>Valor de Venta (USD)</FormLabel><FormControl><Input type="number" step="1000" {...field} /></FormControl><FormMessage /></FormItem>

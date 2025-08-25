@@ -106,7 +106,7 @@ const PdfContent = React.forwardRef<
       <h3 style={sectionTitleStyle}>Datos de Tasación</h3>
       <div style={gridStyle}>
         <div>
-          <div style={fieldStyle}><span style={labelStyle}>M2 Vendibles:</span> <span style={valueStyle}>{listing.m2Vendibles} m²</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>M2 Vendibles Reales:</span> <span style={valueStyle}>{listing.m2Vendibles} m²</span></div>
           <div style={fieldStyle}><span style={labelStyle}>Valor de Venta (USD):</span> <span style={valueStyle}>{typeof listing.valorVentaUSD === "number" ? `$ ${listing.valorVentaUSD.toLocaleString('es-AR')}` : "N/A"}</span></div>
         </div>
         <div>
@@ -117,6 +117,19 @@ const PdfContent = React.forwardRef<
       {listing.saleDate && (
         <div style={fieldStyle}><span style={labelStyle}>Fecha de Venta:</span> <span style={valueStyle}>{format(new Date(listing.saleDate), "dd/MM/yyyy")}</span></div>
       )}
+
+      <h4 style={{ ...sectionTitleStyle, fontSize: '14px', marginTop: '12px', marginBottom: '6px' }}>Plusvalía</h4>
+      <div style={gridStyle}>
+        <div>
+          <div style={fieldStyle}><span style={labelStyle}>A1:</span> <span style={valueStyle}>{listing.A1 != null ? Number(listing.A1).toLocaleString('es-AR') : 'N/A'}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>A2:</span> <span style={valueStyle}>{listing.A2 != null ? Number(listing.A2).toLocaleString('es-AR') : 'N/A'}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>A1-A2:</span> <span style={valueStyle}>{listing['A1-A2'] != null ? Number(listing['A1-A2']).toLocaleString('es-AR') : 'N/A'}</span></div>
+        </div>
+        <div>
+          <div style={fieldStyle}><span style={labelStyle}>B:</span> <span style={valueStyle}>{listing.B != null ? Number(listing.B).toLocaleString('es-AR') : 'N/A'}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>AxB:</span> <span style={valueStyle}>{listing.AxB != null ? Number(listing.AxB).toLocaleString('es-AR') : 'N/A'}</span></div>
+        </div>
+      </div>
 
       {canViewOwnerInfo(currentUser, listing) && (
         <>
@@ -919,7 +932,7 @@ export default function LoteDetailPage() {
                 <div className="space-y-4">
                   <div className="flex items-center">
                     <Ruler className="h-5 w-5 mr-3 text-muted-foreground" />
-                    <span className="font-medium">M2 Vendibles:</span>
+                    <span className="font-medium">M2 Vendibles Reales:</span>
                     <span className="ml-auto text-muted-foreground">{listing.m2vendibles != null ? Number(listing.m2vendibles).toLocaleString('es-AR') + ' m²' : 'N/A'}</span>
                   </div>
                   <div className="flex items-center">
@@ -945,6 +958,37 @@ export default function LoteDetailPage() {
                     <span className="ml-auto text-muted-foreground">
                       {listing.fventa ? format(new Date(listing.fventa), 'dd/MM/yyyy') : 'N/A'}
                     </span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Sección Plusvalía */}
+              <div className="mt-6 pt-4 border-t">
+                <h4 className="font-semibold text-sm mb-4 text-muted-foreground">Plusvalía</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center">
+                      <span className="font-medium">A1:</span>
+                      <span className="ml-auto text-muted-foreground">{listing.A1 != null ? Number(listing.A1).toLocaleString('es-AR') : 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="font-medium">A2:</span>
+                      <span className="ml-auto text-muted-foreground">{listing.A2 != null ? Number(listing.A2).toLocaleString('es-AR') : 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="font-medium">A1-A2:</span>
+                      <span className="ml-auto text-muted-foreground">{listing['A1-A2'] != null ? Number(listing['A1-A2']).toLocaleString('es-AR') : 'N/A'}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center">
+                      <span className="font-medium">B:</span>
+                      <span className="ml-auto text-muted-foreground">{listing.B != null ? Number(listing.B).toLocaleString('es-AR') : 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="font-medium">AxB:</span>
+                      <span className="ml-auto text-muted-foreground">{listing.AxB != null ? Number(listing.AxB).toLocaleString('es-AR') : 'N/A'}</span>
+                    </div>
                   </div>
                 </div>
               </div>

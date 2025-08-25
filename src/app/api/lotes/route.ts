@@ -9,6 +9,16 @@ function normalizeBarrio(str: string) {
   return capitalizeWords(str.trim());
 }
 
+// Función para normalizar caracteres acentuados
+function normalizeText(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remover diacríticos
+    .replace(/[ü]/g, 'u') // Convertir ü a u
+    .replace(/[ñ]/g, 'n') // Convertir ñ a n
+    .toLowerCase();
+}
+
 function mapLote(row: any, agenteUsuario: any = null) {
   return {
     address: row.direccion || row.dir_lote || 'Dirección no disponible',
@@ -114,16 +124,29 @@ export async function GET(req: Request) {
     idx++;
   }
   if (search) {
+    console.log('🔍 Búsqueda DEBUG:');
+    console.log('  - Término de búsqueda:', search);
+    
     whereClauses.push(`(
-      LOWER(l.smp) LIKE LOWER($${idx}) OR 
-      LOWER(l.dir_lote) LIKE LOWER($${idx}) OR 
-      LOWER(l.barrio) LIKE LOWER($${idx}) OR 
-      LOWER(l.estado) LIKE LOWER($${idx}) OR 
-      LOWER(l.origen) LIKE LOWER($${idx}) OR 
-      LOWER(l.agente) LIKE LOWER($${idx}) OR
-      LOWER(u.nombre) LIKE LOWER($${idx}) OR
-      LOWER(u.apellido) LIKE LOWER($${idx}) OR
-      LOWER(CONCAT(u.nombre, ' ', u.apellido)) LIKE LOWER($${idx})
+      LOWER(l.smp) LIKE $${idx} OR 
+      LOWER(l.dir_lote) LIKE $${idx} OR 
+      LOWER(l.barrio) LIKE $${idx} OR 
+      LOWER(l.estado) LIKE $${idx} OR 
+      LOWER(l.origen) LIKE $${idx} OR 
+      LOWER(l.agente) LIKE $${idx} OR
+      LOWER(u.nombre) LIKE $${idx} OR
+      LOWER(u.apellido) LIKE $${idx} OR
+      LOWER(CONCAT(u.nombre, ' ', u.apellido)) LIKE $${idx} OR
+      -- Búsqueda normalizada para caracteres especiales (sin acentos)
+      LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(l.smp, 'Á', 'A'), 'É', 'E'), 'Í', 'I'), 'Ó', 'O'), 'Ú', 'U'), 'Ü', 'U'), 'Ñ', 'N')) LIKE $${idx} OR
+      LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(l.dir_lote, 'Á', 'A'), 'É', 'E'), 'Í', 'I'), 'Ó', 'O'), 'Ú', 'U'), 'Ü', 'U'), 'Ñ', 'N')) LIKE $${idx} OR
+      LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(l.barrio, 'Á', 'A'), 'É', 'E'), 'Í', 'I'), 'Ó', 'O'), 'Ú', 'U'), 'Ü', 'U'), 'Ñ', 'N')) LIKE $${idx} OR
+      LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(l.estado, 'Á', 'A'), 'É', 'E'), 'Í', 'I'), 'Ó', 'O'), 'Ú', 'U'), 'Ü', 'U'), 'Ñ', 'N')) LIKE $${idx} OR
+      LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(l.origen, 'Á', 'A'), 'É', 'E'), 'Í', 'I'), 'Ó', 'O'), 'Ú', 'U'), 'Ü', 'U'), 'Ñ', 'N')) LIKE $${idx} OR
+      LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(l.agente, 'Á', 'A'), 'É', 'E'), 'Í', 'I'), 'Ó', 'O'), 'Ú', 'U'), 'Ü', 'U'), 'Ñ', 'N')) LIKE $${idx} OR
+      LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(u.nombre, 'Á', 'A'), 'É', 'E'), 'Í', 'I'), 'Ó', 'O'), 'Ú', 'U'), 'Ü', 'U'), 'Ñ', 'N')) LIKE $${idx} OR
+      LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(u.apellido, 'Á', 'A'), 'É', 'E'), 'Í', 'I'), 'Ó', 'O'), 'Ú', 'U'), 'Ü', 'U'), 'Ñ', 'N')) LIKE $${idx} OR
+      LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(CONCAT(u.nombre, ' ', u.apellido), 'Á', 'A'), 'É', 'E'), 'Í', 'I'), 'Ó', 'O'), 'Ú', 'U'), 'Ü', 'U'), 'Ñ', 'N')) LIKE $${idx}
     )`);
     values.push(`%${search.toLowerCase()}%`);
     idx++;
@@ -185,6 +208,15 @@ export async function GET(req: Request) {
       } : null;
       return mapLote(row, agenteUsuario);
     });
+    
+    // Log para verificar los datos que se están enviando
+    if (search) {
+      console.log('📊 Datos encontrados:');
+      lotes.forEach((lote, index) => {
+        console.log(`  ${index + 1}. Barrio: "${lote.neighborhood}" (SMP: ${lote.smp})`);
+      });
+    }
+    
     return NextResponse.json({ lotes, total });
   } catch (error) {
     console.error('Error en /api/lotes:', error);

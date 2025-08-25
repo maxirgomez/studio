@@ -570,8 +570,8 @@ export default function MapPage() {
           <CardContent>
             <div 
               ref={mapContainer} 
-              className="h-[70vh] w-full rounded-lg relative"
-              style={{ minHeight: '500px' }}
+              className="h-[70vh] mt-5 w-full rounded-lg relative"
+              style={{ minHeight: '730px' }}
             >
               {loadingLote && (
                 <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
