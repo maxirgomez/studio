@@ -80,7 +80,7 @@ function capitalizeFirst(str: string): string {
 }
 
 // Hook personalizado para detectar cuando el usuario termina de escribir
-function useTypingComplete<T>(value: T, minLength: number = 3): { value: T; triggerSearch: () => void } {
+function useTypingComplete<T>(value: T, minLength: number = 3, isNumeric: boolean = false): { value: T; triggerSearch: () => void; isTyping: boolean } {
   const [completedValue, setCompletedValue] = useState<T>(value);
   const [isTyping, setIsTyping] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout>();
@@ -104,12 +104,22 @@ function useTypingComplete<T>(value: T, minLength: number = 3): { value: T; trig
         clearTimeout(timeoutRef.current);
       }
 
-      // Detectar si el usuario terminó de escribir (espacio, punto, coma, etc.)
-      const hasEndingPunctuation = /[.,;!?]/.test(stringValue);
-      const hasSpace = stringValue.includes(' ');
-      const delay = hasEndingPunctuation ? 100 : (hasSpace ? 200 : 600);
+      let delay = 600; // Delay por defecto
+
+      if (isNumeric) {
+        // Para números, usar un delay más corto y no depender de puntuación
+        delay = 300; // 300ms para números
+      } else {
+        // Para texto, usar la lógica original
+        const hasEndingPunctuation = /[.,;!?]/.test(stringValue);
+        const hasSpace = stringValue.includes(' ');
+        delay = hasEndingPunctuation ? 100 : (hasSpace ? 200 : 600);
+      }
+
+      console.log(`⏱️ useTypingComplete - Valor: "${stringValue}", Tipo: ${isNumeric ? 'numérico' : 'texto'}, Delay: ${delay}ms`);
 
       timeoutRef.current = setTimeout(() => {
+        console.log(`✅ useTypingComplete completado - Valor: "${stringValue}"`);
         setCompletedValue(value);
         setIsTyping(false);
       }, delay);
@@ -123,9 +133,9 @@ function useTypingComplete<T>(value: T, minLength: number = 3): { value: T; trig
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [value, minLength]);
+  }, [value, minLength, isNumeric]);
 
-  return { value: completedValue, triggerSearch };
+  return { value: completedValue, triggerSearch, isTyping };
 }
 
 
@@ -255,8 +265,8 @@ export default function NuevoLotePage() {
   const numeroValue = form.watch("numero");
 
   // Aplicar detección de escritura completa a los valores de búsqueda
-  const frenteTyping = useTypingComplete(frenteValue || '', 3);
-  const numeroTyping = useTypingComplete(numeroValue || '', 1);
+  const frenteTyping = useTypingComplete(frenteValue || '', 3, false);
+  const numeroTyping = useTypingComplete(numeroValue || '', 1, true);
   const completedFrenteValue = frenteTyping.value || '';
   const completedNumeroValue = numeroTyping.value || '';
 
@@ -335,15 +345,23 @@ export default function NuevoLotePage() {
   useEffect(() => {
     const searchFrente = completedFrenteValue.trim();
     const searchNumero = completedNumeroValue.trim();
+    
+    console.log('🔍 Búsqueda SMP - Frente:', searchFrente, 'Número:', searchNumero);
+    
     setSmpEditable(false);
     if (searchFrente && searchNumero) {
       setLoadingSMP(true);
       const params = new URLSearchParams({ frente: searchFrente, num_dom: searchNumero });
-      fetch(`/api/lotes/buscar?${params.toString()}`)
+      const url = `/api/lotes/buscar?${params.toString()}`;
+      console.log('🔍 URL de búsqueda:', url);
+      
+      fetch(url)
         .then(res => res.json())
         .then(data => {
+          console.log('🔍 Respuesta de la API:', data);
           if (data.found && data.lotes.length > 0) {
             const lote = data.lotes[0];
+            console.log('✅ Lote encontrado:', lote);
             form.setValue('smp', lote.smp || '', { shouldValidate: true });
             form.setValue('neighborhood', lote.barrio || '', { shouldValidate: true });
             form.setValue('partida', lote.partida || '', { shouldValidate: true });
@@ -359,16 +377,20 @@ export default function NuevoLotePage() {
             const direccionReal = `${searchFrente} ${searchNumero}`.trim();
             form.setValue('direccionContacto', direccionReal, { shouldValidate: false });
             
-            
             setSmpEditable(false);
           } else {
+            console.log('❌ No se encontró lote para:', searchFrente, searchNumero);
             form.setValue('smp', '', { shouldValidate: false });
             setSmpEditable(true);
           }
           setLoadingSMP(false);
         })
-        .catch(() => setLoadingSMP(false));
+        .catch((error) => {
+          console.error('❌ Error en búsqueda SMP:', error);
+          setLoadingSMP(false);
+        });
     } else {
+      console.log('⚠️ Faltan datos para búsqueda - Frente:', searchFrente, 'Número:', searchNumero);
       form.setValue('smp', '', { shouldValidate: false });
       setSmpEditable(false);
       setLoadingSMP(false);
@@ -623,7 +645,7 @@ export default function NuevoLotePage() {
                   <FormItem className="relative">
                     <FormLabel>Número</FormLabel>
                     <FormControl>
-                      <div>
+                      <div className="flex gap-2">
                         <Input
                           placeholder="Ej: 1060"
                           {...field}
@@ -640,7 +662,19 @@ export default function NuevoLotePage() {
                             setMostrarCalleSug(false);
                           }}
                         />
-
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            console.log('🔍 Búsqueda manual activada');
+                            numeroTyping.triggerSearch();
+                            frenteTyping.triggerSearch();
+                          }}
+                          disabled={loadingSMP}
+                        >
+                          {loadingSMP ? 'Buscando...' : 'Buscar'}
+                        </Button>
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -663,6 +697,11 @@ export default function NuevoLotePage() {
                               <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '100%' }}></div>
                             </div>
                             <div className="text-xs text-gray-600 mt-1">Cargando...</div>
+                          </div>
+                        )}
+                        {(frenteTyping.isTyping || numeroTyping.isTyping) && !loadingSMP && (
+                          <div className="mt-2">
+                            <div className="text-xs text-blue-600">Detectando escritura...</div>
                           </div>
                         )}
                       </div>

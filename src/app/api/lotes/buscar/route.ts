@@ -239,12 +239,10 @@ export async function GET(req: Request) {
           cp.partida,
           ROUND(CAST(pc.inc_uva AS DECIMAL), 2) as incidencia_uva,
           ROUND(CAST(pc.fot_em_1 AS DECIMAL), 2) as fot,
-          ROUND(CAST(pc.alicuota AS DECIMAL), 2) as alicuota,
-          pm.m2aprox as m2_estimados
+          ROUND(CAST(pc.alicuota AS DECIMAL), 2) as alicuota
         FROM public.frentesparcelas fp
         LEFT JOIN public.parcelascur pc ON fp.smp = pc.smp
         LEFT JOIN public.cur_parcelas cp ON fp.smp = cp.smp
-        LEFT JOIN public.prefapp_m2 pm ON fp.smp = pm.smp
         WHERE 1=1
       `;
       
@@ -324,10 +322,11 @@ export async function GET(req: Request) {
         frente: row.frente, // Calle desde frentesparcelas
         num_dom: row.num_dom, // Número desde frentesparcelas
         
-        // Información normativa desde parcelascur, cur_parcelas y prefapp_m2 usando el SMP de frentesparcelas
+        // Información normativa desde parcelascur, cur_parcelas usando el SMP de frentesparcelas
         codigoUrbanistico: row.codigo_urbanistico, // Desde parcelascur.cur
         barrio: row.barrio, // Desde parcelascur.barrio
-        m2_estimados: row.m2_estimados, // Desde prefapp_m2.m2aprox
+        m2_estimados: 0, // Valor por defecto ya que no tenemos la tabla prefapp_m2
+        sup_parcela: 0, // Valor por defecto ya que no tenemos la tabla prefapp_m2
         cpu: row.cpu, // Desde parcelascur.dist_cpu_1
         partida: row.partida, // Desde cur_parcelas.partida
         incidenciaUVA: row.incidencia_uva, // Desde parcelascur.inc_uva
