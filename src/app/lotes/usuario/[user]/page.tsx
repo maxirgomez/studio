@@ -101,7 +101,6 @@ export default function UserProfileEditPage() {
         setLoading(false);
       })
       .catch((err) => {
-        console.error("[DEBUG] Fetch error:", err);
         setLoading(false);
       });
     // Obtener roles únicos

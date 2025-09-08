@@ -26,6 +26,8 @@ interface LotesFiltersProps {
   statusFilters: string[];
   neighborhoodFilters: string[];
   agentFilters: string[];
+  tipoFilters: string[];
+  esquinaFilters: string[];
   uniqueOrigens: string[];
   uniqueStatuses: string[];
   uniqueNeighborhoods: string[];
@@ -35,11 +37,19 @@ interface LotesFiltersProps {
   minArea: number;
   maxArea: number;
   areaInput: [string, string];
+  frenteSliderValue: [number, number];
+  minFrente: number;
+  maxFrente: number;
+  frenteInput: [string, string];
   handleMultiSelectFilterChange: (key: string, value: string) => void;
   handleAreaInputChange: (index: 0 | 1, value: string) => void;
   handleAreaInputBlur: () => void;
   handleSliderVisualChange: (newRange: [number, number]) => void;
   handleSliderFilterCommit: (newRange: [number, number]) => void;
+  handleFrenteInputChange: (index: 0 | 1, value: string) => void;
+  handleFrenteInputBlur: () => void;
+  handleFrenteSliderVisualChange: (newRange: [number, number]) => void;
+  handleFrenteSliderFilterCommit: (newRange: [number, number]) => void;
   activeFilters: { type: string; value: string; key: string }[];
   handleRemoveFilter: (key: string, value: string) => void;
   // Nuevas props para ordenamiento
@@ -54,6 +64,8 @@ const LotesFilters: React.FC<LotesFiltersProps> = ({
   statusFilters,
   neighborhoodFilters,
   agentFilters,
+  tipoFilters,
+  esquinaFilters,
   uniqueOrigens,
   uniqueStatuses,
   uniqueNeighborhoods,
@@ -63,11 +75,19 @@ const LotesFilters: React.FC<LotesFiltersProps> = ({
   minArea,
   maxArea,
   areaInput,
+  frenteSliderValue,
+  minFrente,
+  maxFrente,
+  frenteInput,
   handleMultiSelectFilterChange,
   handleAreaInputChange,
   handleAreaInputBlur,
   handleSliderVisualChange,
   handleSliderFilterCommit,
+  handleFrenteInputChange,
+  handleFrenteInputBlur,
+  handleFrenteSliderVisualChange,
+  handleFrenteSliderFilterCommit,
   activeFilters,
   handleRemoveFilter,
   // Nuevas props para ordenamiento
@@ -181,6 +201,60 @@ const LotesFilters: React.FC<LotesFiltersProps> = ({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      <div className="space-y-2">
+        <Label>Tipo</Label>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="w-full justify-between">
+              <span>{tipoFilters.length > 0 ? `${tipoFilters.length} seleccionados` : "Tipos"}</span>
+              <ChevronDown className="h-4 w-4 opacity-50" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-[250px]">
+            <DropdownMenuLabel>Filtrar por Tipo</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuCheckboxItem
+              checked={tipoFilters.includes('Lote')}
+              onCheckedChange={() => handleMultiSelectFilterChange('tipo', 'Lote')}
+            >
+              Lote
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={tipoFilters.includes('Local')}
+              onCheckedChange={() => handleMultiSelectFilterChange('tipo', 'Local')}
+            >
+              Local
+            </DropdownMenuCheckboxItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      <div className="space-y-2">
+        <Label>Ubicado en Esquina</Label>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="w-full justify-between">
+              <span>{esquinaFilters.length > 0 ? `${esquinaFilters.length} seleccionados` : "Esquina"}</span>
+              <ChevronDown className="h-4 w-4 opacity-50" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-[250px]">
+            <DropdownMenuLabel>Filtrar por Esquina</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuCheckboxItem
+              checked={esquinaFilters.includes('Si')}
+              onCheckedChange={() => handleMultiSelectFilterChange('esquina', 'Si')}
+            >
+              Sí
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={esquinaFilters.includes('No')}
+              onCheckedChange={() => handleMultiSelectFilterChange('esquina', 'No')}
+            >
+              No
+            </DropdownMenuCheckboxItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <Label>M² Estimados: {sliderValue[0]} - {sliderValue[1]}m²</Label>
@@ -225,6 +299,37 @@ const LotesFilters: React.FC<LotesFiltersProps> = ({
           min={minArea}
           max={maxArea}
           step={10}
+        />
+      </div>
+      <div className="space-y-4">
+        <Label>Ancho de Frente: {frenteSliderValue[0]} - {frenteSliderValue[1]}m</Label>
+        <div className="flex gap-2">
+          <Input
+            type="number"
+            placeholder="Min"
+            value={frenteInput[0]}
+            min={minFrente}
+            max={maxFrente}
+            onChange={(e) => handleFrenteInputChange(0, e.target.value)}
+            onBlur={handleFrenteInputBlur}
+          />
+          <Input
+            type="number"
+            placeholder="Max"
+            value={frenteInput[1]}
+            min={minFrente}
+            max={maxFrente}
+            onChange={(e) => handleFrenteInputChange(1, e.target.value)}
+            onBlur={handleFrenteInputBlur}
+          />
+        </div>
+        <Slider
+          value={frenteSliderValue}
+          onValueChange={handleFrenteSliderVisualChange}
+          onValueCommit={handleFrenteSliderFilterCommit}
+          min={minFrente}
+          max={maxFrente}
+          step={0.5}
         />
       </div>
     </CardContent>

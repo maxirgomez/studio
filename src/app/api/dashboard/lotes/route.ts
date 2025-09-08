@@ -120,7 +120,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ lotes, total });
 
   } catch (error) {
-    console.error('Error en dashboard lotes:', error);
     return NextResponse.json(
       { error: 'Error al obtener lotes', details: (error as Error).message },
       { status: 500 }

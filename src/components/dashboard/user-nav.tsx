@@ -50,7 +50,6 @@ export function UserNav() {
   return (
     <DropdownMenu>
       {/* Log para ver el user en el render */}
-      {/* {user && console.log('[UserNav] Render user:', user)} */}
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">

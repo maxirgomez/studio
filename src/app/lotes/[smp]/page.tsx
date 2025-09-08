@@ -21,7 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, MapPin, Scan, Ruler, Edit, Download, Upload, Library, FileText, User, Home, Mailbox, Building, Phone, Smartphone, Mail, Info, XCircle, Scaling, Percent, CreditCard, DollarSign, MessageSquare, Calendar, CreditCard as CreditCardIcon } from "lucide-react"
+import { ArrowLeft, MapPin, Scan, Ruler, Edit, Download, Upload, Library, FileText, User, Home, Mailbox, Building, Phone, Smartphone, Mail, Info, XCircle, Scaling, Percent, CreditCard, DollarSign, MessageSquare, Calendar, CreditCard as CreditCardIcon, X } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -92,15 +92,14 @@ const PdfContent = React.forwardRef<
         <div>
           <div style={fieldStyle}><span style={labelStyle}>Código Urbanístico:</span> <span style={valueStyle}>{listing.cur}</span></div>
           <div style={fieldStyle}><span style={labelStyle}>CPU:</span> <span style={valueStyle}>{listing.cpu}</span></div>
-          <div style={fieldStyle}><span style={labelStyle}>FOT:</span> <span style={valueStyle}>{listing.fot}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Superficie de Parcela:</span> <span style={valueStyle}>{listing.sup_parcela || 'N/A'} m²</span></div>
         </div>
         <div>
           <div style={fieldStyle}><span style={labelStyle}>M² Estimados:</span> <span style={valueStyle}>{listing.area} m²</span></div>
-          <div style={fieldStyle}><span style={labelStyle}>Incidencia UVA:</span> <span style={valueStyle}>{listing.incidenciaUVA}</span></div>
-          <div style={fieldStyle}><span style={labelStyle}>Alícuota:</span> <span style={valueStyle}>{listing.alicuota}%</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Barrio:</span> <span style={valueStyle}>{listing.neighborhood}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Partida:</span> <span style={valueStyle}>{listing.partida}</span></div>
         </div>
       </div>
-      <div style={{ ...fieldStyle, gridColumn: 'span 2' }}><span style={labelStyle}>Partida:</span> <span style={valueStyle}>{listing.partida}</span></div>
 
 
       <h3 style={sectionTitleStyle}>Datos de Tasación</h3>
@@ -121,14 +120,32 @@ const PdfContent = React.forwardRef<
       <h4 style={{ ...sectionTitleStyle, fontSize: '14px', marginTop: '12px', marginBottom: '6px' }}>Plusvalía</h4>
       <div style={gridStyle}>
         <div>
+          <div style={fieldStyle}><span style={labelStyle}>Superficie de Parcela:</span> <span style={valueStyle}>{listing.sup_parcela || 'N/A'} m²</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Incidencia UVA:</span> <span style={valueStyle}>{listing.incidenciaUVA || 'N/A'}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Alícuota:</span> <span style={valueStyle}>{listing.alicuota || 'N/A'}%</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>FOT:</span> <span style={valueStyle}>{listing.fot || 'N/A'}</span></div>
+        </div>
+        <div>
           <div style={fieldStyle}><span style={labelStyle}>A1:</span> <span style={valueStyle}>{listing.A1 != null ? Number(listing.A1).toLocaleString('es-AR') : 'N/A'}</span></div>
           <div style={fieldStyle}><span style={labelStyle}>A2:</span> <span style={valueStyle}>{listing.A2 != null ? Number(listing.A2).toLocaleString('es-AR') : 'N/A'}</span></div>
           <div style={fieldStyle}><span style={labelStyle}>A1-A2:</span> <span style={valueStyle}>{listing['A1-A2'] != null ? Number(listing['A1-A2']).toLocaleString('es-AR') : 'N/A'}</span></div>
         </div>
+      </div>
+      <div style={gridStyle}>
         <div>
           <div style={fieldStyle}><span style={labelStyle}>B:</span> <span style={valueStyle}>{listing.B != null ? Number(listing.B).toLocaleString('es-AR') : 'N/A'}</span></div>
           <div style={fieldStyle}><span style={labelStyle}>AxB:</span> <span style={valueStyle}>{listing.AxB != null ? Number(listing.AxB).toLocaleString('es-AR') : 'N/A'}</span></div>
         </div>
+      </div>
+
+      <h4 style={{ ...sectionTitleStyle, fontSize: '14px', marginTop: '12px', marginBottom: '6px' }}>Frentes de Parcela</h4>
+      <div style={{ ...fieldStyle, gridColumn: 'span 2' }}>
+        <span style={labelStyle}>Total de Frentes:</span> 
+        <span style={valueStyle}>{listing.totalFrentes || 'N/A'}</span>
+      </div>
+      <div style={{ ...fieldStyle, gridColumn: 'span 2' }}>
+        <span style={labelStyle}>Ubicación:</span> 
+        <span style={valueStyle}>{(listing.totalFrentes && listing.totalFrentes > 1) ? 'Esquina' : 'Medio de cuadra'}</span>
       </div>
 
       {canViewOwnerInfo(currentUser, listing) && (
@@ -281,10 +298,20 @@ export default function LoteDetailPage() {
   const [notes, setNotes] = useState<any[]>([]);
   const [notesLoading, setNotesLoading] = useState(true);
   const [newNote, setNewNote] = useState("");
+  
+  // Estados para editar notas
+  const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
+  const [editingNoteText, setEditingNoteText] = useState("");
   const pdfContentRef = useRef<HTMLDivElement>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const { hide } = useSpinner();
   const [agenteUsuario, setAgenteUsuario] = useState<any | null>(null);
+
+  // --- Frentes del lote ---
+  const [frentes, setFrentes] = useState<any[]>([]);
+  const [frentesLoading, setFrentesLoading] = useState(true);
+  const [superficieParcela, setSuperficieParcela] = useState<number | null>(null);
+  const [isEsquina, setIsEsquina] = useState(false);
 
   // --- Archivos adjuntos ---
   const [docs, setDocs] = useState<any[]>([]);
@@ -348,6 +375,32 @@ export default function LoteDetailPage() {
     fetchNotas();
   }, [params.smp]);
 
+  // Fetch frentes del lote
+  useEffect(() => {
+    async function fetchFrentes() {
+      setFrentesLoading(true);
+      try {
+        const res = await fetch(`/api/lotes/${params.smp}/frentes`);
+        if (res.ok) {
+          const data = await res.json();
+          setFrentes(data.frentes || []);
+          setSuperficieParcela(data.superficieParcela || null);
+          setIsEsquina(data.isEsquina || false);
+        } else {
+          setFrentes([]);
+          setSuperficieParcela(null);
+          setIsEsquina(false);
+        }
+      } catch {
+        setFrentes([]);
+        setSuperficieParcela(null);
+        setIsEsquina(false);
+      }
+      setFrentesLoading(false);
+    }
+    fetchFrentes();
+  }, [params.smp]);
+
   // Fetch docs
   useEffect(() => {
     async function fetchDocs() {
@@ -400,6 +453,95 @@ export default function LoteDetailPage() {
         variant: "destructive",
         title: "Error",
         description: "No se pudo guardar la nota.",
+      });
+    }
+  };
+
+  const handleEditNote = (noteIndex: number, currentText: string) => {
+    setEditingNoteId(noteIndex);
+    setEditingNoteText(currentText);
+  };
+
+  const handleSaveEdit = async () => {
+    if (editingNoteId === null || !editingNoteText.trim()) return;
+    
+    try {
+      // Obtener la nota que se está editando
+      const noteToEdit = notes[editingNoteId];
+      if (!noteToEdit) return;
+      
+      const res = await fetch(`/api/lotes/${params.smp}/notas/update`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          agente: noteToEdit.agente?.user || noteToEdit.agente,
+          fecha: noteToEdit.fecha,
+          nota: editingNoteText 
+        }),
+      });
+      
+      if (res.ok) {
+        // Actualizar la nota en el estado local
+        setNotes(notes.map((note, index) => 
+          index === editingNoteId 
+            ? { ...note, notas: editingNoteText }
+            : note
+        ));
+        setEditingNoteId(null);
+        setEditingNoteText("");
+        toast({
+          title: "Nota actualizada",
+          description: "La nota se ha actualizado correctamente.",
+        });
+      } else {
+        throw new Error("Error al actualizar nota");
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la nota.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingNoteId(null);
+    setEditingNoteText("");
+  };
+
+  const handleDeleteNote = async (noteIndex: number) => {
+    if (!confirm("¿Estás seguro de que quieres eliminar esta nota?")) return;
+    
+    try {
+      // Obtener la nota que se va a eliminar
+      const noteToDelete = notes[noteIndex];
+      if (!noteToDelete) return;
+      
+      const res = await fetch(`/api/lotes/${params.smp}/notas/delete`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          agente: noteToDelete.agente?.user || noteToDelete.agente,
+          fecha: noteToDelete.fecha
+        }),
+      });
+      
+      if (res.ok) {
+        // Remover la nota del estado local
+        setNotes(notes.filter((_, index) => index !== noteIndex));
+        toast({
+          title: "Nota eliminada",
+          description: "La nota se ha eliminado correctamente.",
+        });
+      } else {
+        throw new Error("Error al eliminar nota");
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la nota.",
+        variant: "destructive",
       });
     }
   };
@@ -486,7 +628,6 @@ export default function LoteDetailPage() {
         description: `La ficha del lote ${listing.address} se ha descargado.`,
       });
     } catch (error) {
-      console.error("Error al generar PDF:", error);
       toast({
         variant: "destructive",
         title: "Error al generar PDF",
@@ -801,14 +942,11 @@ export default function LoteDetailPage() {
                     <span className="ml-auto text-muted-foreground">{listing.area} m²</span>
                   </div>
                   <div className="flex items-center">
-                    <Scaling className="h-5 w-5 mr-3 text-muted-foreground" />
-                    <span className="font-medium">Incidencia UVA:</span>
-                    <span className="ml-auto text-muted-foreground">{formatDecimal(listing.incidenciaUVA)}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <FileText className="h-5 w-5 mr-3 text-muted-foreground" />
-                    <span className="font-medium">FOT:</span>
-                    <span className="ml-auto text-muted-foreground">{formatDecimal(listing.fot)}</span>
+                    <Ruler className="h-5 w-5 mr-3 text-muted-foreground" />
+                    <span className="font-medium">Superficie de Parcela:</span>
+                    <span className="ml-auto text-muted-foreground">
+                      {superficieParcela ? `${superficieParcela.toLocaleString('es-AR')} m²` : 'N/A'}
+                    </span>
                   </div>
                 </div>
                 <div className="space-y-4">
@@ -828,12 +966,60 @@ export default function LoteDetailPage() {
                     <span className="ml-auto text-muted-foreground">{listing.partida}</span>
                   </div>
                   <div className="flex items-center">
-                    <Percent className="h-5 w-5 mr-3 text-muted-foreground" />
-                    <span className="font-medium">Alícuota:</span>
-                    <span className="ml-auto text-muted-foreground">{formatDecimal(listing.alicuota)}%</span>
+                    <MapPin className="h-5 w-5 mr-3 text-muted-foreground" />
+                    <span className="font-medium">Ubicación:</span>
+                    <span className="ml-auto text-muted-foreground">
+                      {isEsquina ? 'Esquina' : 'Medio de cuadra'}
+                    </span>
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Nueva sección: Frentes de Parcela */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Frentes de Parcela</CardTitle>
+              <CardDescription>
+                {isEsquina ? 'Lote ubicado en esquina con múltiples frentes' : 'Lote ubicado en medio de cuadra'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm">
+              {frentesLoading ? (
+                <div className="text-center text-muted-foreground">Cargando frentes...</div>
+              ) : frentes.length === 0 ? (
+                <div className="text-center text-muted-foreground">No hay información de frentes disponible</div>
+              ) : (
+                <div className="space-y-3">
+                  {frentes.map((frente, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center">
+                          <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+                          <span className="font-medium">{frente.calle}</span>
+                        </div>
+                        <div className="flex items-center">
+                          <span className="text-muted-foreground">N°</span>
+                          <span className="font-medium ml-1">{frente.numero}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center">
+                        <Ruler className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <span className="font-medium">{frente.ancho_frente} m</span>
+                      </div>
+                    </div>
+                  ))}
+                  {isEsquina && (
+                    <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-xs text-blue-700 text-center">
+                        ⚠️ Lote de esquina: Este lote tiene {frentes.length} frente(s) 
+                        {frentes.length > 1 ? 's' : ''} con diferentes anchos
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -968,6 +1154,26 @@ export default function LoteDetailPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                   <div className="space-y-4">
                     <div className="flex items-center">
+                      <span className="font-medium">Superficie de Parcela:</span>
+                      <span className="ml-auto text-muted-foreground">
+                        {superficieParcela ? `${superficieParcela.toLocaleString('es-AR')} m²` : 'N/A'}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="font-medium">Incidencia UVA:</span>
+                      <span className="ml-auto text-muted-foreground">{formatDecimal(listing.incidenciaUVA)}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="font-medium">Alícuota:</span>
+                      <span className="ml-auto text-muted-foreground">{formatDecimal(listing.alicuota)}%</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="font-medium">FOT:</span>
+                      <span className="ml-auto text-muted-foreground">{formatDecimal(listing.fot)}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center">
                       <span className="font-medium">A1:</span>
                       <span className="ml-auto text-muted-foreground">{listing.A1 != null ? Number(listing.A1).toLocaleString('es-AR') : 'N/A'}</span>
                     </div>
@@ -980,14 +1186,18 @@ export default function LoteDetailPage() {
                       <span className="ml-auto text-muted-foreground">{listing['A1-A2'] != null ? Number(listing['A1-A2']).toLocaleString('es-AR') : 'N/A'}</span>
                     </div>
                   </div>
-                  <div className="space-y-4">
-                    <div className="flex items-center">
-                      <span className="font-medium">B:</span>
-                      <span className="ml-auto text-muted-foreground">{listing.B != null ? Number(listing.B).toLocaleString('es-AR') : 'N/A'}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="font-medium">AxB:</span>
-                      <span className="ml-auto text-muted-foreground">{listing.AxB != null ? Number(listing.AxB).toLocaleString('es-AR') : 'N/A'}</span>
+                </div>
+                <div className="mt-4 pt-4 border-t">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                    <div className="space-y-4">
+                      <div className="flex items-center">
+                        <span className="font-medium">B:</span>
+                        <span className="ml-auto text-muted-foreground">{listing.B != null ? Number(listing.B).toLocaleString('es-AR') : 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="font-medium">AxB:</span>
+                        <span className="ml-auto text-muted-foreground">{listing.AxB != null ? Number(listing.AxB).toLocaleString('es-AR') : 'N/A'}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1023,25 +1233,79 @@ export default function LoteDetailPage() {
                 ) : (
                   <div className="space-y-4">
                     {notes.length === 0 && <div className="text-center text-muted-foreground">No hay notas aún.</div>}
-                    {notes.map((note, index) => (
-                      <div key={index} className="flex gap-4">
-                        <Avatar>
-                          <AvatarImage src={note.agente?.avatarUrl || "https://placehold.co/100x100.png"} alt={`Foto de perfil de ${note.agente?.nombre || 'agente'}`} data-ai-hint={note.agente?.aiHint || "person"} />
-                          <AvatarFallback>
-                            {note.agente?.initials || (note.agente?.nombre ? `${note.agente.nombre[0] || ''}${note.agente.apellido?.[0] || ''}`.toUpperCase() : (note.agente || "?"))}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium">{note.agente?.nombre ? `${note.agente.nombre} ${note.agente.apellido}` : note.agente || "-"}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {note.fecha ? format(parseISO(note.fecha), "dd/MM/yyyy") : ""}
-                            </p>
+                    {notes.map((note, index) => {
+                      // Verificar si el usuario actual puede editar/eliminar esta nota
+                      const isCurrentUserNote = currentUser && (currentUser.user === note.agente?.user || currentUser.user === note.agente);
+                      
+                      return (
+                        <div key={index} className="flex gap-4">
+                          <Avatar>
+                            <AvatarImage src={note.agente?.avatarUrl || "https://placehold.co/100x100.png"} alt={`Foto de perfil de ${note.agente?.nombre || 'agente'}`} data-ai-hint={note.agente?.aiHint || "person"} />
+                            <AvatarFallback>
+                              {note.agente?.initials || (note.agente?.nombre ? `${note.agente.nombre[0] || ''}${note.agente.apellido?.[0] || ''}`.toUpperCase() : (note.agente || "?"))}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-medium">{note.agente?.nombre ? `${note.agente.nombre} ${note.agente.apellido}` : note.agente || "-"}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-xs text-muted-foreground">
+                                  {note.fecha ? format(parseISO(note.fecha), "dd/MM/yyyy") : ""}
+                                </p>
+                                {isCurrentUserNote && editingNoteId !== index && (
+                                  <div className="flex gap-1">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleEditNote(index, note.notas)}
+                                      className="h-6 w-6 p-0"
+                                    >
+                                      <Edit className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleDeleteNote(index)}
+                                      className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            {editingNoteId === index ? (
+                              <div className="mt-2 space-y-2">
+                                <Textarea
+                                  value={editingNoteText}
+                                  onChange={(e) => setEditingNoteText(e.target.value)}
+                                  className="min-h-[80px]"
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={handleSaveEdit}
+                                    className="h-8"
+                                  >
+                                    Guardar
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={handleCancelEdit}
+                                    className="h-8"
+                                  >
+                                    Cancelar
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-base text-muted-foreground">{note.notas}</p>
+                            )}
                           </div>
-                          <p className="text-base text-muted-foreground">{note.notas}</p>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

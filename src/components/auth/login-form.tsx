@@ -171,7 +171,6 @@ export function LoginForm() {
       setIsResetDialogOpen(false);
       setResetEmail("");
     } catch (error: any) {
-       console.error("Password reset failed", error);
        toast({
         title: "Error",
         description: "No se pudo enviar el email de recuperación. Verifica que el correo sea correcto.",

@@ -39,7 +39,6 @@ export async function GET() {
     
     return NextResponse.json({ estados: sortedEstados });
   } catch (error) {
-    console.error('Error en endpoint estados:', error);
     return NextResponse.json({ error: 'Error al obtener estados', details: (error as Error).message }, { status: 500 });
   }
 } 

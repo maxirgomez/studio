@@ -19,21 +19,18 @@ function mapLote(row: any) {
   function generateFotoLoteUrl(smp: string, existingFotoLote: string | null): string | null {
     // Si ya hay una URL de foto_lote, usarla
     if (existingFotoLote) {
-      console.log('mapLote: Usando URL existente de foto_lote:', existingFotoLote);
       return existingFotoLote;
     }
     
     // Si no hay URL existente, generar una nueva
     if (smp) {
       const fotoUrl = `https://fotos.usig.buenosaires.gob.ar/getFoto?smp=${smp.toUpperCase()}`;
-      console.log('mapLote: Generando nueva URL de foto_lote:', fotoUrl);
       return fotoUrl;
     }
     
     return null;
   }
   
-  console.log('mapLote: SMP original de la BD:', row.smp);
   
   // LOG para depuración de m2vendibles
   return {
@@ -54,6 +51,7 @@ function mapLote(row: any) {
     incidenciaUVA: row.inc_uva,
     fot: row.fot,
     alicuota: row.alicuota,
+    sup_parcela: row.sup_parcela,
     // --- Tasación ---
     m2vendibles: row.m2vendibles,
     vventa: row.vventa,
@@ -95,8 +93,11 @@ export async function GET(req: Request, context: any) {
     return NextResponse.json({ error: 'SMP no especificado' }, { status: 400 });
   }
   try {
+    // Obtener datos básicos del lote
     const { rows } = await pool.query(
-      `SELECT * FROM public.prefapp_lotes WHERE smp = $1 LIMIT 1`,
+      `SELECT l.*
+       FROM public.prefapp_lotes l 
+       WHERE l.smp = $1 LIMIT 1`,
       [smp]
     );
     if (rows.length === 0) {

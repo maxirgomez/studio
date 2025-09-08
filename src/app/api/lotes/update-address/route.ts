@@ -48,7 +48,6 @@ export async function POST(req: Request) {
     });
 
   } catch (error) {
-    console.error('[POST /api/lotes/update-address] Error:', error);
     return NextResponse.json({ 
       error: 'Error al actualizar el lote', 
       details: (error as Error).message 

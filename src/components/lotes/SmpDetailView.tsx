@@ -17,7 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, MapPin, Scan, Ruler, Edit, Download, Upload, Library, FileText, User, Home, Mailbox, Building, Phone, Smartphone, Mail, Info, XCircle, Scaling, Percent, CreditCard, DollarSign, MessageSquare, Calendar, CreditCard as CreditCardIcon } from "lucide-react";
+import { ArrowLeft, MapPin, Scan, Ruler, Edit, Download, Upload, Library, FileText, User, Home, Mailbox, Building, Phone, Smartphone, Mail, Info, XCircle, Scaling, Percent, CreditCard, DollarSign, MessageSquare, Calendar, CreditCard as CreditCardIcon, Square, CornerUpRight, Trash2, Save, X, Hand, Bell, Check, X as XIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +43,19 @@ function formatFallecido(value: string | null | undefined): string {
     return "Sin información";
   }
   return value;
+}
+
+// Función helper para generar URL de WhatsApp
+function generateWhatsAppUrl(phoneNumber: string): string {
+  if (!phoneNumber) return '';
+  
+  // Limpiar el número de teléfono (remover espacios, guiones, paréntesis)
+  const cleanNumber = phoneNumber.replace(/[\s\-\(\)]/g, '');
+  
+  // Si no empieza con código de país, agregar +54 (Argentina)
+  const formattedNumber = cleanNumber.startsWith('+') ? cleanNumber : `+54${cleanNumber}`;
+  
+  return `https://wa.me/${formattedNumber}`;
 }
 
 const PdfContent = React.forwardRef<
@@ -130,9 +143,9 @@ const PdfContent = React.forwardRef<
           <div style={fieldStyle}><span style={labelStyle}>Teléfono 1:</span> <span style={valueStyle}>{listing.tel1}</span></div>
           <div style={fieldStyle}><span style={labelStyle}>Teléfono 2:</span> <span style={valueStyle}>{listing.tel2}</span></div>
           <div style={fieldStyle}><span style={labelStyle}>Teléfono 3:</span> <span style={valueStyle}>{listing.tel3}</span></div>
-          <div style={fieldStyle}><span style={labelStyle}>Celular 1:</span> <span style={valueStyle}>{listing.cel1}</span></div>
-          <div style={fieldStyle}><span style={labelStyle}>Celular 2:</span> <span style={valueStyle}>{listing.cel2}</span></div>
-          <div style={fieldStyle}><span style={labelStyle}>Celular 3:</span> <span style={valueStyle}>{listing.cel3}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Celular 1:</span> <span style={valueStyle}>{listing.cel1} {listing.cel1 ? '(WhatsApp)' : ''}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Celular 2:</span> <span style={valueStyle}>{listing.cel2} {listing.cel2 ? '(WhatsApp)' : ''}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Celular 3:</span> <span style={valueStyle}>{listing.cel3} {listing.cel3 ? '(WhatsApp)' : ''}</span></div>
         </div>
       </div>
         </>
@@ -228,6 +241,11 @@ export default function SmpDetailView({
   const pdfContentRef = useRef<HTMLDivElement>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const { hide } = useSpinner();
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteText, setEditingNoteText] = useState("");
+  const [solicitudes, setSolicitudes] = useState<any[]>([]);
+  const [loadingSolicitudes, setLoadingSolicitudes] = useState(false);
+  const [showSolicitudes, setShowSolicitudes] = useState(false);
 
   // --- Archivos adjuntos ---
   const [uploading, setUploading] = useState(false);
@@ -237,6 +255,14 @@ export default function SmpDetailView({
   useEffect(() => {
     hide();
   }, []);
+
+
+  // Cargar solicitudes si el usuario es el agente asignado
+  useEffect(() => {
+    if (currentUser && listing && currentUser.user === listing.agente) {
+      loadSolicitudes();
+    }
+  }, [currentUser, listing]);
 
   const handleAddNote = async () => {
     if (newNote.trim() === "" || !listing || !currentUser) return;
@@ -267,6 +293,165 @@ export default function SmpDetailView({
         variant: "destructive",
         title: "Error",
         description: "No se pudo guardar la nota.",
+      });
+    }
+  };
+
+  const handleEditNote = (noteId: string, currentText: string) => {
+    setEditingNoteId(noteId);
+    setEditingNoteText(currentText);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingNoteId || editingNoteText.trim() === "") return;
+    
+    try {
+      const res = await fetch(`/api/lotes/${smp}/notas/${editingNoteId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notas: editingNoteText })
+      });
+      
+      if (res.ok) {
+        toast({
+          title: "Nota Actualizada",
+          description: "La nota ha sido actualizada correctamente.",
+        });
+        setEditingNoteId(null);
+        setEditingNoteText("");
+        window.location.reload();
+      } else {
+        const errorData = await res.json();
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: errorData.error || "No se pudo actualizar la nota.",
+        });
+      }
+    } catch {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo actualizar la nota.",
+      });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingNoteId(null);
+    setEditingNoteText("");
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (!window.confirm("¿Estás seguro de que quieres eliminar esta nota?")) return;
+    
+    try {
+      const res = await fetch(`/api/lotes/${smp}/notas/${noteId}`, {
+        method: "DELETE"
+      });
+      
+      if (res.ok) {
+        toast({
+          title: "Nota Eliminada",
+          description: "La nota ha sido eliminada correctamente.",
+        });
+        window.location.reload();
+      } else {
+        const errorData = await res.json();
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: errorData.error || "No se pudo eliminar la nota.",
+        });
+      }
+    } catch {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo eliminar la nota.",
+      });
+    }
+  };
+
+  const handleSolicitarLote = async () => {
+    if (!currentUser || !listing) return;
+    
+    try {
+      const res = await fetch(`/api/lotes/${smp}/solicitar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+      
+      if (res.ok) {
+        toast({
+          title: "Solicitud Enviada",
+          description: "Tu solicitud ha sido enviada al agente asignado.",
+        });
+      } else {
+        const errorData = await res.json();
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: errorData.error || "No se pudo enviar la solicitud.",
+        });
+      }
+    } catch {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo enviar la solicitud.",
+      });
+    }
+  };
+
+  const loadSolicitudes = async () => {
+    if (!currentUser || !listing) return;
+    
+    setLoadingSolicitudes(true);
+    try {
+      const res = await fetch(`/api/lotes/${smp}/solicitar`);
+      if (res.ok) {
+        const data = await res.json();
+        setSolicitudes(data.solicitudes || []);
+      }
+    } catch (error) {
+      console.error('Error al cargar solicitudes:', error);
+    } finally {
+      setLoadingSolicitudes(false);
+    }
+  };
+
+  const handleResponderSolicitud = async (solicitudId: string, accion: 'aceptar' | 'rechazar') => {
+    try {
+      const res = await fetch(`/api/lotes/${smp}/solicitar/${solicitudId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accion })
+      });
+      
+      if (res.ok) {
+        toast({
+          title: `Solicitud ${accion === 'aceptar' ? 'Aceptada' : 'Rechazada'}`,
+          description: `La solicitud ha sido ${accion === 'aceptar' ? 'aceptada' : 'rechazada'} correctamente.`,
+        });
+        loadSolicitudes();
+        // Recargar la página para actualizar el agente si se aceptó
+        if (accion === 'aceptar') {
+          window.location.reload();
+        }
+      } else {
+        const errorData = await res.json();
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: errorData.error || `No se pudo ${accion} la solicitud.`,
+        });
+      }
+    } catch {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: `No se pudo ${accion} la solicitud.`,
       });
     }
   };
@@ -353,7 +538,6 @@ export default function SmpDetailView({
             description: `La ficha del lote ${listing.address} se ha descargado.`,
         });
     } catch (error) {
-        console.error("Error al generar PDF:", error);
         toast({
             variant: "destructive",
             title: "Error al generar PDF",
@@ -509,6 +693,78 @@ export default function SmpDetailView({
                             <p className="text-sm text-muted-foreground">Agente a cargo</p>
                         </div>
                     </div>
+                    
+                    {/* Botón Solicitar Lote */}
+                    {currentUser && currentUser.user !== listing.agente && (
+                        <div className="pt-2">
+                            <Button 
+                                onClick={handleSolicitarLote}
+                                className="w-full"
+                                variant="outline"
+                            >
+                                <Hand className="mr-2 h-4 w-4" />
+                                Solicitar Lote
+                            </Button>
+                        </div>
+                    )}
+                    
+                    {/* Notificaciones de solicitudes para el agente asignado */}
+                    {currentUser && currentUser.user === listing.agente && solicitudes.length > 0 && (
+                        <div className="pt-2 border-t">
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center">
+                                    <Bell className="h-4 w-4 mr-2 text-orange-500" />
+                                    <span className="font-medium text-sm">Solicitudes Pendientes</span>
+                                </div>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => setShowSolicitudes(!showSolicitudes)}
+                                    className="h-6 w-6 p-0"
+                                >
+                                    {showSolicitudes ? <XIcon className="h-3 w-3" /> : <Bell className="h-3 w-3" />}
+                                </Button>
+                            </div>
+                            
+                            {showSolicitudes && (
+                                <div className="space-y-2">
+                                    {solicitudes.map((solicitud) => (
+                                        <div key={solicitud.id} className="p-2 bg-orange-50 border border-orange-200 rounded">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-sm font-medium">
+                                                        {solicitud.nombre && solicitud.apellido 
+                                                            ? `${solicitud.nombre} ${solicitud.apellido}`
+                                                            : solicitud.solicitante
+                                                        }
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {new Date(solicitud.fecha_solicitud).toLocaleDateString('es-AR')}
+                                                    </p>
+                                                </div>
+                                                <div className="flex gap-1">
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() => handleResponderSolicitud(solicitud.id, 'aceptar')}
+                                                        className="h-6 w-6 p-0 bg-green-500 hover:bg-green-600"
+                                                    >
+                                                        <Check className="h-3 w-3" />
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() => handleResponderSolicitud(solicitud.id, 'rechazar')}
+                                                        className="h-6 w-6 p-0 bg-red-500 hover:bg-red-600"
+                                                    >
+                                                        <XIcon className="h-3 w-3" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
@@ -649,14 +905,11 @@ export default function SmpDetailView({
                         <span className="ml-auto text-muted-foreground">{listing.area} m²</span>
                       </div>
                       <div className="flex items-center">
-                        <Scaling className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Incidencia UVA:</span>
-                        <span className="ml-auto text-muted-foreground">{listing.incidenciaUVA}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <FileText className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">FOT:</span>
-                        <span className="ml-auto text-muted-foreground">{listing.fot}</span>
+                        <Square className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <span className="font-medium">Superficie de Parcela:</span>
+                        <span className="ml-auto text-muted-foreground">
+                          {listing.sup_parcela ? `${listing.sup_parcela.toLocaleString('es-AR')} m²` : 'N/A'}
+                        </span>
                       </div>
                     </div>
                     <div className="space-y-4">
@@ -675,12 +928,16 @@ export default function SmpDetailView({
                         <span className="font-medium">Partida:</span>
                         <span className="ml-auto text-muted-foreground">{listing.partida}</span>
                       </div>
-                      <div className="flex items-center">
-                        <Percent className="h-5 w-5 mr-3 text-muted-foreground" />
-                        <span className="font-medium">Alícuota:</span>
-                        <span className="ml-auto text-muted-foreground">{listing.alicuota}%</span>
-                      </div>
                     </div>
+                  </div>
+                  
+                  {/* Sección de Frentes de Parcela */}
+                  <div className="mt-6 pt-4 border-t">
+                    <div className="flex items-center mb-3">
+                      <CornerUpRight className="h-5 w-5 mr-3 text-muted-foreground" />
+                      <span className="font-medium">Frentes de Parcela</span>
+                    </div>
+                    <div className="text-muted-foreground text-sm">Información de frentes temporalmente deshabilitada.</div>
                   </div>
                 </CardContent>
             </Card>
@@ -753,17 +1010,56 @@ export default function SmpDetailView({
                       <div className="flex items-center">
                           <Smartphone className="h-5 w-5 mr-3 text-muted-foreground" />
                           <span className="font-medium">Celular 1:</span>
-                          <span className="ml-auto text-muted-foreground">{listing.cel1}</span>
+                          <span className="ml-auto">
+                            {listing.cel1 ? (
+                              <a 
+                                href={generateWhatsAppUrl(listing.cel1)} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-green-600 hover:text-green-800 hover:underline"
+                              >
+                                {listing.cel1}
+                              </a>
+                            ) : (
+                              <span className="text-muted-foreground">N/A</span>
+                            )}
+                          </span>
                       </div>
                       <div className="flex items-center">
                           <Smartphone className="h-5 w-5 mr-3 text-muted-foreground" />
                           <span className="font-medium">Celular 2:</span>
-                          <span className="ml-auto text-muted-foreground">{listing.cel2}</span>
+                          <span className="ml-auto">
+                            {listing.cel2 ? (
+                              <a 
+                                href={generateWhatsAppUrl(listing.cel2)} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-green-600 hover:text-green-800 hover:underline"
+                              >
+                                {listing.cel2}
+                              </a>
+                            ) : (
+                              <span className="text-muted-foreground">N/A</span>
+                            )}
+                          </span>
                       </div>
                       <div className="flex items-center">
                           <Smartphone className="h-5 w-5 mr-3 text-muted-foreground" />
                           <span className="font-medium">Celular 3:</span>
-                          <span className="ml-auto text-muted-foreground">{listing.cel3}</span>
+                          <span className="ml-auto">
+                            {listing.cel3 ? (
+                              <a 
+                                href={generateWhatsAppUrl(listing.cel3)} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-green-600 hover:text-green-800 hover:underline"
+                              >
+                                {listing.cel3}
+                              </a>
+                            ) : (
+                              <span className="text-muted-foreground">N/A</span>
+                            )}
+                          </span>
                       </div>
                     </div>
                   </div>
@@ -809,6 +1105,72 @@ export default function SmpDetailView({
                     </div>
                   </div>
                 </div>
+                
+                {/* Sección de Plusvalía */}
+                <div className="mt-6 pt-4 border-t">
+                  <div className="flex items-center mb-4">
+                    <Percent className="h-5 w-5 mr-3 text-muted-foreground" />
+                    <span className="font-medium text-lg">Plusvalía</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                    <div className="space-y-4">
+                      <div className="flex items-center">
+                        <Square className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <span className="font-medium">Superficie de Parcela:</span>
+                        <span className="ml-auto text-muted-foreground">
+                          {listing.sup_parcela ? `${listing.sup_parcela.toLocaleString('es-AR')} m²` : 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <Scaling className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <span className="font-medium">Incidencia UVA:</span>
+                        <span className="ml-auto text-muted-foreground">{listing.incidenciaUVA || 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Ruler className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <span className="font-medium">M2 Plusvalía estimados:</span>
+                        <span className="ml-auto text-muted-foreground">{listing.m2Plusvalia || 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <FileText className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <span className="font-medium">A1 (Área CUr * 0,8):</span>
+                        <span className="ml-auto text-muted-foreground">{listing.a1 || 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <FileText className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <span className="font-medium">A2 (Área FOT):</span>
+                        <span className="ml-auto text-muted-foreground">{listing.a2 || 'N/A'}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="flex items-center">
+                        <Percent className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <span className="font-medium">Alícuota:</span>
+                        <span className="ml-auto text-muted-foreground">{listing.alicuota ? `${listing.alicuota}%` : 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <FileText className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <span className="font-medium">FOT:</span>
+                        <span className="ml-auto text-muted-foreground">{listing.fot || 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <FileText className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <span className="font-medium">A1 - A2:</span>
+                        <span className="ml-auto text-muted-foreground">{listing.a1MenosA2 || 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <FileText className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <span className="font-medium">B (Incidencia * Alícuota):</span>
+                        <span className="ml-auto text-muted-foreground">{listing.b || 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <FileText className="h-5 w-5 mr-3 text-muted-foreground" />
+                        <span className="font-medium">AxB (UVAs Estimadas):</span>
+                        <span className="ml-auto text-muted-foreground">{listing.axb || 'N/A'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
             
@@ -837,25 +1199,83 @@ export default function SmpDetailView({
                   <Separator />
                   <div className="space-y-4">
                     {notes.length === 0 && <div className="text-center text-muted-foreground">No hay notas aún.</div>}
-                    {notes.map((note, index) => (
-                      <div key={index} className="flex gap-4">
-                        <Avatar>
-                          <AvatarImage src={note.agente?.avatarUrl || "https://placehold.co/100x100.png"} alt={`Foto de perfil de ${note.agente?.nombre || 'agente'}`} data-ai-hint={note.agente?.aiHint || "person"} />
-                          <AvatarFallback>
-                            {note.agente?.initials || (note.agente?.nombre ? `${note.agente.nombre[0] || ''}${note.agente.apellido?.[0] || ''}`.toUpperCase() : (note.agente || "?"))}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium">{note.agente?.nombre ? `${note.agente.nombre} ${note.agente.apellido}` : note.agente || "-"}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {note.fecha ? format(parseISO(note.fecha), "dd/MM/yyyy") : ""}
-                            </p>
+                    {notes.map((note, index) => {
+                      // Simplificar: si hay usuario logueado, puede editar/eliminar sus propias notas
+                      const isCurrentUserNote = currentUser && (currentUser.user === note.agente?.user || currentUser.user === note.agente);
+                      const isEditing = editingNoteId === note.id;
+                      
+                      
+                      return (
+                        <div key={note.id || index} className="flex gap-4">
+                          <Avatar>
+                            <AvatarImage src={note.agente?.avatarUrl || "https://placehold.co/100x100.png"} alt={`Foto de perfil de ${note.agente?.nombre || 'agente'}`} data-ai-hint={note.agente?.aiHint || "person"} />
+                            <AvatarFallback>
+                              {note.agente?.initials || (note.agente?.nombre ? `${note.agente.nombre[0] || ''}${note.agente.apellido?.[0] || ''}`.toUpperCase() : (note.agente || "?"))}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-medium">{note.agente?.nombre ? `${note.agente.nombre} ${note.agente.apellido}` : note.agente || "-"}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-xs text-muted-foreground">
+                                  {note.fecha ? format(parseISO(note.fecha), "dd/MM/yyyy") : ""}
+                                </p>
+                                {isCurrentUserNote && !isEditing && (
+                                  <div className="flex gap-1">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleEditNote(note.id, note.notas)}
+                                      className="h-6 w-6 p-0"
+                                    >
+                                      <Edit className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleDeleteNote(note.id)}
+                                      className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            {isEditing ? (
+                              <div className="mt-2 space-y-2">
+                                <Textarea
+                                  value={editingNoteText}
+                                  onChange={(e) => setEditingNoteText(e.target.value)}
+                                  className="min-h-[80px]"
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={handleSaveEdit}
+                                    className="h-8"
+                                  >
+                                    <Save className="h-3 w-3 mr-1" />
+                                    Guardar
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={handleCancelEdit}
+                                    className="h-8"
+                                  >
+                                    <X className="h-3 w-3 mr-1" />
+                                    Cancelar
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-base text-muted-foreground">{note.notas}</p>
+                            )}
                           </div>
-                          <p className="text-base text-muted-foreground">{note.notas}</p>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </CardContent>

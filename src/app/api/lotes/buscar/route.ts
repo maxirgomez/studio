@@ -361,7 +361,6 @@ export async function GET(req: Request) {
       return NextResponse.json({ found: true, lotes });
     }
   } catch (error) {
-    console.error('[API buscar] Error:', error);
     return NextResponse.json({ error: 'Error al buscar lote', details: (error as Error).message }, { status: 500 });
   }
 } 

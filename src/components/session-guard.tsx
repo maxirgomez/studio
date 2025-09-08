@@ -16,6 +16,7 @@ export function SessionGuard() {
     const checkSession = async () => {
       try {
         const res = await fetch("/api/me");
+        
         const now = new Date();
         
         if ((res.status === 401 || res.status === 403) && !expired) {
@@ -28,7 +29,6 @@ export function SessionGuard() {
           router.push(`/?next=${encodeURIComponent(pathname)}`);
         }
       } catch (e) {
-        
       }
     };
     checkSession();

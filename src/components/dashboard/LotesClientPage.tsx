@@ -62,6 +62,8 @@ export default function LotesClientPage() {
 
   const [minArea, setMinArea] = useState(0);
   const [maxArea, setMaxArea] = useState(1000);
+  const [minFrente, setMinFrente] = useState(0);
+  const [maxFrente, setMaxFrente] = useState(50);
   
   const currentPage = Number(searchParams.get('page')) || 1;
   const listingsPerPage = 8;
@@ -70,15 +72,21 @@ export default function LotesClientPage() {
   const neighborhoodFilters = useMemo(() => searchParams.get('neighborhood')?.split(',') || [], [searchParams]);
   const statusFilters = useMemo(() => searchParams.get('status')?.split(',') || [], [searchParams]);
   const origenFilters = useMemo(() => searchParams.get('origen')?.split(',') || [], [searchParams]);
+  const tipoFilters = useMemo(() => searchParams.get('tipo')?.split(',') || [], [searchParams]);
+  const esquinaFilters = useMemo(() => searchParams.get('esquina')?.split(',') || [], [searchParams]);
   const searchFilter = useMemo(() => searchParams.get('search') || '', [searchParams]);
   const sortBy = useMemo(() => searchParams.get('sortBy') || 'gid', [searchParams]);
   const sortOrder = useMemo(() => (searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc', [searchParams]);
 
   const minAreaFilter = useMemo(() => searchParams.get('minArea') ? Number(searchParams.get('minArea')) : minArea, [searchParams, minArea]);
   const maxAreaFilter = useMemo(() => searchParams.get('maxArea') ? Number(searchParams.get('maxArea')) : maxArea, [searchParams, maxArea]);
+  const minFrenteFilter = useMemo(() => searchParams.get('minFrente') ? Number(searchParams.get('minFrente')) : minFrente, [searchParams, minFrente]);
+  const maxFrenteFilter = useMemo(() => searchParams.get('maxFrente') ? Number(searchParams.get('maxFrente')) : maxFrente, [searchParams, maxFrente]);
 
   const [areaInput, setAreaInput] = useState<[string, string]>(['', '']);
   const [sliderValue, setSliderValue] = useState<[number, number]>([minArea, maxArea]);
+  const [frenteInput, setFrenteInput] = useState<[string, string]>(['', '']);
+  const [frenteSliderValue, setFrenteSliderValue] = useState<[number, number]>([minFrente, maxFrente]);
   
   const [uniqueNeighborhoods, setUniqueNeighborhoods] = useState<string[]>([]);
   const [uniqueStatuses, setUniqueStatuses] = useState<string[]>([]);
@@ -129,10 +137,22 @@ export default function LotesClientPage() {
         setMinArea(data.minArea || 0);
         setMaxArea(data.maxArea || 1000);
       } catch (error) {
-        console.error('Error al cargar rango de áreas:', error);
       }
     }
     fetchAreaRange();
+  }, []);
+
+  useEffect(() => {
+    async function fetchFrenteRange() {
+      try {
+        const res = await fetch('/api/lotes/frente-range');
+        const data = await res.json();
+        setMinFrente(data.minFrente || 0);
+        setMaxFrente(data.maxFrente || 50);
+      } catch (error) {
+      }
+    }
+    fetchFrenteRange();
   }, []);
   
   useEffect(() => {
@@ -146,6 +166,18 @@ export default function LotesClientPage() {
       setSliderValue([minArea, maxArea]);
     }
   }, [minAreaFilter, maxAreaFilter, minArea, maxArea]);
+
+  useEffect(() => {
+    // Solo mostrar valores en los inputs si hay un filtro activo (no es el rango completo)
+    if (minFrenteFilter > minFrente || maxFrenteFilter < maxFrente) {
+      setFrenteInput([String(minFrenteFilter), String(maxFrenteFilter)]);
+      setFrenteSliderValue([minFrenteFilter, maxFrenteFilter]);
+    } else {
+      // Si no hay filtro activo, dejar los inputs vacíos
+      setFrenteInput(['', '']);
+      setFrenteSliderValue([minFrente, maxFrente]);
+    }
+  }, [minFrenteFilter, maxFrenteFilter, minFrente, maxFrente]);
   
   const createQueryString = useCallback(
     (paramsToUpdate: Record<string, string | null | number>) => {
@@ -174,6 +206,8 @@ export default function LotesClientPage() {
   const handleRemoveFilter = (key: string, valueToRemove: string) => {
     if (key === 'area') {
       router.push(`${pathname}?${createQueryString({ minArea: null, maxArea: null, page: 1 })}`, { scroll: false });
+    } else if (key === 'frente') {
+      router.push(`${pathname}?${createQueryString({ minFrente: null, maxFrente: null, page: 1 })}`, { scroll: false });
     } else {
       const currentValues = searchParams.get(key)?.split(',') || [];
       const newValues = currentValues.filter(v => v !== valueToRemove);
@@ -213,6 +247,38 @@ export default function LotesClientPage() {
      router.push(`${pathname}?${createQueryString({ minArea: String(newRange[0]), maxArea: String(newRange[1]), page: 1 })}`, { scroll: false });
   };
 
+  const handleFrenteInputChange = (index: 0 | 1, value: string) => {
+    const newInputs = [...frenteInput] as [string, string];
+    newInputs[index] = value;
+    setFrenteInput(newInputs);
+  };
+  
+  const handleFrenteInputBlur = () => {
+    let newMin = Number(frenteInput[0]);
+    let newMax = Number(frenteInput[1]);
+
+    if (isNaN(newMin) || newMin < minFrente) newMin = minFrente;
+    if (isNaN(newMax) || newMax > maxFrente) newMax = maxFrente;
+    if (newMin > maxFrente) newMin = maxFrente;
+    if (newMax < minFrente) newMax = minFrente;
+    if (newMin > newMax) {
+      [newMin, newMax] = [newMax, newMin];
+    }
+    
+    if (newMin !== minFrenteFilter || newMax !== maxFrenteFilter) {
+      router.push(`${pathname}?${createQueryString({ minFrente: String(newMin), maxFrente: String(newMax), page: 1 })}`, { scroll: false });
+    }
+  };
+  
+  const handleFrenteSliderVisualChange = (newRange: [number, number]) => {
+    setFrenteSliderValue(newRange);
+    setFrenteInput([String(newRange[0]), String(newRange[1])])
+  };
+  
+  const handleFrenteSliderFilterCommit = (newRange: [number, number]) => {
+     router.push(`${pathname}?${createQueryString({ minFrente: String(newRange[0]), maxFrente: String(newRange[1]), page: 1 })}`, { scroll: false });
+  };
+
   const handleSortOrderToggle = () => {
     const newOrder = sortOrder === 'asc' ? 'desc' : 'asc';
     router.push(`${pathname}?${createQueryString({ sortBy: 'm2aprox', sortOrder: newOrder, page: 1 })}`, { scroll: false });
@@ -249,12 +315,22 @@ export default function LotesClientPage() {
   neighborhoodFilters.forEach(value => activeFilters.push({ type: 'Barrio', value, key: 'neighborhood' }));
   origenFilters.forEach(value => activeFilters.push({ type: 'Origen', value, key: 'origen' }));
   statusFilters.forEach(value => activeFilters.push({ type: 'Estado', value, key: 'status' }));
+  tipoFilters.forEach(value => activeFilters.push({ type: 'Tipo', value, key: 'tipo' }));
+  esquinaFilters.forEach(value => activeFilters.push({ type: 'Esquina', value, key: 'esquina' }));
   // Solo mostrar filtro de área si realmente está aplicado (no es el rango completo)
   if (minAreaFilter > minArea || maxAreaFilter < maxArea) {
       activeFilters.push({
           type: 'M²',
           value: `${minAreaFilter} - ${maxAreaFilter}`,
           key: 'area'
+      });
+  }
+  // Solo mostrar filtro de frente si realmente está aplicado (no es el rango completo)
+  if (minFrenteFilter > minFrente || maxFrenteFilter < maxFrente) {
+      activeFilters.push({
+          type: 'Frente',
+          value: `${minFrenteFilter} - ${maxFrenteFilter}`,
+          key: 'frente'
       });
   }
 
@@ -323,7 +399,7 @@ export default function LotesClientPage() {
       }
     };
     fetchLotes();
-     }, [currentPage, agentFilters, neighborhoodFilters, statusFilters, origenFilters, minAreaFilter, maxAreaFilter, searchFilter, sortBy, sortOrder, router, pathname, createQueryString]);
+     }, [currentPage, agentFilters, neighborhoodFilters, statusFilters, origenFilters, tipoFilters, esquinaFilters, minAreaFilter, maxAreaFilter, minFrenteFilter, maxFrenteFilter, searchFilter, sortBy, sortOrder, router, pathname, createQueryString]);
 
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 lg:grid-cols-[280px_1fr]">
@@ -333,6 +409,8 @@ export default function LotesClientPage() {
           statusFilters={statusFilters}
           neighborhoodFilters={neighborhoodFilters}
           agentFilters={agentFilters}
+          tipoFilters={tipoFilters}
+          esquinaFilters={esquinaFilters}
           uniqueOrigens={uniqueOrigens}
           uniqueStatuses={uniqueStatuses}
           uniqueNeighborhoods={uniqueNeighborhoods}
@@ -342,11 +420,19 @@ export default function LotesClientPage() {
           minArea={minArea}
           maxArea={maxArea}
           areaInput={areaInput}
+          frenteSliderValue={frenteSliderValue}
+          minFrente={minFrente}
+          maxFrente={maxFrente}
+          frenteInput={frenteInput}
           handleMultiSelectFilterChange={handleMultiSelectFilterChange}
           handleAreaInputChange={handleAreaInputChange}
           handleAreaInputBlur={handleAreaInputBlur}
           handleSliderVisualChange={handleSliderVisualChange}
           handleSliderFilterCommit={handleSliderFilterCommit}
+          handleFrenteInputChange={handleFrenteInputChange}
+          handleFrenteInputBlur={handleFrenteInputBlur}
+          handleFrenteSliderVisualChange={handleFrenteSliderVisualChange}
+          handleFrenteSliderFilterCommit={handleFrenteSliderFilterCommit}
           activeFilters={activeFilters}
           handleRemoveFilter={handleRemoveFilter}
           sortOrder={sortOrder}

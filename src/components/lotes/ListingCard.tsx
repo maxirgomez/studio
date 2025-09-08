@@ -81,7 +81,6 @@ const ListingCard = ({ listing }: ListingCardProps) => (
              }
              
              // DEBUG: Mostrar el valor exacto que llega
-             console.log('🔍 Dirección DEBUG:', listing.address);
              
              // Detectar si la dirección tiene formato "CALLE 1155.1157.1159..."
              const match = listing.address.match(/^(\D+)([\d.]+)$/);

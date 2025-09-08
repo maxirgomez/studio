@@ -35,6 +35,8 @@ function mapLote(row: any, agenteUsuario: any = null) {
     imageUrl: row.foto_lote,
     aiHint: row.ai_hint,
     origen: row.origen,
+    tipo: row.tipo,
+    esquina: row.esquina,
     codigoUrbanistico: row.codigo_urbanistico,
     cpu: row.cpu,
     partida: row.partida,
@@ -60,8 +62,12 @@ export async function GET(req: Request) {
   const neighborhood = searchParams.get('neighborhood');
   const status = searchParams.get('status');
   const origen = searchParams.get('origen');
+  const tipo = searchParams.get('tipo');
+  const esquina = searchParams.get('esquina');
   const minArea = searchParams.get('minArea');
   const maxArea = searchParams.get('maxArea');
+  const minFrente = searchParams.get('minFrente');
+  const maxFrente = searchParams.get('maxFrente');
   const search = searchParams.get('search');
   const sortBy = searchParams.get('sortBy') || 'gid';
   const sortOrder = searchParams.get('sortOrder') || 'asc';
@@ -113,6 +119,22 @@ export async function GET(req: Request) {
       idx++;
     }
   }
+  if (tipo) {
+    const tipos = tipo.split(',').map(t => t.trim()).filter(Boolean);
+    if (tipos.length > 0) {
+      whereClauses.push(`l.tipo = ANY($${idx}::text[])`);
+      values.push(tipos);
+      idx++;
+    }
+  }
+  if (esquina) {
+    const esquinas = esquina.split(',').map(e => e.trim()).filter(Boolean);
+    if (esquinas.length > 0) {
+      whereClauses.push(`l.esquina = ANY($${idx}::text[])`);
+      values.push(esquinas);
+      idx++;
+    }
+  }
   if (minArea) {
     whereClauses.push(`l.m2aprox IS NOT NULL AND CAST(l.m2aprox AS DECIMAL) >= $${idx}`);
     values.push(Number(minArea));
@@ -123,9 +145,26 @@ export async function GET(req: Request) {
     values.push(Number(maxArea));
     idx++;
   }
+  if (minFrente || maxFrente) {
+    // Para el filtro de frente, necesitamos hacer un JOIN con la tabla de frentes
+    // y verificar que al menos uno de los frentes del SMP cumpla con el criterio
+    whereClauses.push(`l.smp IN (
+      SELECT DISTINCT smp 
+      FROM public.frentesparcelas 
+      WHERE anchofrente IS NOT NULL AND anchofrente > 0
+      ${minFrente ? `AND anchofrente >= $${idx}` : ''}
+      ${maxFrente ? `AND anchofrente <= $${idx + (minFrente ? 1 : 0)}` : ''}
+    )`);
+    if (minFrente) {
+      values.push(Number(minFrente));
+      idx++;
+    }
+    if (maxFrente) {
+      values.push(Number(maxFrente));
+      idx++;
+    }
+  }
   if (search) {
-    console.log('🔍 Búsqueda DEBUG:');
-    console.log('  - Término de búsqueda:', search);
     
     whereClauses.push(`(
       LOWER(l.smp) LIKE $${idx} OR 
@@ -209,17 +248,9 @@ export async function GET(req: Request) {
       return mapLote(row, agenteUsuario);
     });
     
-    // Log para verificar los datos que se están enviando
-    if (search) {
-      console.log('📊 Datos encontrados:');
-      lotes.forEach((lote, index) => {
-        console.log(`  ${index + 1}. Barrio: "${lote.neighborhood}" (SMP: ${lote.smp})`);
-      });
-    }
     
     return NextResponse.json({ lotes, total });
   } catch (error) {
-    console.error('Error en /api/lotes:', error);
     return NextResponse.json(
       { error: 'Error al obtener los lotes', details: (error as Error).message },
       { status: 500 }
@@ -244,7 +275,7 @@ export async function POST(req: Request) {
     
     // Validar campos requeridos
     const requiredFields = [
-      'smp', 'propietario', 'estado', 'agente', 'origen'
+      'smp', 'propietario', 'estado', 'agente', 'origen', 'tipo'
     ];
     
     for (const field of requiredFields) {
@@ -286,7 +317,7 @@ export async function POST(req: Request) {
     
     // Insertar el nuevo lote
     const insertFields = [
-      'smp', 'propietario', 'direccion', 'barrio', 'm2aprox', 'estado', 'agente', 'origen',
+      'smp', 'propietario', 'direccion', 'barrio', 'm2aprox', 'estado', 'agente', 'origen', 'tipo',
       'cur', 'dist_cpu_1', 'partida', 'inc_uva', 'fot', 'alicuota',
       'localidad', 'cp', 'direccionalt', 'fallecido', 'email', 'cuitcuil', 'otros',
       'tel1', 'tel2', 'tel3', 'cel1', 'cel2', 'cel3',

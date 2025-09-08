@@ -7,15 +7,22 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev_secret";
 
 export async function GET(req: NextRequest) {
   const token = req.cookies.get("token")?.value;
+  
+  // Log para debugging
+  
   if (!token) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
+  
   try {
     const payload = jwt.verify(token, JWT_SECRET);
+    
     const userId = typeof payload === 'object' && 'user' in payload ? payload.user : null;
     if (!userId) {
       return NextResponse.json({ error: "Token inválido" }, { status: 401 });
     }
+    
+    
     // Consultar la base de datos para obtener los datos actuales
     const { rows } = await pool.query(
       'SELECT nombre, mail, "user", apellido, rol, foto_perfil FROM public.prefapp_users WHERE "user" = $1',

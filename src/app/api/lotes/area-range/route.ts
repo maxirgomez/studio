@@ -13,7 +13,6 @@ export async function GET() {
       maxArea 
     });
   } catch (error) {
-    console.error('Error al obtener rango de áreas:', error);
     return NextResponse.json(
       { error: 'Error al obtener rango de áreas', details: (error as Error).message },
       { status: 500 }

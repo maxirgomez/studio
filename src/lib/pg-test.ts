@@ -5,7 +5,7 @@ import { Client } from "pg";
 export async function testPostgresConnection() {
   const client = new Client({
     user: 'developer',
-    host: '34.45.139.58',
+    host: '34.136.69.128',
     database: 'prefapp',
     password: 'Dev!2025',
     port: 5432,
@@ -22,9 +22,6 @@ export async function testPostgresConnection() {
       ORDER BY estado
     `);
     
-    estadosRes.rows.forEach((row, index) => {
-      console.log(`${index + 1}. "${row.estado}" (longitud: ${row.estado?.length})`);
-    });
     
     // También mostrar conteo por estado
     const conteoRes = await client.query(`
@@ -35,12 +32,8 @@ export async function testPostgresConnection() {
       ORDER BY cantidad DESC
     `);
     
-    conteoRes.rows.forEach(row => {
-      console.log(`"${row.estado}": ${row.cantidad} lotes`);
-    });
     
   } catch (err) {
-    console.error('Error de conexión o consulta:', err);
     throw err;
   } finally {
     await client.end();

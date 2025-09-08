@@ -15,14 +15,31 @@ export async function GET(req: NextRequest, { params }: any) {
   }
   try {
     const { rows } = await pool.query(
-      `SELECT smp, agente, notas, fecha FROM prefapp_notas WHERE smp = $1 ORDER BY fecha DESC`,
+      `SELECT n.smp, n.agente, n.notas, n.fecha, u.nombre, u.apellido, u.foto_perfil, u.initials
+       FROM prefapp_notas n
+       LEFT JOIN prefapp_users u ON n.agente = u.user
+       WHERE n.smp = $1 ORDER BY n.fecha DESC`,
       [smp]
     );
-    const notas = rows.map(nota => ({ ...nota, fecha: nota.fecha }));
+    
+    const notas = rows.map((nota, index) => ({ 
+      id: index + 1, // Generar ID temporal basado en el índice
+      smp: nota.smp,
+      agente: {
+        user: nota.agente,
+        nombre: nota.nombre,
+        apellido: nota.apellido,
+        avatarUrl: nota.foto_perfil,
+        initials: nota.initials
+      },
+      notas: nota.notas,
+      fecha: nota.fecha 
+    }));
+    
     
     return NextResponse.json({ notas });
   } catch (error) {
-    console.error("[NOTAS][GET] Error al obtener notas:", error);
+    console.error('Error al obtener notas:', error);
     return NextResponse.json({ error: "Error al obtener notas", details: (error as Error).message }, { status: 500 });
   }
 }
@@ -63,42 +80,20 @@ export async function POST(req: NextRequest, { params }: any) {
     return NextResponse.json({ error: "Usuario no encontrado en el token" }, { status: 401 });
   }
 
-  // Validación de seguridad: verificar que el usuario tenga permisos para agregar notas a este lote
+  // Verificar que el lote existe
   try {
-    // Obtener información del lote para verificar permisos
     const { rows: loteRows } = await pool.query(
-      `SELECT agente FROM public.prefapp_lotes WHERE smp = $1 LIMIT 1`,
+      `SELECT smp FROM public.prefapp_lotes WHERE smp = $1 LIMIT 1`,
       [smp]
     );
     
     if (loteRows.length === 0) {
-      
       return NextResponse.json({ error: 'Lote no encontrado' }, { status: 404 });
     }
     
-    const lote = loteRows[0];
-    const loteAgente = lote.agente;
-    
-    ;
-
-    // Solo los administradores tienen acceso total
-    const isAdmin = rol === 'Administrador';
-    
-    // El usuario asignado al lote también puede agregar notas
-    const isAssignedAgent = agente && loteAgente &&
-        agente.toLowerCase() === loteAgente.toLowerCase();
-    
-    if (!isAdmin && !isAssignedAgent) {
-      
-      return NextResponse.json({ 
-        error: 'Acceso denegado. Solo el agente asignado o un administrador pueden agregar notas a este lote.' 
-      }, { status: 403 });
-    }
-    
   } catch (error) {
-    console.error('[NOTAS][POST] Error en validación de permisos:', error);
     return NextResponse.json({ 
-      error: 'Error al validar permisos de usuario' 
+      error: 'Error al verificar lote' 
     }, { status: 500 });
   }
   let body;
@@ -117,26 +112,45 @@ export async function POST(req: NextRequest, { params }: any) {
   // Guardar la fecha como YYYY-MM-DD (compatible con columna date)
   const fecha = new Date().toISOString().slice(0, 10);
   try {
-    // Insertar la nota (sin RETURNING)
+    // Insertar la nota
     const insertQuery = `INSERT INTO prefapp_notas (smp, agente, notas, fecha) VALUES ($1, $2, $3, $4)`;
     await pool.query(insertQuery, [smp, agente, nota, fecha]);
-    // Buscar la última nota insertada para este smp, agente y texto
-    const selectQuery = `SELECT smp, agente, notas, fecha FROM prefapp_notas WHERE smp = $1 AND agente = $2 AND notas = $3 AND fecha = $4 ORDER BY fecha DESC LIMIT 1`;
-    const { rows } = await pool.query(selectQuery, [smp, agente, nota, fecha]);
-    const notaInsertada = rows[0];
     
-    // Devolver la nota insertada con los datos de usuario para el frontend
+    // Obtener información completa del usuario desde la base de datos
+    const { rows: userRows } = await pool.query(
+      `SELECT nombre, apellido, foto_perfil, initials FROM prefapp_users WHERE user = $1 LIMIT 1`,
+      [agente]
+    );
+    
+    const userInfo = userRows[0] || {
+      nombre: nombre || '',
+      apellido: apellido || '',
+      foto_perfil: avatarUrl || '',
+      initials: initials || ''
+    };
+    
+    const notaInsertada = {
+      id: Date.now(), // ID temporal único
+      smp: smp,
+        agente: {
+          user: agente,
+          nombre: userInfo.nombre,
+          apellido: userInfo.apellido,
+          avatarUrl: userInfo.foto_perfil,
+          initials: userInfo.initials
+        },
+      notas: nota,
+      fecha: fecha,
+    };
+    
+    
+    // Devolver la nota insertada con información del usuario actual
     return NextResponse.json({
       success: true,
-      nota: {
-        smp,
-        agente, // <-- solo el username
-        notas: nota,
-        fecha: notaInsertada?.fecha,
-      }
+      nota: notaInsertada
     });
   } catch (error) {
-    console.error("[NOTAS][POST] Error al insertar nota:", error);
+    console.error('Error al insertar nota:', error);
     return NextResponse.json({ error: "Error al insertar nota", details: (error as Error).message }, { status: 500 });
   }
 } 

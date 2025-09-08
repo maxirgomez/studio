@@ -116,10 +116,8 @@ function useTypingComplete<T>(value: T, minLength: number = 3, isNumeric: boolea
         delay = hasEndingPunctuation ? 100 : (hasSpace ? 200 : 600);
       }
 
-      console.log(`⏱️ useTypingComplete - Valor: "${stringValue}", Tipo: ${isNumeric ? 'numérico' : 'texto'}, Delay: ${delay}ms`);
 
       timeoutRef.current = setTimeout(() => {
-        console.log(`✅ useTypingComplete completado - Valor: "${stringValue}"`);
         setCompletedValue(value);
         setIsTyping(false);
       }, delay);
@@ -147,6 +145,7 @@ const newLoteFormSchema = z.object({
   agent: z.string().min(1, "El agente es requerido."),
   status: z.string().min(1, "El estado es requerido."),
   origen: z.string().min(1, "El origen es requerido."),
+  tipo: z.string().min(1, "El tipo es requerido."),
 
   // Informacion Normativa
   codigoUrbanistico: z.string().optional(),
@@ -228,6 +227,7 @@ export default function NuevoLotePage() {
       agent: "",
       status: "Tomar Acción",
       origen: "",
+      tipo: "Lote",
       codigoUrbanistico: "",
       neighborhood: "",
       m2aprox: 0,
@@ -346,22 +346,18 @@ export default function NuevoLotePage() {
     const searchFrente = completedFrenteValue.trim();
     const searchNumero = completedNumeroValue.trim();
     
-    console.log('🔍 Búsqueda SMP - Frente:', searchFrente, 'Número:', searchNumero);
     
     setSmpEditable(false);
     if (searchFrente && searchNumero) {
       setLoadingSMP(true);
       const params = new URLSearchParams({ frente: searchFrente, num_dom: searchNumero });
       const url = `/api/lotes/buscar?${params.toString()}`;
-      console.log('🔍 URL de búsqueda:', url);
       
       fetch(url)
         .then(res => res.json())
         .then(data => {
-          console.log('🔍 Respuesta de la API:', data);
           if (data.found && data.lotes.length > 0) {
             const lote = data.lotes[0];
-            console.log('✅ Lote encontrado:', lote);
             form.setValue('smp', lote.smp || '', { shouldValidate: true });
             form.setValue('neighborhood', lote.barrio || '', { shouldValidate: true });
             form.setValue('partida', lote.partida || '', { shouldValidate: true });
@@ -379,18 +375,15 @@ export default function NuevoLotePage() {
             
             setSmpEditable(false);
           } else {
-            console.log('❌ No se encontró lote para:', searchFrente, searchNumero);
             form.setValue('smp', '', { shouldValidate: false });
             setSmpEditable(true);
           }
           setLoadingSMP(false);
         })
         .catch((error) => {
-          console.error('❌ Error en búsqueda SMP:', error);
           setLoadingSMP(false);
         });
     } else {
-      console.log('⚠️ Faltan datos para búsqueda - Frente:', searchFrente, 'Número:', searchNumero);
       form.setValue('smp', '', { shouldValidate: false });
       setSmpEditable(false);
       setLoadingSMP(false);
@@ -427,11 +420,12 @@ export default function NuevoLotePage() {
       
       // Preparar los datos para la API según el mapeo de campos
       const loteData = {
-        // Información del Lote (solo estos 4 son realmente requeridos)
+        // Información del Lote (solo estos 5 son realmente requeridos)
         smp: data.smp,
         agente: data.agent,
         estado: data.status,
         origen: data.origen,
+        tipo: data.tipo,
         
         // Información Normativa (viene de la búsqueda automática o valores por defecto)
         cur: data.codigoUrbanistico || null,
@@ -508,7 +502,6 @@ export default function NuevoLotePage() {
       
       router.push(`/lotes`);
     } catch (error) {
-      console.error('Error al crear el lote:', error);
       toast({
         title: "Error al crear el lote",
         description: error instanceof Error ? error.message : 'No se pudo crear el lote.',
@@ -667,7 +660,6 @@ export default function NuevoLotePage() {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            console.log('🔍 Búsqueda manual activada');
                             numeroTyping.triggerSearch();
                             frenteTyping.triggerSearch();
                           }}
@@ -757,6 +749,21 @@ export default function NuevoLotePage() {
                       </FormControl>
                       <SelectContent>
                         {origens.map(origen => <SelectItem key={origen} value={origen}>{origen}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="tipo" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger><SelectValue placeholder="Seleccionar tipo..." /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Lote">Lote</SelectItem>
+                        <SelectItem value="Local">Local</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

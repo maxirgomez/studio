@@ -81,7 +81,6 @@ export const useDashboardData = (): DashboardData => {
         setOrigenes(origenesData.origenes || []);
 
       } catch (err) {
-        console.error('Error fetching dashboard data:', err);
         setError(err instanceof Error ? err.message : 'Error desconocido');
       } finally {
         setLoading(false);

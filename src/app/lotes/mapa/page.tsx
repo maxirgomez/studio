@@ -117,10 +117,8 @@ export default function MapPage() {
             
           }
         } else {
-          console.error('Error al cargar barrios');
         }
       } catch (error) {
-        console.error('Error al cargar barrios:', error);
       } finally {
         setLoadingBarrios(false);
       }
@@ -248,7 +246,6 @@ export default function MapPage() {
         setPopupOpen(true);
       }
     } catch (error) {
-      console.error('Error al obtener información del lote:', error);
     } finally {
       setLoadingLote(false);
     }
