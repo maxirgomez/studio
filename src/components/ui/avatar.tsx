@@ -34,17 +34,47 @@ AvatarImage.displayName = AvatarPrimitive.Image.displayName
 
 const AvatarFallback = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Fallback>,
-  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback>
->(({ className, ...props }, ref) => (
-  <AvatarPrimitive.Fallback
-    ref={ref}
-    className={cn(
-      "flex h-full w-full items-center justify-center rounded-full bg-muted",
-      className
-    )}
-    {...props}
-  />
-))
+  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback> & {
+    name?: string
+  }
+>(({ className, name, children, ...props }, ref) => {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Función para extraer las iniciales del nombre
+  const getInitials = (fullName?: string) => {
+    if (!fullName) return children || "?"
+    
+    const words = fullName.trim().split(/\s+/)
+    if (words.length === 0) return children || "?"
+    
+    if (words.length === 1) {
+      return words[0][0]?.toUpperCase() || children || "?"
+    }
+    
+    // Primera letra del nombre + primera letra del apellido
+    const firstInitial = words[0][0]?.toUpperCase() || ""
+    const lastInitial = words[words.length - 1][0]?.toUpperCase() || ""
+    
+    return firstInitial + lastInitial
+  }
+
+  return (
+    <AvatarPrimitive.Fallback
+      ref={ref}
+      className={cn(
+        "flex h-full w-full items-center justify-center rounded-full bg-muted text-sm font-medium",
+        className
+      )}
+      {...props}
+    >
+      {mounted && name ? getInitials(name) : children}
+    </AvatarPrimitive.Fallback>
+  )
+})
 AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName
 
 export { Avatar, AvatarImage, AvatarFallback }

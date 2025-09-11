@@ -21,31 +21,23 @@ import { Label } from "@/components/ui/label";
 import { logout } from "@/components/auth/login-form";
 import { parseJwt } from "@/lib/utils";
 import { useUser } from "@/context/UserContext";
+import { useLotesSolicitados } from "@/hooks/use-lotes-solicitados";
 
 export function UserNav() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const { user, loading } = useUser();
+  const { count: lotesSolicitadosCount } = useLotesSolicitados();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleLogout = async () => {
     await logout(router);
   };
 
-  const getInitials = (nombre?: string, mail?: string): string => {
-    if (nombre) {
-      const parts = nombre.split(' ').filter(Boolean);
-      if (parts.length > 1) {
-        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-      }
-      if(parts.length === 1 && parts[0].length > 0) {
-        return parts[0].substring(0,2).toUpperCase();
-      }
-    }
-    if (mail) {
-      return mail.substring(0,2).toUpperCase();
-    }
-    return "AU";
-  };
 
   return (
     <DropdownMenu>
@@ -54,8 +46,13 @@ export function UserNav() {
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
             {user?.foto_perfil && <AvatarImage src={user.foto_perfil} alt={user?.nombre || 'User avatar'} />}
-            <AvatarFallback>{getInitials(user?.nombre, user?.mail)}</AvatarFallback>
+            <AvatarFallback name={user?.nombre || user?.mail || "Usuario"} />
           </Avatar>
+          {mounted && lotesSolicitadosCount > 0 && (
+            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-medium">
+              {lotesSolicitadosCount > 99 ? '99+' : lotesSolicitadosCount}
+            </span>
+          )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>

@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from '@/components/theme-provider';
 import { SessionGuard } from "@/components/session-guard";
 import { UserProvider } from "@/context/UserContext";
+import { NotificationProvider } from "@/context/NotificationContext";
 import SpinnerProvider from "@/components/ui/SpinnerProvider";
 import SpinnerOverlay from "@/components/ui/SpinnerOverlay";
 import NavigationSpinnerHandler from "@/components/ui/NavigationSpinnerHandler";
@@ -27,20 +28,22 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={cn("min-h-screen bg-background font-sans antialiased", inter.variable)}>
         <UserProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-          >
-            <SpinnerProvider>
-              <NavigationSpinnerHandler />
-              <SessionGuard />
-              <SpinnerOverlay />
-              {children}
-              <Toaster />
-              <Analytics />
-            </SpinnerProvider>
-          </ThemeProvider>
+          <NotificationProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+            >
+              <SpinnerProvider>
+                <NavigationSpinnerHandler />
+                <SessionGuard />
+                <SpinnerOverlay />
+                {children}
+                <Toaster />
+                <Analytics />
+              </SpinnerProvider>
+            </ThemeProvider>
+          </NotificationProvider>
         </UserProvider>
       </body>
     </html>

@@ -45,6 +45,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button"
+import SolicitudesPendientes from "@/components/lotes/SolicitudesPendientes"
 
 interface ChartDataPoint {
   name: string;
@@ -334,6 +335,9 @@ export default function DashboardClientPage() {
 
   return (
     <div className="space-y-6">
+      {/* Componente de Solicitudes Pendientes */}
+      <SolicitudesPendientes />
+      
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>

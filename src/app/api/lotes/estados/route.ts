@@ -3,11 +3,13 @@ import pool from '@/lib/db';
 
 export async function GET() {
   try {
-    // Traer todos los estados únicos de la tabla
+    // Traer todos los estados únicos de la tabla (excluyendo estados de solicitud)
     const { rows } = await pool.query(`
       SELECT DISTINCT estado 
       FROM public.prefapp_lotes 
-      WHERE estado IS NOT NULL
+      WHERE estado IS NOT NULL 
+      AND estado NOT LIKE 'Solicitado por%'
+      AND estado NOT LIKE 'En transferencia%'
       ORDER BY estado
     `);
     
@@ -37,7 +39,10 @@ export async function GET() {
     // Ordenar alfabéticamente
     const sortedEstados = normalizedEstados.sort();
     
-    return NextResponse.json({ estados: sortedEstados });
+    return NextResponse.json({ 
+      estados: sortedEstados,
+      estadosNormales: normalizedEstados
+    });
   } catch (error) {
     return NextResponse.json({ error: 'Error al obtener estados', details: (error as Error).message }, { status: 500 });
   }

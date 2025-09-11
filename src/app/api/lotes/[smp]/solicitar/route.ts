@@ -1,136 +1,144 @@
-import { NextRequest, NextResponse } from "next/server";
-import pool from "@/lib/db";
-import jwt from "jsonwebtoken";
+import { NextResponse } from 'next/server';
+import pool from '@/lib/db';
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev_secret";
-
-// POST: Solicitar un lote
-export async function POST(req: NextRequest, { params }: any) {
-  const awaitedParams = typeof params?.then === "function" ? await params : params;
-  const smp = awaitedParams?.smp;
+export async function POST(req: Request, context: any) {
+  let smp: string | undefined;
+  if (context?.params && typeof context.params.then === 'function') {
+    const awaitedParams = await context.params;
+    smp = awaitedParams?.smp;
+  } else {
+    smp = context?.params?.smp;
+  }
   
   if (!smp) {
-    return NextResponse.json({ error: "SMP es requerido" }, { status: 400 });
+    const url = new URL(req.url);
+    const parts = url.pathname.split('/');
+    smp = parts[parts.length - 2]; // Obtener smp desde la URL
+  }
+  
+  if (!smp) {
+    return NextResponse.json({ error: 'SMP no especificado' }, { status: 400 });
   }
 
   try {
-    // Verificar autenticación
-    const token = req.cookies.get('token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    const body = await req.json();
+    const { usuarioSolicitante, motivo } = body;
+    
+    if (!usuarioSolicitante) {
+      return NextResponse.json({ error: 'Usuario solicitante requerido' }, { status: 400 });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    const currentUser = decoded.user;
-
-    // Verificar que el lote existe
-    const { rows: loteRows } = await pool.query(
-      `SELECT smp, agente FROM prefapp_lotes WHERE smp = $1`,
+    // Verificar que el lote existe y obtener agente actual
+    const { rows } = await pool.query(
+      `SELECT agente, direccion FROM public.prefapp_lotes WHERE smp = $1 LIMIT 1`,
       [smp]
     );
-
-    if (loteRows.length === 0) {
-      return NextResponse.json({ error: "Lote no encontrado" }, { status: 404 });
+    
+    if (rows.length === 0) {
+      return NextResponse.json({ error: 'Lote no encontrado' }, { status: 404 });
     }
-
-    const lote = loteRows[0];
-
-    // No permitir que el agente actual solicite su propio lote
-    if (lote.agente === currentUser) {
-      return NextResponse.json({ error: "No puedes solicitar tu propio lote" }, { status: 400 });
+    
+    const agenteActual = rows[0].agente;
+    const direccionLote = rows[0].direccion;
+    
+    // Verificar que no sea el mismo usuario
+    if (agenteActual === usuarioSolicitante) {
+      return NextResponse.json({ error: 'No puedes solicitar tu propio lote' }, { status: 400 });
     }
-
-    // Verificar si ya existe una solicitud pendiente
-    const { rows: solicitudRows } = await pool.query(
-      `SELECT id FROM prefapp_solicitudes_lotes 
-       WHERE smp = $1 AND solicitante = $2 AND estado = 'pendiente'`,
-      [smp, currentUser]
+    
+    // Verificar que no haya una solicitud pendiente del mismo usuario
+    const { rows: estadoRows } = await pool.query(
+      `SELECT estado FROM public.prefapp_lotes WHERE smp = $1 LIMIT 1`,
+      [smp]
     );
-
-    if (solicitudRows.length > 0) {
-      return NextResponse.json({ error: "Ya tienes una solicitud pendiente para este lote" }, { status: 400 });
+    
+    const estadoActual = estadoRows[0]?.estado;
+    if (estadoActual?.includes(`Solicitado por ${usuarioSolicitante}`)) {
+      return NextResponse.json({ error: 'Ya tienes una solicitud pendiente para este lote' }, { status: 400 });
     }
-
-    // Crear la solicitud
-    const fecha = new Date().toISOString();
-    const { rows: insertRows } = await pool.query(
-      `INSERT INTO prefapp_solicitudes_lotes (smp, agente_actual, solicitante, fecha_solicitud, estado) 
-       VALUES ($1, $2, $3, $4, 'pendiente') 
-       RETURNING id`,
-      [smp, lote.agente, currentUser, fecha]
+    
+    // Cambiar estado a solicitud pendiente
+    const nuevoEstado = `Solicitado por ${usuarioSolicitante}`;
+    await pool.query(
+      `UPDATE public.prefapp_lotes 
+       SET estado = $1 
+       WHERE smp = $2`,
+      [nuevoEstado, smp]
     );
-
+    
+    // Crear nota de seguimiento
+    await pool.query(
+      `INSERT INTO prefapp_notas (smp, agente, notas, fecha) 
+       VALUES ($1, $2, $3, NOW())`,
+      [smp, usuarioSolicitante, `Solicita transferencia del lote "${direccionLote}". Motivo: ${motivo || 'No especificado'}`]
+    );
+    
     return NextResponse.json({ 
       success: true, 
-      solicitudId: insertRows[0].id,
-      message: "Solicitud enviada correctamente"
+      message: 'Solicitud enviada correctamente',
+      nuevoEstado,
+      agenteActual 
     });
-
+    
   } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      return NextResponse.json({ error: "Token inválido" }, { status: 401 });
-    }
+    console.error('Error al procesar solicitud:', error);
     return NextResponse.json({ 
-      error: "Error al procesar la solicitud", 
+      error: 'Error al procesar solicitud', 
       details: (error as Error).message 
     }, { status: 500 });
   }
 }
 
-// GET: Obtener solicitudes de un lote
-export async function GET(req: NextRequest, { params }: any) {
-  const awaitedParams = typeof params?.then === "function" ? await params : params;
-  const smp = awaitedParams?.smp;
+export async function GET(req: Request, context: any) {
+  let smp: string | undefined;
+  if (context?.params && typeof context.params.then === 'function') {
+    const awaitedParams = await context.params;
+    smp = awaitedParams?.smp;
+  } else {
+    smp = context?.params?.smp;
+  }
   
   if (!smp) {
-    return NextResponse.json({ error: "SMP es requerido" }, { status: 400 });
+    const url = new URL(req.url);
+    const parts = url.pathname.split('/');
+    smp = parts[parts.length - 2];
+  }
+  
+  if (!smp) {
+    return NextResponse.json({ error: 'SMP no especificado' }, { status: 400 });
   }
 
   try {
-    // Verificar autenticación
-    const token = req.cookies.get('token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    const currentUser = decoded.user;
-
-    // Obtener el agente del lote
-    const { rows: loteRows } = await pool.query(
-      `SELECT agente FROM prefapp_lotes WHERE smp = $1`,
+    // Obtener información de solicitudes para este lote
+    const { rows } = await pool.query(
+      `SELECT estado, agente, direccion FROM public.prefapp_lotes WHERE smp = $1 LIMIT 1`,
       [smp]
     );
-
-    if (loteRows.length === 0) {
-      return NextResponse.json({ error: "Lote no encontrado" }, { status: 404 });
+    
+    if (rows.length === 0) {
+      return NextResponse.json({ error: 'Lote no encontrado' }, { status: 404 });
     }
-
-    const lote = loteRows[0];
-
-    // Solo el agente asignado puede ver las solicitudes
-    if (lote.agente !== currentUser) {
-      return NextResponse.json({ error: "No tienes permisos para ver las solicitudes de este lote" }, { status: 403 });
-    }
-
-    // Obtener solicitudes pendientes
-    const { rows: solicitudesRows } = await pool.query(
-      `SELECT sl.*, u.nombre, u.apellido 
-       FROM prefapp_solicitudes_lotes sl
-       LEFT JOIN prefapp_users u ON sl.solicitante = u.user
-       WHERE sl.smp = $1 AND sl.estado = 'pendiente'
-       ORDER BY sl.fecha_solicitud DESC`,
-      [smp]
-    );
-
-    return NextResponse.json({ solicitudes: solicitudesRows });
-
+    
+    const lote = rows[0];
+    const estado = lote.estado;
+    
+    // Verificar si hay una solicitud pendiente
+    const tieneSolicitud = estado?.includes('Solicitado por');
+    const usuarioSolicitante = tieneSolicitud ? estado.replace('Solicitado por ', '') : null;
+    
+    return NextResponse.json({
+      smp,
+      direccion: lote.direccion,
+      agente: lote.agente,
+      estado,
+      tieneSolicitud,
+      usuarioSolicitante
+    });
+    
   } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      return NextResponse.json({ error: "Token inválido" }, { status: 401 });
-    }
+    console.error('Error al obtener información de solicitud:', error);
     return NextResponse.json({ 
-      error: "Error al obtener solicitudes", 
+      error: 'Error al obtener información de solicitud', 
       details: (error as Error).message 
     }, { status: 500 });
   }

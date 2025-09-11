@@ -16,6 +16,7 @@ import {
 } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { useUser } from "@/context/UserContext"
+import { useNotification } from "@/context/NotificationContext"
 
 import {
   Card,
@@ -47,6 +48,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import ProfileCardSkeleton from "@/components/lotes/ProfileCardSkeleton"
+import { Badge } from "@/components/ui/badge"
+import { MapPin, Ruler, DollarSign, User, Check, X } from "lucide-react"
 
 const profileFormSchema = z.object({
   nombre: z.string().min(2, {
@@ -69,11 +72,17 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 export default function MyProfilePage() {
   const { toast } = useToast();
   const { user, loading, refreshUser } = useUser();
+  const { refreshLotesSolicitados } = useNotification();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [minTimePassed, setMinTimePassed] = useState(false);
+  
+  // Estados para lotes solicitados
+  const [lotesSolicitados, setLotesSolicitados] = useState<any[]>([]);
+  const [loadingSolicitudes, setLoadingSolicitudes] = useState(true);
+  const [transferiendo, setTransferiendo] = useState<string | null>(null);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -122,6 +131,116 @@ export default function MyProfilePage() {
     const timer = setTimeout(() => setMinTimePassed(true), 1000);
     return () => clearTimeout(timer);
   }, []);
+
+  // Cargar lotes solicitados
+  useEffect(() => {
+    if (user) {
+      fetchLotesSolicitados();
+    }
+  }, [user]);
+
+  const fetchLotesSolicitados = async () => {
+    if (!user) return;
+    
+    setLoadingSolicitudes(true);
+    try {
+      const res = await fetch(`/api/lotes/solicitudes-pendientes?agente=${user.user}`);
+      if (res.ok) {
+        const data = await res.json();
+        setLotesSolicitados(data.solicitudes || []);
+      } else {
+        setLotesSolicitados([]);
+      }
+    } catch (error) {
+      console.error('Error al obtener lotes solicitados:', error);
+      setLotesSolicitados([]);
+    }
+    setLoadingSolicitudes(false);
+  };
+
+  const transferirLote = async (smp: string, usuarioSolicitante: string) => {
+    if (!user) return;
+    
+    setTransferiendo(smp);
+    try {
+      const res = await fetch(`/api/lotes/${smp}/solicitar/${user.user}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accion: 'aceptar',
+          agenteActual: user.user,
+          nuevoAgente: usuarioSolicitante,
+          motivo: 'Transferencia aceptada desde mi perfil'
+        })
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        toast({
+          title: "Lote Transferido",
+          description: `El lote ha sido transferido a ${usuarioSolicitante} exitosamente.`,
+        });
+        
+        // Remover el lote de la lista
+        setLotesSolicitados(prev => prev.filter(lote => lote.smp !== smp));
+        
+        // Refrescar el contador de notificaciones
+        refreshLotesSolicitados();
+      } else {
+        throw new Error(data.error || 'Error al transferir lote');
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "No se pudo transferir el lote.",
+      });
+    }
+    setTransferiendo(null);
+  };
+
+  const rechazarSolicitud = async (smp: string, usuarioSolicitante: string) => {
+    if (!user) return;
+    
+    setTransferiendo(smp);
+    try {
+      const res = await fetch(`/api/lotes/${smp}/solicitar/${user.user}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accion: 'rechazar',
+          agenteActual: user.user,
+          nuevoAgente: null,
+          motivo: 'Solicitud rechazada desde mi perfil'
+        })
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        toast({
+          title: "Solicitud Rechazada",
+          description: `La solicitud de ${usuarioSolicitante} ha sido rechazada.`,
+        });
+        
+        // Remover el lote de la lista
+        setLotesSolicitados(prev => prev.filter(lote => lote.smp !== smp));
+        
+        // Refrescar el contador de notificaciones
+        refreshLotesSolicitados();
+      } else {
+        throw new Error(data.error || 'Error al rechazar solicitud');
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "No se pudo rechazar la solicitud.",
+      });
+    }
+    setTransferiendo(null);
+  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -330,6 +449,102 @@ export default function MyProfilePage() {
           </Form>
         </CardContent>
       </Card>
+
+      {/* Sección de Lotes Solicitados */}
+      {minTimePassed && lotesSolicitados.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Lotes Solicitados ({lotesSolicitados.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {lotesSolicitados.map((lote) => (
+                <div key={lote.smp} className="border rounded-lg p-4 bg-muted/50 border-border">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <Avatar className="h-8 w-8">
+                          {lote.usuarioInfo?.foto_perfil ? (
+                            <AvatarImage 
+                              src={lote.usuarioInfo.foto_perfil} 
+                              alt={`Foto de ${lote.usuarioInfo.nombre} ${lote.usuarioInfo.apellido}`} 
+                            />
+                          ) : null}
+                          <AvatarFallback className="text-xs">
+                            {lote.usuarioInfo?.iniciales || lote.usuarioSolicitante[0].toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-sm">
+                            {lote.usuarioInfo 
+                              ? `${lote.usuarioInfo.nombre} ${lote.usuarioInfo.apellido}`.trim()
+                              : lote.usuarioSolicitante
+                            }
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            solicita este lote
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="ml-11">
+                        <div className="flex items-center gap-2 mb-1">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium text-sm">{lote.direccion}</span>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            <span>{lote.barrio}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Ruler className="h-3 w-3" />
+                            <span>{lote.m2aprox} m²</span>
+                          </div>
+                          {lote.vventa && (
+                            <div className="flex items-center gap-1">
+                              <DollarSign className="h-3 w-3" />
+                              <span>${lote.vventa.toLocaleString('es-AR')}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="mt-2">
+                          <Badge variant="outline" className="text-xs">
+                            SMP: {lote.smp}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2 ml-4">
+                      <Button 
+                        size="sm" 
+                        onClick={() => transferirLote(lote.smp, lote.usuarioSolicitante)}
+                        disabled={transferiendo === lote.smp}
+                      >
+                        <Check className="h-4 w-4 mr-1" />
+                        Transferir
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => rechazarSolicitud(lote.smp, lote.usuarioSolicitante)}
+                        disabled={transferiendo === lote.smp}
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Rechazar
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

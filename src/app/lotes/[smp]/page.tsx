@@ -21,7 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, MapPin, Scan, Ruler, Edit, Download, Upload, Library, FileText, User, Home, Mailbox, Building, Phone, Smartphone, Mail, Info, XCircle, Scaling, Percent, CreditCard, DollarSign, MessageSquare, Calendar, CreditCard as CreditCardIcon, X } from "lucide-react"
+import { ArrowLeft, MapPin, Scan, Ruler, Edit, Download, Upload, Library, FileText, User, Home, Mailbox, Building, Phone, Smartphone, Mail, Info, XCircle, Scaling, Percent, CreditCard, DollarSign, MessageSquare, Calendar, CreditCard as CreditCardIcon, X, HandHeart } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -48,6 +48,19 @@ function formatFallecido(value: string | null | undefined): string {
     return "Sin información";
   }
   return value;
+}
+
+// Función helper para generar URL de WhatsApp
+function generateWhatsAppUrl(phoneNumber: string): string {
+  if (!phoneNumber) return '';
+  
+  // Limpiar el número de teléfono (remover espacios, guiones, paréntesis)
+  const cleanNumber = phoneNumber.replace(/[\s\-\(\)]/g, '');
+  
+  // Si no empieza con código de país, agregar +54 (Argentina)
+  const formattedNumber = cleanNumber.startsWith('+') ? cleanNumber : `+54${cleanNumber}`;
+  
+  return `https://wa.me/${formattedNumber}`;
 }
 
 const PdfContent = React.forwardRef<
@@ -98,9 +111,15 @@ const PdfContent = React.forwardRef<
           <div style={fieldStyle}><span style={labelStyle}>M² Estimados:</span> <span style={valueStyle}>{listing.area} m²</span></div>
           <div style={fieldStyle}><span style={labelStyle}>Barrio:</span> <span style={valueStyle}>{listing.neighborhood}</span></div>
           <div style={fieldStyle}><span style={labelStyle}>Partida:</span> <span style={valueStyle}>{listing.partida}</span></div>
+          <div style={fieldStyle}><span style={labelStyle}>Esquina:</span> <span style={valueStyle}>{(listing.totalFrentes && listing.totalFrentes > 1) ? 'Sí' : 'No'}</span></div>
         </div>
       </div>
 
+      <h4 style={{ ...sectionTitleStyle, fontSize: '14px', marginTop: '12px', marginBottom: '6px' }}>Frentes de Parcela</h4>
+      <div style={{ ...fieldStyle, gridColumn: 'span 2' }}>
+        <span style={labelStyle}>Total de Frentes:</span> 
+        <span style={valueStyle}>{listing.totalFrentes || 'N/A'}</span>
+      </div>
 
       <h3 style={sectionTitleStyle}>Datos de Tasación</h3>
       <div style={gridStyle}>
@@ -138,15 +157,6 @@ const PdfContent = React.forwardRef<
         </div>
       </div>
 
-      <h4 style={{ ...sectionTitleStyle, fontSize: '14px', marginTop: '12px', marginBottom: '6px' }}>Frentes de Parcela</h4>
-      <div style={{ ...fieldStyle, gridColumn: 'span 2' }}>
-        <span style={labelStyle}>Total de Frentes:</span> 
-        <span style={valueStyle}>{listing.totalFrentes || 'N/A'}</span>
-      </div>
-      <div style={{ ...fieldStyle, gridColumn: 'span 2' }}>
-        <span style={labelStyle}>Ubicación:</span> 
-        <span style={valueStyle}>{(listing.totalFrentes && listing.totalFrentes > 1) ? 'Esquina' : 'Medio de cuadra'}</span>
-      </div>
 
       {canViewOwnerInfo(currentUser, listing) && (
         <>
@@ -306,6 +316,7 @@ export default function LoteDetailPage() {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const { hide } = useSpinner();
   const [agenteUsuario, setAgenteUsuario] = useState<any | null>(null);
+  const [solicitando, setSolicitando] = useState(false);
 
   // --- Frentes del lote ---
   const [frentes, setFrentes] = useState<any[]>([]);
@@ -695,6 +706,48 @@ export default function LoteDetailPage() {
     }
   };
 
+  // Solicitar lote
+  const handleSolicitarLote = async () => {
+    if (!currentUser || !listing) return;
+    
+    setSolicitando(true);
+    try {
+      const res = await fetch(`/api/lotes/${params.smp}/solicitar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          usuarioSolicitante: currentUser.user,
+          motivo: 'Solicitud de transferencia de lote'
+        })
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        toast({
+          title: "Solicitud Enviada",
+          description: `Tu solicitud ha sido enviada al agente ${listing.agente}.`,
+        });
+        
+        // Refrescar datos del lote
+        const loteRes = await fetch(`/api/lotes/${params.smp}`);
+        if (loteRes.ok) {
+          const loteData = await loteRes.json();
+          setListing(loteData.lote);
+        }
+      } else {
+        throw new Error(data.error || 'Error al enviar solicitud');
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "No se pudo enviar la solicitud.",
+      });
+    }
+    setSolicitando(false);
+  };
+
   if (loading) {
     return <div>Cargando...</div>;
   }
@@ -843,6 +896,40 @@ export default function LoteDetailPage() {
                  </DialogContent>
                </Dialog>
              )}
+             
+             {/* Botón Solicitar Lote */}
+             {currentUser && 
+              currentUser.user !== listing.agente && 
+              !listing.status?.includes('Solicitado por ' + currentUser.user) && 
+              !listing.status?.includes('En transferencia') && (
+               <Button 
+                 variant="outline" 
+                 onClick={handleSolicitarLote}
+                 disabled={solicitando}
+                 className="w-full"
+               >
+                 <HandHeart className="mr-2 h-4 w-4" />
+                 {solicitando ? "Enviando..." : "Solicitar Lote"}
+               </Button>
+             )}
+
+             {/* Mostrar estado de solicitud */}
+             {listing.status?.includes('Solicitado por') && (
+               <div className="p-3 bg-muted/50 border border-border rounded-lg">
+                 <p className="text-sm text-muted-foreground">
+                   ⏳ {listing.status}
+                 </p>
+               </div>
+             )}
+
+             {listing.status === 'En transferencia' && (
+               <div className="p-3 bg-muted/50 border border-border rounded-lg">
+                 <p className="text-sm text-muted-foreground">
+                   🔄 Transferencia en proceso...
+                 </p>
+               </div>
+             )}
+
              <Button variant="secondary" onClick={handleGeneratePdf} disabled={isGeneratingPdf}>
                <Download className="mr-2 h-4 w-4" />
                {isGeneratingPdf ? "Generando..." : "Descargar Ficha PDF"}
@@ -967,59 +1054,52 @@ export default function LoteDetailPage() {
                   </div>
                   <div className="flex items-center">
                     <MapPin className="h-5 w-5 mr-3 text-muted-foreground" />
-                    <span className="font-medium">Ubicación:</span>
+                    <span className="font-medium">Esquina:</span>
                     <span className="ml-auto text-muted-foreground">
-                      {isEsquina ? 'Esquina' : 'Medio de cuadra'}
+                      {isEsquina ? 'Sí' : 'No'}
                     </span>
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Nueva sección: Frentes de Parcela */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Frentes de Parcela</CardTitle>
-              <CardDescription>
-                {isEsquina ? 'Lote ubicado en esquina con múltiples frentes' : 'Lote ubicado en medio de cuadra'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="text-sm">
-              {frentesLoading ? (
-                <div className="text-center text-muted-foreground">Cargando frentes...</div>
-              ) : frentes.length === 0 ? (
-                <div className="text-center text-muted-foreground">No hay información de frentes disponible</div>
-              ) : (
-                <div className="space-y-3">
-                  {frentes.map((frente, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className="flex items-center">
-                          <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
-                          <span className="font-medium">{frente.calle}</span>
+              
+              {/* Sección Frentes de Parcela integrada */}
+              <div className="mt-6 pt-4 border-t">
+                <h4 className="font-semibold text-sm mb-4 text-muted-foreground">Frentes de Parcela</h4>
+                {frentesLoading ? (
+                  <div className="text-center text-muted-foreground">Cargando frentes...</div>
+                ) : frentes.length === 0 ? (
+                  <div className="text-center text-muted-foreground">No hay información de frentes disponible</div>
+                ) : (
+                  <div className="space-y-3">
+                    {frentes.map((frente, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <div className="flex items-center space-x-4">
+                          <div className="flex items-center">
+                            <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <span className="font-medium">{frente.calle}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <span className="text-muted-foreground">N°</span>
+                            <span className="font-medium ml-1">{frente.numero}</span>
+                          </div>
                         </div>
                         <div className="flex items-center">
-                          <span className="text-muted-foreground">N°</span>
-                          <span className="font-medium ml-1">{frente.numero}</span>
+                          <Ruler className="h-4 w-4 mr-2 text-muted-foreground" />
+                          <span className="font-medium">{frente.ancho_frente} m</span>
                         </div>
                       </div>
-                      <div className="flex items-center">
-                        <Ruler className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span className="font-medium">{frente.ancho_frente} m</span>
+                    ))}
+                    {isEsquina && (
+                      <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-xs text-blue-700 text-center">
+                          ⚠️ Lote de esquina: Este lote tiene {frentes.length} frente(s) 
+                          {frentes.length > 1 ? 's' : ''} con diferentes anchos
+                        </p>
                       </div>
-                    </div>
-                  ))}
-                  {isEsquina && (
-                    <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-xs text-blue-700 text-center">
-                        ⚠️ Lote de esquina: Este lote tiene {frentes.length} frente(s) 
-                        {frentes.length > 1 ? 's' : ''} con diferentes anchos
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
+                    )}
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
 
@@ -1091,17 +1171,56 @@ export default function LoteDetailPage() {
                     <div className="flex items-center">
                       <Smartphone className="h-5 w-5 mr-3 text-muted-foreground" />
                       <span className="font-medium">Celular 1:</span>
-                      <span className="ml-auto text-muted-foreground">{listing.cel1}</span>
+                      <span className="ml-auto">
+                        {listing.cel1 ? (
+                          <a 
+                            href={generateWhatsAppUrl(listing.cel1)} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-foreground hover:underline"
+                          >
+                            {listing.cel1}
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground">N/A</span>
+                        )}
+                      </span>
                     </div>
                     <div className="flex items-center">
                       <Smartphone className="h-5 w-5 mr-3 text-muted-foreground" />
                       <span className="font-medium">Celular 2:</span>
-                      <span className="ml-auto text-muted-foreground">{listing.cel2}</span>
+                      <span className="ml-auto">
+                        {listing.cel2 ? (
+                          <a 
+                            href={generateWhatsAppUrl(listing.cel2)} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-foreground hover:underline"
+                          >
+                            {listing.cel2}
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground">N/A</span>
+                        )}
+                      </span>
                     </div>
                     <div className="flex items-center">
                       <Smartphone className="h-5 w-5 mr-3 text-muted-foreground" />
                       <span className="font-medium">Celular 3:</span>
-                      <span className="ml-auto text-muted-foreground">{listing.cel3}</span>
+                      <span className="ml-auto">
+                        {listing.cel3 ? (
+                          <a 
+                            href={generateWhatsAppUrl(listing.cel3)} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-foreground hover:underline"
+                          >
+                            {listing.cel3}
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground">N/A</span>
+                        )}
+                      </span>
                     </div>
                   </div>
                 </div>

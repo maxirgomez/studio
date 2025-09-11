@@ -1,94 +1,223 @@
-import { NextRequest, NextResponse } from "next/server";
-import pool from "@/lib/db";
-import jwt from "jsonwebtoken";
+import { NextResponse } from 'next/server';
+import pool from '@/lib/db';
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev_secret";
-
-// PUT: Responder a una solicitud (aceptar/rechazar)
-export async function PUT(req: NextRequest, { params }: any) {
-  const awaitedParams = typeof params?.then === "function" ? await params : params;
-  const smp = awaitedParams?.smp;
-  const solicitudId = awaitedParams?.id;
+export async function PUT(req: Request, context: any) {
+  let smp: string | undefined;
+  let id: string | undefined;
   
-  if (!smp || !solicitudId) {
-    return NextResponse.json({ error: "SMP e ID de solicitud son requeridos" }, { status: 400 });
+  if (context?.params && typeof context.params.then === 'function') {
+    const awaitedParams = await context.params;
+    smp = awaitedParams?.smp;
+    id = awaitedParams?.id;
+  } else {
+    smp = context?.params?.smp;
+    id = context?.params?.id;
+  }
+  
+  if (!smp || !id) {
+    const url = new URL(req.url);
+    const parts = url.pathname.split('/');
+    smp = parts[parts.length - 3];
+    id = parts[parts.length - 1];
+  }
+  
+  if (!smp || !id) {
+    return NextResponse.json({ error: 'SMP o ID no especificado' }, { status: 400 });
   }
 
   try {
-    // Verificar autenticación
-    const token = req.cookies.get('token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    const currentUser = decoded.user;
-
     const body = await req.json();
-    const { accion } = body; // 'aceptar' o 'rechazar'
-
-    if (!accion || !['aceptar', 'rechazar'].includes(accion)) {
-      return NextResponse.json({ error: "Acción inválida. Debe ser 'aceptar' o 'rechazar'" }, { status: 400 });
+    const { accion, agenteActual, nuevoAgente, motivo } = body; // accion: 'aceptar' | 'rechazar'
+    
+    if (!accion || !agenteActual) {
+      return NextResponse.json({ error: 'Acción y agente actual requeridos' }, { status: 400 });
     }
-
-    // Obtener la solicitud
-    const { rows: solicitudRows } = await pool.query(
-      `SELECT * FROM prefapp_solicitudes_lotes WHERE id = $1 AND smp = $2 AND estado = 'pendiente'`,
-      [solicitudId, smp]
-    );
-
-    if (solicitudRows.length === 0) {
-      return NextResponse.json({ error: "Solicitud no encontrada o ya procesada" }, { status: 404 });
-    }
-
-    const solicitud = solicitudRows[0];
-
-    // Verificar que el usuario actual es el agente del lote
-    const { rows: loteRows } = await pool.query(
-      `SELECT agente FROM prefapp_lotes WHERE smp = $1`,
+    
+    // Verificar que el lote existe y obtener información actual
+    const { rows } = await pool.query(
+      `SELECT agente, estado, direccion FROM public.prefapp_lotes WHERE smp = $1 LIMIT 1`,
       [smp]
     );
-
-    if (loteRows.length === 0) {
-      return NextResponse.json({ error: "Lote no encontrado" }, { status: 404 });
+    
+    if (rows.length === 0) {
+      return NextResponse.json({ error: 'Lote no encontrado' }, { status: 404 });
     }
-
-    const lote = loteRows[0];
-
-    if (lote.agente !== currentUser) {
-      return NextResponse.json({ error: "No tienes permisos para responder a esta solicitud" }, { status: 403 });
+    
+    const lote = rows[0];
+    const agenteLote = lote.agente;
+    const estadoActual = lote.estado;
+    const direccionLote = lote.direccion;
+    
+    // Verificar que el agente actual tiene permisos para responder
+    if (agenteLote !== agenteActual) {
+      return NextResponse.json({ 
+        error: 'No tienes permisos para responder esta solicitud' 
+      }, { status: 403 });
     }
-
-    // Actualizar el estado de la solicitud
-    const nuevoEstado = accion === 'aceptar' ? 'aceptada' : 'rechazada';
-    const fechaRespuesta = new Date().toISOString();
-
-    await pool.query(
-      `UPDATE prefapp_solicitudes_lotes 
-       SET estado = $1, fecha_respuesta = $2 
-       WHERE id = $3`,
-      [nuevoEstado, fechaRespuesta, solicitudId]
-    );
-
-    // Si se acepta, transferir el lote al solicitante
+    
+    // Verificar que hay una solicitud pendiente
+    if (!estadoActual?.includes('Solicitado por')) {
+      return NextResponse.json({ 
+        error: 'No hay una solicitud pendiente para este lote' 
+      }, { status: 400 });
+    }
+    
+    // Extraer el usuario solicitante del estado
+    const usuarioSolicitante = estadoActual.replace('Solicitado por ', '');
+    
     if (accion === 'aceptar') {
+      if (!nuevoAgente) {
+        return NextResponse.json({ error: 'Nuevo agente requerido para aceptar' }, { status: 400 });
+      }
+      
+      // Cambiar estado a "En transferencia" y actualizar agente
       await pool.query(
-        `UPDATE prefapp_lotes SET agente = $1 WHERE smp = $2`,
-        [solicitud.solicitante, smp]
+        `UPDATE public.prefapp_lotes 
+         SET estado = 'En transferencia', agente = $1 
+         WHERE smp = $2`,
+        [nuevoAgente, smp]
       );
+      
+      // Crear nota de transferencia aceptada
+      await pool.query(
+        `INSERT INTO prefapp_notas (smp, agente, notas, fecha) 
+         VALUES ($1, $2, $3, NOW())`,
+        [smp, agenteActual, `Transferencia aceptada. Lote "${direccionLote}" asignado a ${nuevoAgente}. Motivo: ${motivo || 'No especificado'}`]
+      );
+      
+      // Crear nota para el nuevo agente
+      await pool.query(
+        `INSERT INTO prefapp_notas (smp, agente, notas, fecha) 
+         VALUES ($1, $2, $3, NOW())`,
+        [smp, nuevoAgente, `Lote "${direccionLote}" transferido desde ${agenteActual}. Motivo: ${motivo || 'No especificado'}`]
+      );
+      
+      // Después de un tiempo, cambiar a estado normal (simulamos proceso)
+      setTimeout(async () => {
+        try {
+          await pool.query(
+            `UPDATE public.prefapp_lotes 
+             SET estado = 'Disponible' 
+             WHERE smp = $1 AND estado = 'En transferencia'`,
+            [smp]
+          );
+          
+          // Crear nota de transferencia completada
+          await pool.query(
+            `INSERT INTO prefapp_notas (smp, agente, notas, fecha) 
+             VALUES ($1, $2, $3, NOW())`,
+            [smp, nuevoAgente, `Transferencia completada. Lote "${direccionLote}" ahora está disponible.`]
+          );
+        } catch (error) {
+          console.error('Error al completar transferencia:', error);
+        }
+      }, 10000); // 10 segundos para simular proceso
+      
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Solicitud aceptada. Transferencia en proceso.',
+        nuevoAgente,
+        estadoAnterior: estadoActual
+      });
+      
+    } else if (accion === 'rechazar') {
+      // Volver al estado anterior (asumimos que era 'Disponible')
+      await pool.query(
+        `UPDATE public.prefapp_lotes 
+         SET estado = 'Disponible' 
+         WHERE smp = $1`,
+        [smp]
+      );
+      
+      // Crear nota de rechazo
+      await pool.query(
+        `INSERT INTO prefapp_notas (smp, agente, notas, fecha) 
+         VALUES ($1, $2, $3, NOW())`,
+        [smp, agenteActual, `Solicitud de transferencia rechazada para "${direccionLote}". Motivo: ${motivo || 'No especificado'}`]
+      );
+      
+      // Crear nota para el usuario solicitante
+      await pool.query(
+        `INSERT INTO prefapp_notas (smp, agente, notas, fecha) 
+         VALUES ($1, $2, $3, NOW())`,
+        [smp, usuarioSolicitante, `Tu solicitud para el lote "${direccionLote}" fue rechazada por ${agenteActual}.`]
+      );
+      
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Solicitud rechazada.',
+        estadoAnterior: estadoActual
+      });
+    } else {
+      return NextResponse.json({ error: 'Acción no válida' }, { status: 400 });
     }
-
-    return NextResponse.json({ 
-      success: true, 
-      message: `Solicitud ${accion === 'aceptar' ? 'aceptada' : 'rechazada'} correctamente`
-    });
-
+    
   } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      return NextResponse.json({ error: "Token inválido" }, { status: 401 });
-    }
+    console.error('Error al procesar respuesta de solicitud:', error);
     return NextResponse.json({ 
-      error: "Error al procesar la respuesta", 
+      error: 'Error al procesar respuesta', 
+      details: (error as Error).message 
+    }, { status: 500 });
+  }
+}
+
+export async function GET(req: Request, context: any) {
+  let smp: string | undefined;
+  let id: string | undefined;
+  
+  if (context?.params && typeof context.params.then === 'function') {
+    const awaitedParams = await context.params;
+    smp = awaitedParams?.smp;
+    id = awaitedParams?.id;
+  } else {
+    smp = context?.params?.smp;
+    id = context?.params?.id;
+  }
+  
+  if (!smp || !id) {
+    const url = new URL(req.url);
+    const parts = url.pathname.split('/');
+    smp = parts[parts.length - 3];
+    id = parts[parts.length - 1];
+  }
+  
+  if (!smp || !id) {
+    return NextResponse.json({ error: 'SMP o ID no especificado' }, { status: 400 });
+  }
+
+  try {
+    // Obtener información de la solicitud específica
+    const { rows } = await pool.query(
+      `SELECT estado, agente, direccion FROM public.prefapp_lotes WHERE smp = $1 LIMIT 1`,
+      [smp]
+    );
+    
+    if (rows.length === 0) {
+      return NextResponse.json({ error: 'Lote no encontrado' }, { status: 404 });
+    }
+    
+    const lote = rows[0];
+    const estado = lote.estado;
+    
+    // Verificar si hay una solicitud pendiente
+    const tieneSolicitud = estado?.includes('Solicitado por');
+    const usuarioSolicitante = tieneSolicitud ? estado.replace('Solicitado por ', '') : null;
+    
+    return NextResponse.json({
+      smp,
+      id,
+      direccion: lote.direccion,
+      agente: lote.agente,
+      estado,
+      tieneSolicitud,
+      usuarioSolicitante,
+      puedeResponder: lote.agente === id // El ID representa al agente actual
+    });
+    
+  } catch (error) {
+    console.error('Error al obtener información de solicitud:', error);
+    return NextResponse.json({ 
+      error: 'Error al obtener información de solicitud', 
       details: (error as Error).message 
     }, { status: 500 });
   }

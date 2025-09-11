@@ -31,6 +31,7 @@ export const useUser = () => {
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   const refreshUser = useCallback(async () => {
     setLoading(true);
@@ -50,8 +51,18 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
+    setMounted(true);
     refreshUser();
   }, [refreshUser]);
+
+  // Evitar hidratación hasta que el componente esté montado
+  if (!mounted) {
+    return (
+      <UserContext.Provider value={{ user: null, loading: true, refreshUser, setUser }}>
+        {children}
+      </UserContext.Provider>
+    );
+  }
 
   return (
     <UserContext.Provider value={{ user, loading, refreshUser, setUser }}>
