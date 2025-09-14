@@ -107,8 +107,8 @@ function useTypingComplete<T>(value: T, minLength: number = 3, isNumeric: boolea
       let delay = 600; // Delay por defecto
 
       if (isNumeric) {
-        // Para números, usar un delay más corto y no depender de puntuación
-        delay = 300; // 300ms para números
+        // Para números, usar un delay más largo para evitar búsquedas prematuras
+        delay = 800; // 800ms para números (más tiempo para escribir)
       } else {
         // Para texto, usar la lógica original
         const hasEndingPunctuation = /[.,;!?]/.test(stringValue);
@@ -204,6 +204,8 @@ export default function NuevoLotePage() {
   const [calleSugerencias, setCalleSugerencias] = useState<string[]>([]);
   const [mostrarCalleSug, setMostrarCalleSug] = useState(false);
   const [numeroSugerencias, setNumeroSugerencias] = useState<string[]>([]);
+  const [numeroSugerenciasCompletas, setNumeroSugerenciasCompletas] = useState<string[]>([]); // Guardar rangos completos
+  const [rangoCompletoSeleccionado, setRangoCompletoSeleccionado] = useState<string>(''); // Guardar el rango completo del número seleccionado
   const [mostrarNumeroSug, setMostrarNumeroSug] = useState(false);
   const [smpEditable, setSmpEditable] = useState(false);
   const [loadingCalle, setLoadingCalle] = useState(false);
@@ -266,7 +268,7 @@ export default function NuevoLotePage() {
 
   // Aplicar detección de escritura completa a los valores de búsqueda
   const frenteTyping = useTypingComplete(frenteValue || '', 3, false);
-  const numeroTyping = useTypingComplete(numeroValue || '', 1, true);
+  const numeroTyping = useTypingComplete(numeroValue || '', 2, true); // Cambiar de 1 a 2 caracteres mínimo
   const completedFrenteValue = frenteTyping.value || '';
   const completedNumeroValue = numeroTyping.value || '';
 
@@ -304,91 +306,213 @@ export default function NuevoLotePage() {
     }
   }, [completedFrenteValue, calleSugerencias]);
 
-  // Sugerencias de número - DESHABILITADO
-  // useEffect(() => {
-  //   const calle = completedFrenteValue.trim();
-  //   if (calle && calle.length > 0) {
-  //     setLoadingNumero(true);
-  //     // Usar un parámetro especial para indicar que queremos números
-  //     fetch(`/api/lotes/buscar?frente=${encodeURIComponent(calle)}&numero=`)
-  //       .then(res => res.json())
-  //       .then(data => {
-  //         // La API ahora devuelve directamente los números únicos para autocompletado
-  //         const numeros = data.lotes || [];
-  //         setNumeroSugerencias(numeros);
-  //         setLoadingNumero(false);
-  //       })
-  //       .catch(() => setLoadingNumero(false));
-  //   } else {
-  //     setNumeroSugerencias([]);
-  //     setLoadingNumero(false);
-  //   }
-  // }, [completedFrenteValue]);
-
-  // Filtrar sugerencias de número en tiempo real - DESHABILITADO
-  // const numeroSugerenciasFiltradas = numeroSugerencias.filter(num => {
-  //   if (!numeroValue) return true;
-
-  //   // Normalizar el número ingresado (remover comas y decimales)
-  //   const cleanInput = numeroValue.replace(/,/g, '').replace(/\.0*$/, '');
-
-  //   // Normalizar el número de la sugerencia (remover comas y decimales)
-  //   const cleanSuggestion = String(num).replace(/,/g, '').replace(/\.0*$/, '');
-
-  //   return cleanSuggestion.includes(cleanInput);
-  // });
-
-  // Mostrar sugerencias de número si hay calle seleccionada y hay sugerencias filtradas - DESHABILITADO
-  // const mostrarNumeroSugerencias = completedFrenteValue.trim() && numeroSugerenciasFiltradas.length > 0;
-
-  // Autocomplete SMP y datos normativos
+  // Sugerencias de número
   useEffect(() => {
+    const calle = completedFrenteValue.trim();
+    if (calle && calle.length >= 3) {
+      setLoadingNumero(true);
+      // Usar un parámetro especial para indicar que queremos números
+      fetch(`/api/lotes/buscar?frente=${encodeURIComponent(calle)}&numero=1`)
+        .then(res => res.json())
+        .then(data => {
+          // La API ahora devuelve directamente los números únicos para autocompletado
+          const numeros = data.lotes || [];
+          setNumeroSugerencias(numeros);
+          setNumeroSugerenciasCompletas(numeros); // Guardar también los rangos completos
+          setLoadingNumero(false);
+        })
+        .catch((error) => {
+          console.error('Error fetching numbers:', error);
+          setLoadingNumero(false);
+        });
+    } else {
+      setNumeroSugerencias([]);
+      setNumeroSugerenciasCompletas([]);
+      setLoadingNumero(false);
+    }
+  }, [completedFrenteValue]);
+
+  // Filtrar sugerencias de número en tiempo real con límite inteligente
+  const numeroSugerenciasFiltradas = numeroSugerencias
+    .flatMap(num => {
+      // Expandir rangos de números (ej: "1820.1824.1828" -> ["1820", "1824", "1828"])
+      const numerosIndividuales = String(num).split('.').filter(n => n.trim() !== '');
+      return numerosIndividuales.map(n => ({ 
+        original: num, 
+        individual: n.trim(),
+        rangoCompleto: num // Guardar el rango completo para cada número individual
+      }));
+    })
+    .filter(item => {
+      if (!numeroValue) return true;
+
+      // Normalizar el número ingresado (remover comas y decimales)
+      const cleanInput = numeroValue.replace(/,/g, '').replace(/\.0*$/, '');
+
+      // Normalizar el número individual (remover comas y decimales)
+      const cleanIndividual = item.individual.replace(/,/g, '').replace(/\.0*$/, '');
+
+      // Solo mostrar números que empiecen con el input o sean exactos
+      return cleanIndividual.startsWith(cleanInput) || cleanIndividual === cleanInput;
+    })
+    .sort((a, b) => {
+      if (!numeroValue) return parseInt(a.individual) - parseInt(b.individual);
+
+      const cleanInput = numeroValue.replace(/,/g, '').replace(/\.0*$/, '');
+      const cleanA = a.individual.replace(/,/g, '').replace(/\.0*$/, '');
+      const cleanB = b.individual.replace(/,/g, '').replace(/\.0*$/, '');
+
+      // Priorizar coincidencias exactas
+      const aExact = cleanA === cleanInput;
+      const bExact = cleanB === cleanInput;
+
+      if (aExact && !bExact) return -1; // a va primero
+      if (!aExact && bExact) return 1;  // b va primero
+
+      // Priorizar números que empiecen con el input
+      const aStartsWith = cleanA.startsWith(cleanInput);
+      const bStartsWith = cleanB.startsWith(cleanInput);
+
+      if (aStartsWith && !bStartsWith) return -1; // a va primero
+      if (!aStartsWith && bStartsWith) return 1;  // b va primero
+
+      // Si ambos empiezan igual o ninguno empieza, ordenar por número
+      return parseInt(a.individual) - parseInt(b.individual);
+    })
+    .slice(0, 20); // Limitar a 20 resultados para mejor UX
+
+
+  // Mostrar sugerencias de número si hay calle seleccionada y hay sugerencias filtradas
+  const mostrarNumeroSugerencias = completedFrenteValue.trim() && numeroSugerenciasFiltradas.length > 0;
+
+  // Controlar visibilidad del dropdown de números
+  useEffect(() => {
+    if (numeroSugerenciasFiltradas.length > 0) {
+      // Solo mostrar sugerencias de número si no hay focus en el campo calle
+      const calleInputHasFocus = document.activeElement === calleInputRef.current;
+      if (!calleInputHasFocus) {
+        const numeroExisteEnFiltrados = numeroSugerenciasFiltradas.some(item => item.individual === numeroValue);
+        setMostrarNumeroSug(!numeroExisteEnFiltrados);
+      }
+    }
+  }, [numeroValue, numeroSugerenciasFiltradas]);
+
+  // Función para buscar SMP y datos normativos (solo cuando se hace clic en "Buscar")
+  const buscarSMP = async () => {
     const searchFrente = completedFrenteValue.trim();
     const searchNumero = completedNumeroValue.trim();
     
+    if (!searchFrente || !searchNumero) {
+      toast({
+        title: "Campos requeridos",
+        description: "Por favor, ingresa calle y número antes de buscar.",
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Validar que el número tenga al menos 2 caracteres
+    if (searchNumero.length < 2) {
+      toast({
+        title: "Número muy corto",
+        description: "Por favor, ingresa al menos 2 dígitos para el número.",
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Usar el rango completo seleccionado si está disponible, sino buscar en los rangos
+    let rangoCompleto = rangoCompletoSeleccionado;
+    
+    if (!rangoCompleto) {
+      // Si no hay rango seleccionado, buscar en los rangos disponibles
+      const numeroExisteEnCalle = numeroSugerenciasCompletas.some(numero => {
+        // Expandir rangos de números (ej: "1820.1824.1828" -> ["1820", "1824", "1828"])
+        const numerosIndividuales = String(numero).split('.').filter(n => n.trim() !== '');
+        
+        // Normalizar el número ingresado
+        const cleanInput = searchNumero.replace(/,/g, '').replace(/\.0*$/, '');
+        
+        // Verificar si alguno de los números individuales coincide exactamente
+        const existe = numerosIndividuales.some(numIndividual => {
+          const cleanIndividual = numIndividual.trim().replace(/,/g, '').replace(/\.0*$/, '');
+          return cleanIndividual === cleanInput;
+        });
+        
+        // Guardar el rango completo
+        if (existe) {
+          rangoCompleto = numero; // Guardar el rango completo para la búsqueda
+        }
+        
+        return existe;
+      });
+      
+      if (!numeroExisteEnCalle) {
+        toast({
+          title: "Número no válido",
+          description: `El número "${searchNumero}" no existe en "${searchFrente}". Selecciona un número de las sugerencias o verifica que esté escrito correctamente.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
     
     setSmpEditable(false);
-    if (searchFrente && searchNumero) {
-      setLoadingSMP(true);
-      const params = new URLSearchParams({ frente: searchFrente, num_dom: searchNumero });
+    setLoadingSMP(true);
+    
+    try {
+      // Usar el rango completo para la búsqueda del SMP
+      const numeroParaBuscar = rangoCompleto || searchNumero;
+      
+      const params = new URLSearchParams({ frente: searchFrente, num_dom: numeroParaBuscar });
       const url = `/api/lotes/buscar?${params.toString()}`;
       
-      fetch(url)
-        .then(res => res.json())
-        .then(data => {
-          if (data.found && data.lotes.length > 0) {
-            const lote = data.lotes[0];
-            form.setValue('smp', lote.smp || '', { shouldValidate: true });
-            form.setValue('neighborhood', lote.barrio || '', { shouldValidate: true });
-            form.setValue('partida', lote.partida || '', { shouldValidate: true });
-            form.setValue('m2aprox', lote.m2_estimados || 0, { shouldValidate: true });
-            form.setValue('superficieParcela', lote.sup_parcela || 0, { shouldValidate: true });
-            form.setValue('codigoUrbanistico', lote.codigoUrbanistico || '', { shouldValidate: true });
-            form.setValue('cpu', lote.cpu || '', { shouldValidate: true });
-            form.setValue('incidenciaUVA', lote.incidenciaUVA || 0, { shouldValidate: true });
-            form.setValue('fot', lote.fot || 0, { shouldValidate: true });
-            form.setValue('alicuota', lote.alicuota || 0, { shouldValidate: true });
-            
-            // Asegurar que la dirección se guarde correctamente
-            const direccionReal = `${searchFrente} ${searchNumero}`.trim();
-            form.setValue('direccionContacto', direccionReal, { shouldValidate: false });
-            
-            setSmpEditable(false);
-          } else {
-            form.setValue('smp', '', { shouldValidate: false });
-            setSmpEditable(true);
-          }
-          setLoadingSMP(false);
-        })
-        .catch((error) => {
-          setLoadingSMP(false);
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.found && data.lotes.length > 0) {
+        const lote = data.lotes[0];
+        form.setValue('smp', lote.smp || '', { shouldValidate: true });
+        form.setValue('neighborhood', lote.barrio || '', { shouldValidate: true });
+        form.setValue('partida', lote.partida || '', { shouldValidate: true });
+        form.setValue('m2aprox', lote.m2_estimados || 0, { shouldValidate: true });
+        form.setValue('superficieParcela', lote.sup_parcela || 0, { shouldValidate: true });
+        form.setValue('codigoUrbanistico', lote.codigoUrbanistico || '', { shouldValidate: true });
+        form.setValue('cpu', lote.cpu || '', { shouldValidate: true });
+        form.setValue('incidenciaUVA', lote.incidenciaUVA || 0, { shouldValidate: true });
+        form.setValue('fot', lote.fot || 0, { shouldValidate: true });
+        form.setValue('alicuota', lote.alicuota || 0, { shouldValidate: true });
+        
+        // Asegurar que la dirección se guarde correctamente
+        const direccionReal = `${searchFrente} ${searchNumero}`.trim();
+        form.setValue('direccionContacto', direccionReal, { shouldValidate: false });
+        
+        setSmpEditable(false);
+        
+        toast({
+          title: "SMP encontrado",
+          description: `SMP ${lote.smp} encontrado y datos cargados.`,
         });
-    } else {
-      form.setValue('smp', '', { shouldValidate: false });
-      setSmpEditable(false);
+      } else {
+        form.setValue('smp', '', { shouldValidate: false });
+        setSmpEditable(true);
+        
+        toast({
+          title: "SMP no encontrado",
+          description: `No se encontró un SMP para "${searchFrente} ${searchNumero}". Verifica que el número sea correcto o ingresa un SMP nuevo.`,
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error al buscar",
+        description: "Hubo un error al buscar el SMP. Intenta nuevamente.",
+        variant: 'destructive',
+      });
+    } finally {
       setLoadingSMP(false);
     }
-  }, [completedFrenteValue, completedNumeroValue, form]);
+  };
 
   // Función para limpiar campos numéricos
   function cleanNumericField(value: any): number | null {
@@ -638,35 +762,104 @@ export default function NuevoLotePage() {
                   <FormItem className="relative">
                     <FormLabel>Número</FormLabel>
                     <FormControl>
-                      <div className="flex gap-2">
-                        <Input
-                          placeholder="Ej: 1060"
-                          {...field}
-                          ref={numeroInputRef}
-                          autoComplete="off"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              numeroTyping.triggerSearch();
-                            }
-                          }}
-                          onFocus={() => {
-                            // Ocultar dropdown de calle cuando el campo número tiene focus
-                            setMostrarCalleSug(false);
-                          }}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            numeroTyping.triggerSearch();
-                            frenteTyping.triggerSearch();
-                          }}
-                          disabled={loadingSMP}
-                        >
-                          {loadingSMP ? 'Buscando...' : 'Buscar'}
-                        </Button>
+                      <div>
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Ej: 1060"
+                            {...field}
+                            ref={numeroInputRef}
+                            autoComplete="off"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                numeroTyping.triggerSearch();
+                              }
+                            }}
+                            onFocus={() => {
+                              // Ocultar dropdown de calle cuando el campo número tiene focus
+                              setMostrarCalleSug(false);
+                            }}
+                            onBlur={() => {
+                              // Solo ocultar si el focus no va al campo calle
+                              setTimeout(() => {
+                                const calleInputHasFocus = document.activeElement === calleInputRef.current;
+                                if (!calleInputHasFocus) {
+                                  setMostrarNumeroSug(false);
+                                }
+                              }, 200);
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={buscarSMP}
+                            disabled={loadingSMP}
+                          >
+                            {loadingSMP ? 'Buscando...' : 'Buscar'}
+                          </Button>
+                        </div>
+                        {loadingNumero && (
+                          <div className="mt-2">
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '100%' }}></div>
+                            </div>
+                            <div className="text-xs text-gray-600 mt-1">Cargando números...</div>
+                          </div>
+                        )}
+                        {mostrarNumeroSug && numeroSugerenciasFiltradas.length > 0 && (
+                          <div style={{
+                            position: 'absolute',
+                            zIndex: 10,
+                            background: 'white',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: 6,
+                            marginTop: 2,
+                            maxHeight: 300,
+                            overflowY: numeroSugerenciasFiltradas.length > 10 ? 'scroll' : 'auto',
+                            width: '100%',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                          }}>
+                            {numeroSugerenciasFiltradas.slice(0, 10).map((numero, idx) => (
+                              <div
+                                key={`${numero.individual}-${idx}`}
+                                style={{
+                                  padding: '6px 12px',
+                                  borderBottom: idx < Math.min(9, numeroSugerenciasFiltradas.length - 1) ? '1px solid #f3f4f6' : 'none',
+                                  cursor: 'pointer',
+                                  background: numeroValue === numero.individual ? '#f3f4f6' : 'white',
+                                  fontSize: '14px',
+                                  transition: 'background-color 0.15s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#f9fafb';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = numeroValue === numero.individual ? '#f3f4f6' : 'white';
+                                }}
+                                onClick={() => {
+                                  form.setValue('numero', numero.individual, { shouldValidate: true });
+                                  setRangoCompletoSeleccionado(numero.rangoCompleto); // Guardar el rango completo
+                                  setMostrarNumeroSug(false);
+                                }}
+                              >
+                                {formatAltura(numero.individual)}
+                              </div>
+                            ))}
+                            {numeroSugerenciasFiltradas.length > 10 && (
+                              <div style={{
+                                padding: '8px 12px',
+                                fontSize: '12px',
+                                color: '#6b7280',
+                                textAlign: 'center',
+                                borderTop: '1px solid #f3f4f6',
+                                background: '#f9fafb'
+                              }}>
+                                Mostrando 10 de {numeroSugerenciasFiltradas.length} resultados
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </FormControl>
                     <FormMessage />

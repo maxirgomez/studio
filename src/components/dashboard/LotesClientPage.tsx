@@ -376,12 +376,24 @@ export default function LotesClientPage() {
       if (agentFilters.length > 0) params.set('agent', agentFilters.join(','));
       if (neighborhoodFilters.length > 0) params.set('neighborhood', neighborhoodFilters.join(','));
       if (statusFilters.length > 0) params.set('status', statusFilters.join(','));
-             if (origenFilters.length > 0) params.set('origen', origenFilters.join(','));
-       if (minAreaFilter !== minArea) params.set('minArea', String(minAreaFilter));
-       if (maxAreaFilter !== maxArea) params.set('maxArea', String(maxAreaFilter));
-       if (searchFilter) params.set('search', searchFilter);
-       if (sortBy !== 'gid') params.set('sortBy', sortBy);
-       if (sortOrder !== 'asc') params.set('sortOrder', sortOrder);
+      if (origenFilters.length > 0) params.set('origen', origenFilters.join(','));
+      if (tipoFilters.length > 0) params.set('tipo', tipoFilters.join(','));
+      if (esquinaFilters.length > 0) params.set('esquina', esquinaFilters.join(','));
+      if (minAreaFilter !== minArea) params.set('minArea', String(minAreaFilter));
+      if (maxAreaFilter !== maxArea) params.set('maxArea', String(maxAreaFilter));
+      if (minFrenteFilter !== minFrente) params.set('minFrente', String(minFrenteFilter));
+      if (maxFrenteFilter !== maxFrente) params.set('maxFrente', String(maxFrenteFilter));
+      if (searchFilter) params.set('search', searchFilter);
+      if (sortBy !== 'gid') params.set('sortBy', sortBy);
+      if (sortOrder !== 'asc') params.set('sortOrder', sortOrder);
+      
+      // Debug: Ver qué parámetros se están enviando
+      console.log('=== PARÁMETROS ENVIADOS AL API ===');
+      console.log('URL completa:', `/api/lotes?${params.toString()}`);
+      console.log('minFrenteFilter:', minFrenteFilter, 'maxFrenteFilter:', maxFrenteFilter);
+      console.log('minAreaFilter:', minAreaFilter, 'maxAreaFilter:', maxAreaFilter);
+      console.log('esquinaFilters:', esquinaFilters);
+      
       const res = await fetch(`/api/lotes?${params.toString()}`);
       const data = await res.json();
       const lotes = (data.lotes || []).map((lote: any) => ({
@@ -392,6 +404,9 @@ export default function LotesClientPage() {
       setRealListings(lotes);
       setTotal(data.total || 0);
       setLoadingRealListings(false);
+      
+      // Debug: Verificar que el total se calcula correctamente con filtros
+      console.log('Total de lotes filtrados:', data.total, 'Páginas totales:', Math.ceil((data.total || 0) / listingsPerPage));
       
       // Si no hay lotes en esta página y no es la página 1, redirigir a la página 1
       if (lotes.length === 0 && currentPage > 1) {

@@ -72,6 +72,18 @@ export async function GET(req: Request) {
   const sortBy = searchParams.get('sortBy') || 'gid';
   const sortOrder = searchParams.get('sortOrder') || 'asc';
 
+  // Debug: Log de todos los parámetros recibidos
+  console.log('=== PARÁMETROS RECIBIDOS ===');
+  console.log('minFrente:', minFrente, 'maxFrente:', maxFrente);
+  console.log('minArea:', minArea, 'maxArea:', maxArea);
+  console.log('esquina:', esquina);
+  console.log('agent:', agent);
+  console.log('neighborhood:', neighborhood);
+  console.log('status:', status);
+  console.log('origen:', origen);
+  console.log('tipo:', tipo);
+  console.log('search:', search);
+
   // Construir query dinámica
   let whereClauses = [];
   let values: any[] = [];
@@ -130,9 +142,31 @@ export async function GET(req: Request) {
   if (esquina) {
     const esquinas = esquina.split(',').map(e => e.trim()).filter(Boolean);
     if (esquinas.length > 0) {
-      whereClauses.push(`l.esquina = ANY($${idx}::text[])`);
-      values.push(esquinas);
-      idx++;
+      // Para el filtro de esquina, considerar ambos criterios:
+      // 1. Tabla parcelas_esquina
+      // 2. Lotes con múltiples frentes (frentesparcelas)
+      if (esquinas.includes('Si')) {
+        whereClauses.push(`(
+          l.smp IN (SELECT smp FROM public.parcelas_esquina) OR
+          l.smp IN (
+            SELECT smp 
+            FROM public.frentesparcelas 
+            GROUP BY smp 
+            HAVING COUNT(*) > 1
+          )
+        )`);
+      } else if (esquinas.includes('No')) {
+        whereClauses.push(`(
+          l.smp NOT IN (SELECT smp FROM public.parcelas_esquina) AND
+          l.smp NOT IN (
+            SELECT smp 
+            FROM public.frentesparcelas 
+            GROUP BY smp 
+            HAVING COUNT(*) > 1
+          )
+        )`);
+      }
+      // Si hay ambos valores (Si y No), no agregamos ninguna condición (muestra todos)
     }
   }
   if (minArea) {
@@ -146,23 +180,27 @@ export async function GET(req: Request) {
     idx++;
   }
   if (minFrente || maxFrente) {
-    // Para el filtro de frente, necesitamos hacer un JOIN con la tabla de frentes
-    // y verificar que al menos uno de los frentes del SMP cumpla con el criterio
-    whereClauses.push(`l.smp IN (
-      SELECT DISTINCT smp 
-      FROM public.frentesparcelas 
-      WHERE anchofrente IS NOT NULL AND anchofrente > 0
-      ${minFrente ? `AND anchofrente >= $${idx}` : ''}
-      ${maxFrente ? `AND anchofrente <= $${idx + (minFrente ? 1 : 0)}` : ''}
-    )`);
+    // Alternativa 1: JOIN directo con frentesparcelas para mejor performance
+    const frenteConditions = [];
     if (minFrente) {
+      frenteConditions.push(`fp.anchofrente >= $${idx}`);
       values.push(Number(minFrente));
       idx++;
     }
     if (maxFrente) {
+      frenteConditions.push(`fp.anchofrente <= $${idx}`);
       values.push(Number(maxFrente));
       idx++;
     }
+    
+    whereClauses.push(`EXISTS (
+      SELECT 1 
+      FROM public.frentesparcelas fp 
+      WHERE fp.smp = l.smp 
+      AND fp.anchofrente IS NOT NULL 
+      AND fp.anchofrente > 0
+      ${frenteConditions.length > 0 ? 'AND ' + frenteConditions.join(' AND ') : ''}
+    )`);
   }
   if (search) {
     
@@ -196,6 +234,12 @@ export async function GET(req: Request) {
     where = 'WHERE ' + whereClauses.join(' AND ');
   }
 
+  // Debug: Log de la query y valores
+  console.log('=== DEBUG FILTROS ===');
+  console.log('Where clauses:', whereClauses);
+  console.log('Values:', values);
+  console.log('Where:', where);
+  
   // Query para el total con JOIN
   const countQuery = `
     SELECT COUNT(*) 

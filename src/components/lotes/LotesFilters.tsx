@@ -97,10 +97,7 @@ const LotesFilters: React.FC<LotesFiltersProps> = ({
   currentUser,
 }) => (
   <Card>
-    <CardHeader>
-      <CardTitle>Filtrar Lotes</CardTitle>
-    </CardHeader>
-    <CardContent className="space-y-6">
+    <CardContent className="pt-5 space-y-6">
       <div className="space-y-2">
         <Label>Origen</Label>
         <DropdownMenu>

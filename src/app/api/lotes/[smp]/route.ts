@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
-function mapLote(row: any) {
+function mapLote(row: any, plusvaliaData: any = null) {
   function cleanPhone(val: any) {
     if (val === null || val === undefined) return "";
     return String(val).replace(/\.0+$/, "");
@@ -73,6 +73,12 @@ function mapLote(row: any) {
     cel1: cleanPhone(row.cel1),
     cel2: cleanPhone(row.cel2),
     cel3: cleanPhone(row.cel3),
+    // --- Plusvalía ---
+    A1: plusvaliaData?.a1 || null,           // A1 (Área CUr * 0,8)
+    A2: plusvaliaData?.a2 || null,           // A2 (Área FOT)
+    "A1-A2": plusvaliaData?.["A1-A2"] || null,   // A1 - A2
+    B: plusvaliaData?.b || null,             // B (Incidencia * Alícuota)
+    AxB: plusvaliaData?.["AxB"] || null,         // AxB (UVAs Estimadas)
   };
 }
 
@@ -92,6 +98,9 @@ export async function GET(req: Request, context: any) {
   if (!smp) {
     return NextResponse.json({ error: 'SMP no especificado' }, { status: 400 });
   }
+  
+  console.log('Buscando lote con SMP:', smp);
+  
   try {
     // Obtener datos básicos del lote
     const { rows } = await pool.query(
@@ -100,10 +109,36 @@ export async function GET(req: Request, context: any) {
        WHERE l.smp = $1 LIMIT 1`,
       [smp]
     );
+    
+    console.log('Resultados encontrados:', rows.length);
+    if (rows.length > 0) {
+      console.log('Primer resultado:', rows[0].smp);
+    }
+    
     if (rows.length === 0) {
       return NextResponse.json({ error: 'Lote no encontrado' }, { status: 404 });
     }
-    const lote = mapLote(rows[0]);
+    
+    // Obtener datos de plusvalía por separado
+    let plusvaliaData = null;
+    try {
+      const { rows: plusvaliaRows } = await pool.query(
+        `SELECT a1, a2, "A1-A2", b, "AxB"
+         FROM public.prefapp_m2_parcela 
+         WHERE LOWER(smp) = LOWER($1) LIMIT 1`,
+        [smp]
+      );
+      
+      if (plusvaliaRows.length > 0) {
+        plusvaliaData = plusvaliaRows[0];
+      }
+    } catch (plusvaliaError) {
+      console.log('Error al obtener datos de plusvalía:', plusvaliaError);
+      
+      // Continuamos sin datos de plusvalía
+    }
+    
+    const lote = mapLote(rows[0], plusvaliaData);
     // Buscar usuario (agente) asociado usando JOIN
     let agenteUsuario = null;
     if (lote.agente) {

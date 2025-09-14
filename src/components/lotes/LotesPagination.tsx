@@ -16,24 +16,40 @@ interface LotesPaginationProps {
 }
 
 const LotesPagination: React.FC<LotesPaginationProps> = ({ currentPage, totalPages, createQueryString, pathname }) => {
+  // No mostrar paginación si hay 1 página o menos
   if (totalPages <= 1) return null;
   
   // Si la página actual es mayor que el total de páginas, no mostrar paginación
+  // (esto debería ser manejado por la lógica de redirección en el componente padre)
   if (currentPage > totalPages) return null;
 
-  // Calcular las páginas a mostrar
+  // Calcular las páginas a mostrar de manera compacta
   const pages = [];
-  if (currentPage > 2) {
+  
+  if (totalPages <= 5) {
+    // Si hay 5 páginas o menos, mostrar todas
+    for (let i = 1; i <= totalPages; i++) {
+      pages.push(i);
+    }
+  } else {
+    // Si hay más de 5 páginas, mostrar formato compacto: 1, 2, 3 ... último
     pages.push(1);
-    if (currentPage > 3) pages.push('...');
+    pages.push(2);
+    pages.push(3);
+    
+    // Siempre mostrar puntos suspensivos si hay más de 4 páginas
+    if (totalPages > 4) {
+      pages.push('...');
+    }
+    
+    // Siempre mostrar la última página si hay más de 3 páginas
+    if (totalPages > 3) {
+      pages.push(totalPages);
+    }
   }
-  if (currentPage > 1) pages.push(currentPage - 1);
-  pages.push(currentPage);
-  if (currentPage < totalPages) pages.push(currentPage + 1);
-  if (currentPage < totalPages - 1) {
-    if (currentPage < totalPages - 2) pages.push('...');
-    pages.push(totalPages);
-  }
+  
+  // Debug: Ver qué páginas se están generando
+  console.log('Paginador - totalPages:', totalPages, 'currentPage:', currentPage, 'pages:', pages);
 
   return (
     <div className="mt-8 flex justify-center">

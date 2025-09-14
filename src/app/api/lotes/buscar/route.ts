@@ -199,21 +199,23 @@ function expandNumDomRange(numDom: string): string[] {
 }
 
 export async function GET(req: Request) {
+  let query = '';
+  let values: any[] = [];
+  
   try {
     const { searchParams } = new URL(req.url);
     const smp = searchParams.get('smp');
     const frente = searchParams.get('frente'); // Campo frente de frentesparcelas
     const num_dom = searchParams.get('num_dom') || searchParams.get('numero'); // Campo num_dom de frentesparcelas
 
-    
-
     // Determinar el tipo de búsqueda
     const isAutocomplete = frente && !num_dom && !smp; // Solo calle para autocompletado
     const isNumberSearch = frente && searchParams.get('numero') !== null && !smp; // Calle + parámetro 'numero' para autocompletado de números
     const isExactSearch = smp || (frente && num_dom && num_dom !== ''); // Búsqueda exacta
+    
+    // console.log('Search params:', { smp, frente, num_dom, numero: searchParams.get('numero') });
+    // console.log('Search types:', { isAutocomplete, isNumberSearch, isExactSearch });
 
-    let query = '';
-    const values: any[] = [];
     let idx = 1;
 
     if (isAutocomplete) {
@@ -223,11 +225,27 @@ export async function GET(req: Request) {
       values.push(...searchValues);
     } else if (isNumberSearch) {
       // Búsqueda para autocompletado de números desde frentesparcelas
-      const normalizedFrente = normalizeSpecialChars(frente);
-             query = `SELECT DISTINCT num_dom FROM public.frentesparcelas WHERE (LOWER(frente) = LOWER($${idx}) OR LOWER(frente) = LOWER($${idx + 1})) AND num_dom IS NOT NULL ORDER BY num_dom`;
-      values.push(frente.toLowerCase());
-      values.push(normalizedFrente);
-      idx += 2;
+      // console.log('Number search triggered for frente:', frente);
+      
+      // Buscar números solo de los frentes que coincidan exactamente con la calle seleccionada
+      // Usar una estrategia más inteligente: traer rangos más pequeños primero
+      query = `
+        SELECT DISTINCT 
+          num_dom,
+          CASE 
+            WHEN num_dom NOT LIKE '%.%' THEN 1  -- Números individuales primero
+            WHEN LENGTH(num_dom) - LENGTH(REPLACE(num_dom, '.', '')) = 1 THEN 2  -- Rangos de 2 números
+            WHEN LENGTH(num_dom) - LENGTH(REPLACE(num_dom, '.', '')) = 2 THEN 3  -- Rangos de 3 números
+            ELSE 4  -- Rangos más grandes al final
+          END as sort_priority
+        FROM public.frentesparcelas 
+        WHERE LOWER(frente) = LOWER($1) AND num_dom IS NOT NULL 
+        ORDER BY sort_priority, num_dom
+      `;
+      values.push(frente);
+      
+      // console.log('Final query:', query);
+      // console.log('Query values:', values);
     } else if (isExactSearch) {
       // Búsqueda exacta: buscar en frentesparcelas y obtener información normativa
       query = `
@@ -252,30 +270,16 @@ export async function GET(req: Request) {
         idx++;
       }
       if (frente) {
-        // Búsqueda exacta por frente con normalización de caracteres especiales
-        const normalizedFrente = normalizeSpecialChars(frente);
-                 query += ` AND (LOWER(fp.frente) = LOWER($${idx}) OR LOWER(fp.frente) = LOWER($${idx + 1}))`;
-        values.push(frente.toLowerCase());
-        values.push(normalizedFrente);
-        idx += 2;
+        // Búsqueda más flexible por frente (puede ser parte del nombre)
+        query += ` AND LOWER(fp.frente) LIKE LOWER($${idx})`;
+        values.push(`%${frente}%`);
+        idx++;
       }
       if (num_dom) {
-        // Búsqueda flexible de num_dom que maneje formatos decimales y rangos
-        const normalizedNumDom = normalizeNumDom(num_dom);
-        // Buscar por coincidencia exacta o por rangos que contengan el número
-        query += ` AND (
-          fp.num_dom::text = $${idx}
-          OR fp.num_dom::text LIKE $${idx + 1}
-          OR fp.num_dom::text LIKE $${idx + 2}
-          OR fp.num_dom::text LIKE $${idx + 3}
-          OR fp.num_dom::text LIKE $${idx + 4}
-        )`;
-        values.push(num_dom); // Coincidencia exacta
-        values.push(`%.${normalizedNumDom}.%`); // Para rangos que contengan el número
-        values.push(`${normalizedNumDom}.%`); // Para rangos que empiecen con el número
-        values.push(`%.${normalizedNumDom}`); // Para rangos que terminen con el número
-        values.push(`%${normalizedNumDom}%`); // Búsqueda general que contenga el número
-        idx += 5;
+        // Búsqueda por número que contenga el valor ingresado en el rango
+        query += ` AND fp.num_dom::text LIKE $${idx}`;
+        values.push(`%${num_dom}%`);
+        idx++;
       }
       
       // Para búsquedas exactas, limitar a 1 resultado
@@ -296,19 +300,22 @@ export async function GET(req: Request) {
       return NextResponse.json({ found: true, lotes: calles });
     } else if (isNumberSearch) {
       // Expandir rangos y devolver números únicos para autocompletado
+      // console.log('Raw rows from number search:', rows);
       
       const numerosConRangos = rows.map(row => row.num_dom).filter(Boolean);
+      // console.log('Numbers with ranges:', numerosConRangos);
       
       const numerosExpandidos = new Set<string>();
       
       numerosConRangos.forEach(numDom => {
         const numerosDelRango = expandNumDomRange(numDom);
-        
+        // console.log(`Expanding ${numDom} ->`, numerosDelRango);
         numerosDelRango.forEach(num => numerosExpandidos.add(num));
       });
       
       // Los números ya vienen ordenados de la consulta SQL, pero los expandidos necesitan ordenarse
       const numeros = Array.from(numerosExpandidos).sort((a, b) => parseInt(a) - parseInt(b));
+      // console.log('Final expanded numbers:', numeros);
       
       return NextResponse.json({ found: true, lotes: numeros });
     } else {
@@ -332,7 +339,6 @@ export async function GET(req: Request) {
         incidenciaUVA: row.incidencia_uva, // Desde parcelascur.inc_uva
         fot: row.fot, // Desde parcelascur.fot_em_1
         alicuota: row.alicuota, // Desde parcelascur.alicuota
-        
         // Campos adicionales de frentesparcelas
         dir_lote: row.dir_lote,
         estado: row.estado,
@@ -361,6 +367,14 @@ export async function GET(req: Request) {
       return NextResponse.json({ found: true, lotes });
     }
   } catch (error) {
-    return NextResponse.json({ error: 'Error al buscar lote', details: (error as Error).message }, { status: 500 });
+    console.error('Error in buscar API:', error);
+    console.error('Query that failed:', query || 'Query not defined');
+    console.error('Values that failed:', values || 'Values not defined');
+    return NextResponse.json({ 
+      error: 'Error al buscar lote', 
+      details: (error as Error).message,
+      query: query || 'Query not defined',
+      values: values || 'Values not defined'
+    }, { status: 500 });
   }
 } 
