@@ -1,0 +1,46 @@
+{
+  "timestamp": "2025-09-19T22:30:44.960Z",
+  "build": {
+    "exists": true,
+    "size": 426685899,
+    "staticFiles": {
+      "chunks": {
+        "exists": true,
+        "fileCount": 38,
+        "files": [
+          "164f4fb6-05559ff766e809bd.js",
+          "1684-276ded2e33d78233.js",
+          "1859-c6cd799700a8b46b.js",
+          "2121.53188f93655a7ff0.js",
+          "2316-6e735ac3119bc37a.js"
+        ]
+      },
+      "css": {
+        "exists": true,
+        "fileCount": 1,
+        "files": [
+          "7c6d9be719ec81f8.css"
+        ]
+      },
+      "media": {
+        "exists": true,
+        "fileCount": 7,
+        "files": [
+          "19cfc7226ec3afaa-s.woff2",
+          "21350d82a1f187e9-s.woff2",
+          "8e9860b6e62d6359-s.woff2",
+          "ba9851c3c22cd980-s.woff2",
+          "c5fe6dc8356a8c31-s.woff2"
+        ]
+      }
+    }
+  },
+  "issues": [
+    "Archivo crítico no encontrado: .next/server/app-manifest.json"
+  ],
+  "recommendations": [
+    "Verificar configuración de next.config.ts",
+    "Revisar logs de build para errores",
+    "Asegurar que todas las dependencias estén instaladas"
+  ]
+}

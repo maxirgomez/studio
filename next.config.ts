@@ -2,11 +2,10 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
-  // Configuración para Firebase Hosting estático
-  output: 'export',
-  trailingSlash: true,
+  // Configuración para Firebase Hosting con Functions
+  output: 'standalone',
+  trailingSlash: false,
   skipTrailingSlashRedirect: true,
-  distDir: 'out',
   
   typescript: {
     ignoreBuildErrors: true,

@@ -19,6 +19,7 @@
     "check:static": "node scripts/check-static-files.js",
     "check:export": "node scripts/check-export.js",
     "test:deployment": "node scripts/test-deployment.js",
+    "deploy:firebase": "node scripts/deploy-firebase.js",
     "analyze": "ANALYZE=true npm run build"
   },
   "dependencies": {

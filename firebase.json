@@ -1,15 +1,52 @@
 {
   "hosting": {
-    "public": "out",
+    "source": ".",
     "ignore": [
       "firebase.json",
       "**/.*",
-      "**/node_modules/**"
+      "**/node_modules/**",
+      "**/src/**",
+      "**/scripts/**",
+      "**/docs/**",
+      "**/dataconnect/**",
+      "**/functions/**",
+      "**/uploads/**",
+      "**/*.md",
+      "**/*.html",
+      "**/*.yaml",
+      "**/tsconfig.json",
+      "**/tsconfig.tsbuildinfo",
+      "**/tailwind.config.ts",
+      "**/postcss.config.mjs",
+      "**/middleware.ts",
+      "**/next-env.d.ts",
+      "**/components.json",
+      "**/apphosting.yaml",
+      "**/test-db.ts",
+      "**/static-files-report.json",
+      "**/build-report.json",
+      "**/export-report.json",
+      "**/deployment-test-report.json"
     ],
+    "frameworksBackend": {
+      "region": "us-east1"
+    },
     "rewrites": [
       {
+        "source": "/_next/static/**",
+        "destination": "/_next/static/**"
+      },
+      {
+        "source": "/_next/image/**",
+        "destination": "/_next/image/**"
+      },
+      {
+        "source": "/api/**",
+        "function": "nextjs"
+      },
+      {
         "source": "**",
-        "destination": "/index.html"
+        "function": "nextjs"
       }
     ],
     "headers": [
@@ -29,7 +66,27 @@
             "value": "GET, HEAD, OPTIONS"
           }
         ]
+      },
+      {
+        "source": "/_next/image/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          },
+          {
+            "key": "Access-Control-Allow-Origin",
+            "value": "*"
+          }
+        ]
       }
+    ]
+  },
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs18",
+    "predeploy": [
+      "npm --prefix \"$RESOURCE_DIR\" run build"
     ]
   }
 }
