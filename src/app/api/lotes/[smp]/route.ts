@@ -99,7 +99,7 @@ export async function GET(req: Request, context: any) {
     return NextResponse.json({ error: 'SMP no especificado' }, { status: 400 });
   }
   
-  console.log('Buscando lote con SMP:', smp);
+  //console.log('Buscando lote con SMP:', smp);
   
   try {
     // Obtener datos básicos del lote
@@ -110,9 +110,9 @@ export async function GET(req: Request, context: any) {
       [smp]
     );
     
-    console.log('Resultados encontrados:', rows.length);
+    //console.log('Resultados encontrados:', rows.length);
     if (rows.length > 0) {
-      console.log('Primer resultado:', rows[0].smp);
+      //console.log('Primer resultado:', rows[0].smp);
     }
     
     if (rows.length === 0) {
@@ -133,7 +133,7 @@ export async function GET(req: Request, context: any) {
         plusvaliaData = plusvaliaRows[0];
       }
     } catch (plusvaliaError) {
-      console.log('Error al obtener datos de plusvalía:', plusvaliaError);
+      //console.log('Error al obtener datos de plusvalía:', plusvaliaError);
       
       // Continuamos sin datos de plusvalía
     }

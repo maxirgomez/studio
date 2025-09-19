@@ -75,16 +75,16 @@ export default function MyProfilePage() {
   const { refreshLotesSolicitados } = useNotification();
   
   // Debug logs
-  console.log('🎯 ProfilePage - Estado actual:');
-  console.log('  - loading:', loading);
-  console.log('  - user:', user);
-  console.log('  - user?.nombre:', user?.nombre);
-  console.log('  - user?.apellido:', user?.apellido);
-  console.log('  - user?.mail:', user?.mail);
-  console.log('  - user?.user:', user?.user);
-  console.log('  - user?.rol:', user?.rol);
-  console.log('  - user?.foto_perfil:', user?.foto_perfil);
-  console.log('  - localStorage token:', typeof window !== 'undefined' ? localStorage.getItem('auth_token') : 'N/A');
+  // console.log('🎯 ProfilePage - Estado actual:');
+  // console.log('  - loading:', loading);
+  // console.log('  - user:', user);
+  // console.log('  - user?.nombre:', user?.nombre);
+  // console.log('  - user?.apellido:', user?.apellido);
+  // console.log('  - user?.mail:', user?.mail);
+  // console.log('  - user?.user:', user?.user);
+  // console.log('  - user?.rol:', user?.rol);
+  // console.log('  - user?.foto_perfil:', user?.foto_perfil);
+  // console.log('  - localStorage token:', typeof window !== 'undefined' ? localStorage.getItem('auth_token') : 'N/A');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);

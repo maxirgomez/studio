@@ -81,13 +81,13 @@ export async function testUserConnection(username: string, password: string) {
     await userPool.end();
     
     // Log de conexión exitosa (sin credenciales)
-    console.log(`[DB-AUTH] Conexión exitosa para usuario: ${username}`);
+    // console.log(`[DB-AUTH] Conexión exitosa para usuario: ${username}`);
     return true;
   } catch (error) {
     await userPool.end();
     
     // Log de intento fallido (sin credenciales)
-    console.log(`[DB-AUTH] Intento de conexión fallido para usuario: ${username}`);
+    // console.log(`[DB-AUTH] Intento de conexión fallido para usuario: ${username}`);
     return false;
   }
 }
@@ -100,7 +100,7 @@ export async function executeQueryWithAudit(query: string, params: any[] = [], u
     const duration = Date.now() - startTime;
     
     // Log de consulta exitosa
-    console.log(`[DB-QUERY] ${operation || 'SELECT'} - Usuario: ${userId || 'system'} - Duración: ${duration}ms`);
+    // console.log(`[DB-QUERY] ${operation || 'SELECT'} - Usuario: ${userId || 'system'} - Duración: ${duration}ms`);
     
     return result;
   } catch (error) {

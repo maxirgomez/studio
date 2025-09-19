@@ -34,22 +34,22 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const refreshUser = useCallback(async () => {
-    console.log('🔄 UserContext - refreshUser iniciado');
+    // console.log('🔄 UserContext - refreshUser iniciado');
     setLoading(true);
     
     try {
       const token = localStorage.getItem('auth_token');
-      console.log('🔍 UserContext - Token:', token ? 'ENCONTRADO' : 'NO ENCONTRADO');
-      console.log('🔍 UserContext - Token value:', token ? token.substring(0, 20) + '...' : 'null');
+      // console.log('🔍 UserContext - Token:', token ? 'ENCONTRADO' : 'NO ENCONTRADO');
+      // console.log('🔍 UserContext - Token value:', token ? token.substring(0, 20) + '...' : 'null');
       
       if (!token) {
-        console.log('❌ UserContext - Sin token, estableciendo user como null');
+        // console.log('❌ UserContext - Sin token, estableciendo user como null');
         setUser(null);
         setLoading(false);
         return;
       }
 
-      console.log('📡 UserContext - Haciendo petición a /api/me...');
+      // console.log('📡 UserContext - Haciendo petición a /api/me...');
       const res = await fetch("/api/me", {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -57,13 +57,13 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         },
       });
       
-      console.log('📡 UserContext - Respuesta:', res.status, res.statusText);
+      // console.log('📡 UserContext - Respuesta:', res.status, res.statusText);
       
       if (res.ok) {
         const data = await res.json();
-        console.log('✅ UserContext - Datos recibidos:', data);
-        console.log('✅ UserContext - data.user:', data.user);
-        console.log('✅ UserContext - Estableciendo usuario:', data.user ? 'SÍ' : 'NO');
+        // console.log('✅ UserContext - Datos recibidos:', data);
+        // console.log('✅ UserContext - data.user:', data.user);
+        // console.log('✅ UserContext - Estableciendo usuario:', data.user ? 'SÍ' : 'NO');
         setUser(data.user || null);
       } else {
         const errorData = await res.json();
@@ -79,17 +79,17 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    console.log('🔄 UserContext - useEffect ejecutado');
+    // console.log('🔄 UserContext - useEffect ejecutado');
     
     // Verificar si hay token en localStorage al montar
     const token = localStorage.getItem('auth_token');
-    console.log('🔍 UserContext - Token al montar:', token ? 'ENCONTRADO' : 'NO ENCONTRADO');
+    // console.log('🔍 UserContext - Token al montar:', token ? 'ENCONTRADO' : 'NO ENCONTRADO');
     
     if (token) {
-      console.log('🔄 UserContext - Token encontrado, llamando a refreshUser');
+      // console.log('🔄 UserContext - Token encontrado, llamando a refreshUser');
       refreshUser();
     } else {
-      console.log('❌ UserContext - Sin token al montar, estableciendo user como null');
+      // console.log('❌ UserContext - Sin token al montar, estableciendo user como null');
       setUser(null);
       setLoading(false);
     }
@@ -100,7 +100,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     const checkToken = () => {
       const token = localStorage.getItem('auth_token');
       if (token && !user) {
-        console.log('🔄 UserContext - Token encontrado pero user es null, recargando...');
+        // console.log('🔄 UserContext - Token encontrado pero user es null, recargando...');
         refreshUser();
       }
     };
@@ -111,10 +111,10 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     return () => clearInterval(interval);
   }, [user, refreshUser]);
 
-  console.log('🔄 UserContext - Renderizando, user:', user, 'loading:', loading);
-  console.log('🔄 UserContext - user?.nombre:', user?.nombre);
-  console.log('🔄 UserContext - user?.apellido:', user?.apellido);
-  console.log('🔄 UserContext - user?.mail:', user?.mail);
+  // console.log('🔄 UserContext - Renderizando, user:', user, 'loading:', loading);
+  // console.log('🔄 UserContext - user?.nombre:', user?.nombre);
+  // console.log('🔄 UserContext - user?.apellido:', user?.apellido);
+  // console.log('🔄 UserContext - user?.mail:', user?.mail);
 
   return (
     <UserContext.Provider value={{ user, loading, refreshUser, setUser }}>

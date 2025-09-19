@@ -49,7 +49,7 @@ const LotesPagination: React.FC<LotesPaginationProps> = ({ currentPage, totalPag
   }
   
   // Debug: Ver qué páginas se están generando
-  console.log('Paginador - totalPages:', totalPages, 'currentPage:', currentPage, 'pages:', pages);
+  // console.log('Paginador - totalPages:', totalPages, 'currentPage:', currentPage, 'pages:', pages);
 
   return (
     <div className="mt-8 flex justify-center">

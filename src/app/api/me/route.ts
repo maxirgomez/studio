@@ -11,11 +11,11 @@ export async function GET(req: NextRequest) {
                 req.headers.get("x-auth-token");
   
   // Debug logs
-  console.log('🔍 /api/me - Token recibido:', token ? 'SÍ' : 'NO');
-  console.log('🔍 /api/me - Authorization header:', req.headers.get("authorization"));
+  // console.log('🔍 /api/me - Token recibido:', token ? 'SÍ' : 'NO');
+  // console.log('🔍 /api/me - Authorization header:', req.headers.get("authorization"));
   
   if (!token) {
-    console.log('❌ /api/me - Sin token, devolviendo 401');
+    // console.log('❌ /api/me - Sin token, devolviendo 401');
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
   
@@ -24,11 +24,11 @@ export async function GET(req: NextRequest) {
     
     const userId = typeof payload === 'object' && 'user' in payload ? payload.user : null;
     if (!userId) {
-      console.log('❌ /api/me - Token inválido, no contiene user');
+      // console.log('❌ /api/me - Token inválido, no contiene user');
       return NextResponse.json({ error: "Token inválido" }, { status: 401 });
     }
     
-    console.log('🔍 /api/me - Buscando usuario:', userId);
+    // console.log('🔍 /api/me - Buscando usuario:', userId);
     
     // Consultar la base de datos para obtener los datos actuales
     const { rows } = await pool.query(
@@ -37,14 +37,14 @@ export async function GET(req: NextRequest) {
     );
     
     if (rows.length === 0) {
-      console.log('❌ /api/me - Usuario no encontrado en la base de datos:', userId);
+      // console.log('❌ /api/me - Usuario no encontrado en la base de datos:', userId);
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
     
     const user = rows[0];
-    console.log('✅ /api/me - Usuario encontrado:', user.user, user.nombre, user.apellido);
+    // console.log('✅ /api/me - Usuario encontrado:', user.user, user.nombre, user.apellido);
     // Si no hay apellido, intentar separar del nombre
-    
+
     let nombre = user.nombre || "";
     let apellido = user.apellido || "";
     if (!apellido && nombre.includes(" ")) {

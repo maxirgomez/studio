@@ -73,6 +73,7 @@ export async function GET(req: Request) {
   const sortOrder = searchParams.get('sortOrder') || 'asc';
 
   // Debug: Log de todos los parámetros recibidos
+  /*
   console.log('=== PARÁMETROS RECIBIDOS ===');
   console.log('minFrente:', minFrente, 'maxFrente:', maxFrente);
   console.log('minArea:', minArea, 'maxArea:', maxArea);
@@ -82,7 +83,7 @@ export async function GET(req: Request) {
   console.log('status:', status);
   console.log('origen:', origen);
   console.log('tipo:', tipo);
-  console.log('search:', search);
+  console.log('search:', search);*/
 
   // Construir query dinámica
   let whereClauses = [];
@@ -235,10 +236,10 @@ export async function GET(req: Request) {
   }
 
   // Debug: Log de la query y valores
-  console.log('=== DEBUG FILTROS ===');
+  /*console.log('=== DEBUG FILTROS ===');
   console.log('Where clauses:', whereClauses);
   console.log('Values:', values);
-  console.log('Where:', where);
+  console.log('Where:', where);*/
   
   // Query para el total con JOIN
   const countQuery = `

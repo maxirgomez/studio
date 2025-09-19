@@ -9,6 +9,7 @@ function generateJWTSecret() {
   // Generar 64 bytes de datos aleatorios y convertirlos a base64
   const secret = crypto.randomBytes(64).toString('base64');
   
+  /*
   console.log('🔐 JWT_SECRET generado:');
   console.log('='.repeat(80));
   console.log(secret);
@@ -23,7 +24,7 @@ function generateJWTSecret() {
   console.log('4. En producción, usa variables de entorno del servidor');
   console.log('');
   console.log('⚠️  IMPORTANTE: Si cambias el JWT_SECRET, todos los usuarios');
-  console.log('   tendrán que volver a iniciar sesión.');
+  console.log('   tendrán que volver a iniciar sesión.');*/
 }
 
 // Ejecutar si se llama directamente

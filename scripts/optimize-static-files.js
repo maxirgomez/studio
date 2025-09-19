@@ -46,7 +46,7 @@ async function optimizeImage(inputPath, outputPath, options = {}) {
     }
     
     await pipeline.toFile(outputPath);
-    console.log(`✅ Optimizado: ${path.basename(inputPath)} → ${path.basename(outputPath)}`);
+    //console.log(`✅ Optimizado: ${path.basename(inputPath)} → ${path.basename(outputPath)}`);
   } catch (error) {
     console.error(`❌ Error optimizando ${inputPath}:`, error.message);
   }
@@ -138,18 +138,20 @@ async function generateManifest() {
     JSON.stringify(manifest, null, 2)
   );
   
-  console.log('📄 Manifest generado en optimized/manifest.json');
+  //console.log('📄 Manifest generado en optimized/manifest.json');
 }
 
 async function main() {
+  /*
   console.log('🚀 Iniciando optimización de archivos estáticos...');
   console.log(`📁 Directorio origen: ${PUBLIC_DIR}`);
   console.log(`📁 Directorio optimizado: ${OPTIMIZED_DIR}`);
+  */
   
   try {
     await processDirectory(PUBLIC_DIR);
     await generateManifest();
-    console.log('✅ Optimización completada');
+    //console.log('✅ Optimización completada');
   } catch (error) {
     console.error('❌ Error durante la optimización:', error);
     process.exit(1);
@@ -161,7 +163,9 @@ try {
   require('sharp');
   main();
 } catch (error) {
+  /*
   console.log('📦 Instalando dependencias necesarias...');
   console.log('Ejecuta: npm install sharp');
   console.log('Luego vuelve a ejecutar este script');
+  */
 }

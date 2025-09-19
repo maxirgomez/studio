@@ -61,14 +61,14 @@ export default function UserProfileEditPage() {
   const { user: currentUser, loading: loadingUser } = useUser();
 
   // Debug logs
-  console.log('🎯 UserProfileEditPage - Estado actual:');
-  console.log('  - loading:', loading);
-  console.log('  - user:', user);
-  console.log('  - user?.nombre:', user?.nombre);
-  console.log('  - user?.apellido:', user?.apellido);
-  console.log('  - user?.mail:', user?.mail);
-  console.log('  - user?.rol:', user?.rol);
-  console.log('  - params.user:', params.user);
+  // console.log('🎯 UserProfileEditPage - Estado actual:');
+  // console.log('  - loading:', loading);
+  // console.log('  - user:', user);
+  // console.log('  - user?.nombre:', user?.nombre);
+  // console.log('  - user?.apellido:', user?.apellido);
+  // console.log('  - user?.mail:', user?.mail);
+  // console.log('  - user?.rol:', user?.rol);
+  // console.log('  - params.user:', params.user);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
