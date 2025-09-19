@@ -19,6 +19,7 @@ const PUBLIC_PATHS = [
   '/api/reset-password-request',
   '/api/me', // Permitir acceso a /api/me sin redirección
   '/api/debug-rate-limit', // Endpoint de debug
+  '/api/debug-auth', // Endpoint de debug de autenticación
 ];
 
 // Rutas de API que requieren autenticación pero no redirección
@@ -38,8 +39,8 @@ export function middleware(req: NextRequest) {
     return response;
   }
 
-  // Verificar rate limiting para rutas de API
-  if (pathname.startsWith('/api/')) {
+  // Verificar rate limiting para rutas de API (excepto /api/me)
+  if (pathname.startsWith('/api/') && !pathname.startsWith('/api/me')) {
     const clientIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
     if (!checkRateLimit(clientIP)) {
       return NextResponse.json(
@@ -75,6 +76,6 @@ export function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     // Proteger todas las rutas excepto las públicas
-    '/((?!_next|favicon.ico|login|api/login|api/me|api/public|api/test-db|api/reset-password-request|api/debug-rate-limit).*)',
+    '/((?!_next|favicon.ico|login|api/login|api/me|api/public|api/test-db|api/reset-password-request|api/debug-rate-limit|api/debug-auth).*)',
   ],
 }; 

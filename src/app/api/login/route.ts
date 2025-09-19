@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
         sameSite: "lax", // Cambiar a lax para mejor compatibilidad en producción
         maxAge: 60 * 60, // 1 hora
         path: "/",
-        domain: process.env.NODE_ENV === "production" ? undefined : undefined, // Permitir subdominios en producción
+        // No especificar domain para permitir que funcione en cualquier subdominio
       });
       
       return response;
@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
       sameSite: "lax", // Cambiar a lax para mejor compatibilidad en producción
       maxAge: 60 * 60, // 1 hora
       path: "/",
-      domain: process.env.NODE_ENV === "production" ? undefined : undefined, // Permitir subdominios en producción
+      // No especificar domain para permitir que funcione en cualquier subdominio
     });
     
     return response;
