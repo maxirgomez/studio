@@ -20,9 +20,8 @@ function checkBuildFiles() {
     return false;
   }
   
-  // Verificar archivos críticos
+  // Verificar archivos críticos (modo export)
   const criticalFiles = [
-    'server/app-manifest.json',
     'BUILD_ID',
     'static/css',
     'static/chunks'

@@ -9,12 +9,16 @@
     "build": "next build",
     "build:prod": "npm run optimize:static && next build && npm run verify:build",
     "build:verify": "next build && npm run verify:build",
+    "build:check": "next build && npm run check:static",
     "start": "next start",
     "start:prod": "NODE_ENV=production next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "optimize:static": "node scripts/optimize-static-files.js",
     "verify:build": "node scripts/verify-build.js",
+    "check:static": "node scripts/check-static-files.js",
+    "check:export": "node scripts/check-export.js",
+    "test:deployment": "node scripts/test-deployment.js",
     "analyze": "ANALYZE=true npm run build"
   },
   "dependencies": {

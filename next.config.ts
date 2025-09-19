@@ -2,12 +2,11 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
-  // Configuración para Docker (comentado para archivos estáticos)
-  // output: 'standalone',
-  
-  // Configuración para producción en Firebase
-  trailingSlash: false,
+  // Configuración para Firebase Hosting estático
+  output: 'export',
+  trailingSlash: true,
   skipTrailingSlashRedirect: true,
+  distDir: 'out',
   
   typescript: {
     ignoreBuildErrors: true,
@@ -97,7 +96,7 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
-    unoptimized: false,
+    unoptimized: true, // Necesario para exportación estática
     dangerouslyAllowSVG: true,
     // Configuración adicional para producción
     formats: ['image/webp', 'image/avif'],
