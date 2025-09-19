@@ -64,6 +64,10 @@ export function LoginForm() {
   const { toast } = useToast();
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
+  const [resetStep, setResetStep] = useState<'email' | 'password'>('email');
+  const [resetToken, setResetToken] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [lockUntil, setLockUntil] = useState<Date | null>(null);
   const [remaining, setRemaining] = useState<string>("");
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -163,13 +167,26 @@ export function LoginForm() {
       return;
     }
     try {
-      await sendPasswordResetEmail(auth, resetEmail);
-      toast({
-        title: "Email de recuperación enviado",
-        description: "Revisa tu bandeja de entrada para restablecer tu contraseña.",
+      const res = await fetch("/api/reset-password-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: resetEmail }),
       });
-      setIsResetDialogOpen(false);
-      setResetEmail("");
+      
+      if (res.ok) {
+        toast({
+          title: "Email de recuperación enviado",
+          description: "Revisa tu bandeja de entrada para restablecer tu contraseña.",
+        });
+        setResetStep('password');
+      } else {
+        const data = await res.json();
+        toast({
+          title: "Error",
+          description: data.error || "No se pudo enviar el email de recuperación.",
+          variant: "destructive",
+        });
+      }
     } catch (error: any) {
        toast({
         title: "Error",
@@ -179,12 +196,87 @@ export function LoginForm() {
     }
   }
 
+  async function handlePasswordChange() {
+    if (!newPassword || !confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Por favor, completa todos los campos.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Las contraseñas no coinciden.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      toast({
+        title: "Error",
+        description: "La contraseña debe tener al menos 6 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          token: resetToken, 
+          newPassword: newPassword 
+        }),
+      });
+      
+      if (res.ok) {
+        toast({
+          title: "Contraseña actualizada",
+          description: "Tu contraseña ha sido restablecida exitosamente.",
+        });
+        setIsResetDialogOpen(false);
+        setResetStep('email');
+        setResetEmail("");
+        setNewPassword("");
+        setConfirmPassword("");
+        setResetToken("");
+      } else {
+        const data = await res.json();
+        toast({
+          title: "Error",
+          description: data.error || "No se pudo restablecer la contraseña.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Ha ocurrido un error inesperado. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    }
+  }
+
+  function handleResetDialogClose() {
+    setIsResetDialogOpen(false);
+    setResetStep('email');
+    setResetEmail("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setResetToken("");
+  }
+
   if (postLoginLoading) {
     return <div className="flex justify-center items-center h-64 text-lg font-semibold">Cargando tu información...</div>;
   }
 
   return (
-    <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+    <>
       <Card className="shadow-lg">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl text-center">Iniciar Sesión</CardTitle>
@@ -225,11 +317,14 @@ export function LoginForm() {
                   <FormItem>
                     <div className="flex items-center">
                       <FormLabel className="font-bold">Contraseña</FormLabel>
-                      <DialogTrigger asChild>
-                        <Button variant="link" type="button" className="ml-auto inline-block px-0 text-sm">
+                        <Button 
+                          variant="link" 
+                          type="button" 
+                          className="ml-auto inline-block px-0 text-sm"
+                          onClick={() => setIsResetDialogOpen(true)}
+                        >
                           ¿Olvidaste tu contraseña?
                         </Button>
-                      </DialogTrigger>
                     </div>
                     <FormControl>
                       <Input type="password" placeholder="••••••••" {...field} disabled={!!lockUntil} />
@@ -249,35 +344,88 @@ export function LoginForm() {
         </CardFooter>
       </Card>
       
-      <DialogContent>
+      <Dialog open={isResetDialogOpen} onOpenChange={handleResetDialogClose}>
+        <DialogContent>
         <DialogHeader>
-          <DialogTitle>Restablecer Contraseña</DialogTitle>
+          <DialogTitle>
+            {resetStep === 'email' ? 'Restablecer Contraseña' : 'Nueva Contraseña'}
+          </DialogTitle>
           <DialogDescription>
-            Introduce tu dirección de email y te enviaremos un enlace para restablecer tu contraseña.
+            {resetStep === 'email' 
+              ? 'Introduce tu dirección de email y te enviaremos un enlace para restablecer tu contraseña.'
+              : 'Introduce tu nueva contraseña y el token que recibiste por email.'
+            }
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid items-center gap-1.5">
-            <Label htmlFor="reset-email">Email</Label>
-            <Input
-              id="reset-email"
-              type="email"
-              placeholder="email@ejemplo.com"
-              value={resetEmail}
-              onChange={(e) => setResetEmail(e.target.value)}
-            />
-          </div>
+          {resetStep === 'email' ? (
+            <div className="grid items-center gap-1.5">
+              <Label htmlFor="reset-email">Email</Label>
+              <Input
+                id="reset-email"
+                type="email"
+                placeholder="email@ejemplo.com"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+              />
+            </div>
+          ) : (
+            <>
+              <div className="grid items-center gap-1.5">
+                <Label htmlFor="reset-token">Token de verificación</Label>
+                <Input
+                  id="reset-token"
+                  type="text"
+                  placeholder="Pega aquí el token del email"
+                  value={resetToken}
+                  onChange={(e) => setResetToken(e.target.value)}
+                />
+              </div>
+              <div className="grid items-center gap-1.5">
+                <Label htmlFor="new-password">Nueva contraseña</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </div>
+              <div className="grid items-center gap-1.5">
+                <Label htmlFor="confirm-password">Confirmar contraseña</Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </div>
+            </>
+          )}
         </div>
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="secondary">Cancelar</Button>
           </DialogClose>
-          <Button type="button" onClick={handlePasswordReset}>
-            Enviar enlace
-          </Button>
+          {resetStep === 'email' ? (
+            <Button type="button" onClick={handlePasswordReset}>
+              Enviar enlace
+            </Button>
+          ) : (
+            <>
+              <Button type="button" variant="outline" onClick={() => setResetStep('email')}>
+                Volver
+              </Button>
+              <Button type="button" onClick={handlePasswordChange}>
+                Cambiar contraseña
+              </Button>
+            </>
+          )}
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
