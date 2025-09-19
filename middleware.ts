@@ -12,7 +12,9 @@ const PUBLIC_PATHS = [
   '/login',
   '/api/login',
   '/favicon.ico',
-  '/_next',
+  '/_next/static', // Archivos estáticos de Next.js
+  '/_next/image', // Optimización de imágenes
+  '/_next/webpack-hmr', // Hot module replacement
   '/api/public',
   '/api/test-db',
   '/api/test-db/',
@@ -75,7 +77,7 @@ export function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    // Proteger todas las rutas excepto las públicas
-    '/((?!_next|favicon.ico|^$|login|api/login|api/public|api/test-db|api/reset-password-request|api/debug-jwt|api/debug-token).*)',
+    // Proteger todas las rutas excepto las públicas y archivos estáticos
+    '/((?!_next/static|_next/image|_next/webpack-hmr|favicon.ico|^$|login|api/login|api/public|api/test-db|api/reset-password-request|api/debug-jwt|api/debug-token).*)',
   ],
 }; 

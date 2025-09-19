@@ -4,10 +4,53 @@
     "ignore": [
       "firebase.json",
       "**/.*",
-      "**/node_modules/**"
+      "**/node_modules/**",
+      "**/src/**",
+      "**/scripts/**",
+      "**/docs/**",
+      "**/*.md",
+      "**/tsconfig.json",
+      "**/tailwind.config.ts",
+      "**/postcss.config.mjs",
+      "**/middleware.ts",
+      "**/next-env.d.ts"
     ],
     "frameworksBackend": {
       "region": "us-east1"
-    }
+    },
+    "rewrites": [
+      {
+        "source": "/_next/static/**",
+        "destination": "/_next/static/**"
+      },
+      {
+        "source": "/_next/image**",
+        "destination": "/_next/image**"
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "/_next/static/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "source": "/_next/image/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      }
+    ]
   }
 }

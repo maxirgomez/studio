@@ -5,12 +5,19 @@ const nextConfig: NextConfig = {
   // Configuración para Docker (comentado para archivos estáticos)
   // output: 'standalone',
   
+  // Configuración para producción en Firebase
+  trailingSlash: false,
+  skipTrailingSlashRedirect: true,
+  
   typescript: {
     ignoreBuildErrors: true,
   },
   eslint: {
     ignoreDuringBuilds: true,
   },
+  
+  // Configuración de assetPrefix para archivos estáticos
+  assetPrefix: process.env.NODE_ENV === 'production' ? '' : '',
   
   // Configuración para archivos estáticos en producción
   async headers() {
@@ -41,6 +48,24 @@ const nextConfig: NextConfig = {
           {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
+          },
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
+          },
+        ],
+      },
+      {
+        // Cache para archivos de fuentes
+        source: '/_next/static/media/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
           },
         ],
       },
