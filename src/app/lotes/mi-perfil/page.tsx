@@ -98,6 +98,12 @@ export default function MyProfilePage() {
   
   // Estado para debug del token
   const [tokenStatus, setTokenStatus] = useState<string>('verificando...');
+  const [isClient, setIsClient] = useState(false);
+
+  // Detectar si estamos en el cliente
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -369,7 +375,7 @@ export default function MyProfilePage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Mi Perfil</h1>
-          <p className="text-muted-foreground">Administra tu información perasdasdasdassonal y de la cuenta.</p>
+          <p className="text-muted-foreground">Administra tu información personal y de la cuenta.</p>
         </div>
         <Card>
           <CardContent className="pt-6">
@@ -397,6 +403,7 @@ export default function MyProfilePage() {
           <p className="text-muted-foreground">Administra tu información personal y de la cuenta.</p>
         </div>
       </div>
+
 
 
 
