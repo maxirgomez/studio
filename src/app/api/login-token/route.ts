@@ -107,16 +107,20 @@ export async function POST(req: NextRequest) {
       const token = generateSecureToken(payload);
       
       // Enviar respuesta con headers de seguridad
-      const response = NextResponse.json({ success: true, user: payload });
+      const response = NextResponse.json({ 
+        success: true, 
+        user: payload,
+        token: token // Incluir el token en el response
+      });
       applySecurityHeaders(response);
       
+      // También establecer la cookie
       response.cookies.set("token", token, {
         httpOnly: true,
         secure: false, // Cambiar a false para IP directa (HTTP)
-        sameSite: "lax", // Cambiar a lax para mejor compatibilidad en producción
+        sameSite: "lax",
         maxAge: 60 * 60, // 1 hora
         path: "/",
-        // No especificar domain para permitir que funcione en cualquier subdominio
       });
       
       return response;
@@ -151,20 +155,23 @@ export async function POST(req: NextRequest) {
     const token = generateSecureToken(payload);
 
     // Enviar el token en una cookie httpOnly con headers de seguridad
-    const response = NextResponse.json({ success: true, user: payload });
+    const response = NextResponse.json({ 
+      success: true, 
+      user: payload,
+      token: token // Incluir el token en el response
+    });
     applySecurityHeaders(response);
     
     response.cookies.set("token", token, {
       httpOnly: true,
       secure: false, // Cambiar a false para IP directa (HTTP)
-      sameSite: "lax", // Cambiar a lax para mejor compatibilidad en producción
+      sameSite: "lax",
       maxAge: 60 * 60, // 1 hora
       path: "/",
-      // No especificar domain para permitir que funcione en cualquier subdominio
     });
     
     return response;
   } catch (error) {
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
-} 
+}
