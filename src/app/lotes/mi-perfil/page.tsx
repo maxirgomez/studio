@@ -73,6 +73,18 @@ export default function MyProfilePage() {
   const { toast } = useToast();
   const { user, loading, refreshUser } = useUser();
   const { refreshLotesSolicitados } = useNotification();
+  
+  // Debug logs
+  console.log('🎯 ProfilePage - Estado actual:');
+  console.log('  - loading:', loading);
+  console.log('  - user:', user);
+  console.log('  - user?.nombre:', user?.nombre);
+  console.log('  - user?.apellido:', user?.apellido);
+  console.log('  - user?.mail:', user?.mail);
+  console.log('  - user?.user:', user?.user);
+  console.log('  - user?.rol:', user?.rol);
+  console.log('  - user?.foto_perfil:', user?.foto_perfil);
+  console.log('  - localStorage token:', typeof window !== 'undefined' ? localStorage.getItem('auth_token') : 'N/A');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
@@ -83,6 +95,9 @@ export default function MyProfilePage() {
   const [lotesSolicitados, setLotesSolicitados] = useState<any[]>([]);
   const [loadingSolicitudes, setLoadingSolicitudes] = useState(true);
   const [transferiendo, setTransferiendo] = useState<string | null>(null);
+  
+  // Estado para debug del token
+  const [tokenStatus, setTokenStatus] = useState<string>('verificando...');
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -97,7 +112,15 @@ export default function MyProfilePage() {
   });
 
   useEffect(() => {
+    console.log('🔄 ProfilePage - useEffect ejecutado, user:', user);
     if (user) {
+      console.log('🔄 ProfilePage - Actualizando formulario con datos:', {
+        nombre: user.nombre,
+        apellido: user.apellido,
+        mail: user.mail,
+        user: user.user
+      });
+      // Forzar la actualización del formulario con los datos del usuario
       form.reset({
         nombre: user.nombre || "",
         apellido: user.apellido || "",
@@ -108,8 +131,7 @@ export default function MyProfilePage() {
       setPreviewUrl(user.foto_perfil || null);
       setHasChanges(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, form]);
 
   useEffect(() => {
     if (!editMode) return;
@@ -258,9 +280,14 @@ export default function MyProfilePage() {
     if (!hasChanges) return;
     if (!user) return;
     // PATCH al backend para actualizar nombre, apellido, user, mail y contraseña
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    console.log('📝 MiPerfil - PATCH /api/me con token:', token ? 'SÍ' : 'NO');
     const res = await fetch("/api/me", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify({
         nombre: data.nombre,
         apellido: data.apellido,
@@ -273,7 +300,10 @@ export default function MyProfilePage() {
       toast({ title: "Perfil actualizado" });
       await refreshUser();
       // Refrescar datos del usuario
-      const resUser = await fetch("/api/me");
+      console.log('📝 MiPerfil - GET /api/me para refrescar usuario, token:', token ? 'SÍ' : 'NO');
+      const resUser = await fetch("/api/me", {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
+      });
       if (resUser.ok) {
         const { user: updatedUser } = await resUser.json();
         form.reset({
@@ -298,8 +328,10 @@ export default function MyProfilePage() {
     if (selectedFile) {
       const formData = new FormData();
       formData.append("avatar", selectedFile);
+      console.log('🖼️ MiPerfil - POST /api/me/avatar con token:', token ? 'SÍ' : 'NO');
       const resImg = await fetch("/api/me/avatar", {
         method: "POST",
+        headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
         body: formData,
       });
       if (resImg.ok) {
@@ -331,15 +363,49 @@ export default function MyProfilePage() {
     return <ProfileCardSkeleton />;
   }
 
+  // Si no hay usuario después de cargar, mostrar mensaje de no autenticado
+  if (!loading && !user) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Mi Perfil</h1>
+          <p className="text-muted-foreground">Administra tu información perasdasdasdassonal y de la cuenta.</p>
+        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center space-y-4">
+              <div className="text-6xl">🔒</div>
+              <h2 className="text-2xl font-semibold">No estás autenticado</h2>
+              <p className="text-muted-foreground">
+                Necesitas iniciar sesión para ver tu perfil.
+              </p>
+              <Button onClick={() => window.location.href = '/'}>
+                Iniciar Sesión
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Mi Perfil</h1>
-        <p className="text-muted-foreground">Administra tu información personal y de la cuenta.</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Mi Perfil</h1>
+          <p className="text-muted-foreground">Administra tu información personal y de la cuenta.</p>
+        </div>
       </div>
+
+
+
       <Card>
         <CardHeader>
-          <CardTitle>Editar Perfil</CardTitle>
+          <CardTitle>Editar Información</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Modifica tu información personal y cambia tu contraseña.
+          </p>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -368,7 +434,12 @@ export default function MyProfilePage() {
                     <FormItem>
                       <FormLabel>Nombre</FormLabel>
                       <FormControl>
-                        <Input placeholder="Tu nombre" {...field} disabled={!editMode} />
+                        <Input 
+                          placeholder={editMode ? "Tu nombre" : ""}
+                          {...field} 
+                          disabled={!editMode}
+                          value={editMode ? (field.value ?? "") : (user?.nombre || "")}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -381,7 +452,12 @@ export default function MyProfilePage() {
                     <FormItem>
                       <FormLabel>Apellido</FormLabel>
                       <FormControl>
-                        <Input placeholder="Tu apellido" {...field} disabled={!editMode} />
+                        <Input 
+                          placeholder={editMode ? "Tu apellido" : ""}
+                          {...field} 
+                          disabled={!editMode}
+                          value={editMode ? (field.value ?? "") : (user?.apellido || "")}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -400,7 +476,7 @@ export default function MyProfilePage() {
                          placeholder="tu_usuario" 
                          {...field} 
                          disabled={!editMode}
-                         value={field.value || ''}
+                         value={field.value || user?.user || ''}
                        />
                      </FormControl>
                      <FormMessage />
@@ -415,7 +491,13 @@ export default function MyProfilePage() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="email@ejemplo.com" {...field} disabled={!editMode} />
+                      <Input 
+                        type="email" 
+                        placeholder="email@ejemplo.com" 
+                        {...field} 
+                        disabled={!editMode}
+                        value={field.value || user?.mail || ""}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

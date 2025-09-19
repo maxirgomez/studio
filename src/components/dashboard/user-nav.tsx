@@ -30,6 +30,7 @@ export function UserNav() {
   const { count: lotesSolicitadosCount } = useLotesSolicitados();
   const [mounted, setMounted] = useState(false);
 
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -39,14 +40,26 @@ export function UserNav() {
   };
 
 
+  // Mostrar loading state mientras se cargan los datos del usuario
+  if (loading) {
+    return (
+      <Button variant="ghost" className="relative h-8 w-8 rounded-full" disabled>
+        <Avatar className="h-9 w-9">
+          <AvatarFallback>...</AvatarFallback>
+        </Avatar>
+      </Button>
+    );
+  }
+
   return (
     <DropdownMenu>
-      {/* Log para ver el user en el render */}
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
             {user?.foto_perfil && <AvatarImage src={user.foto_perfil} alt={user?.nombre || 'User avatar'} />}
-            <AvatarFallback name={user?.nombre || user?.mail || "Usuario"} />
+            <AvatarFallback>
+              {user?.nombre ? user.nombre.charAt(0).toUpperCase() : user?.mail ? user.mail.charAt(0).toUpperCase() : "U"}
+            </AvatarFallback>
           </Avatar>
           {mounted && lotesSolicitadosCount > 0 && (
             <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-medium">
@@ -58,8 +71,12 @@ export function UserNav() {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user?.nombre || "Agente"} {user?.apellido || "Apellido"}</p>
-            <p className="text-xs leading-none text-muted-foreground">{user?.mail || "agente@baigun.realty"}</p>
+            <p className="text-sm font-medium leading-none">
+              {user?.nombre || "Agente"} {user?.apellido || "Apellido"}
+            </p>
+            <p className="text-xs leading-none text-muted-foreground">
+              {user?.mail || "agente@baigun.realty"}
+            </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

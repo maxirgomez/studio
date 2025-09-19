@@ -62,7 +62,16 @@ setInterval(cleanupRateLimits, 5 * 60 * 1000);
 // Función para extraer y validar token JWT
 export function extractAndValidateToken(req: NextRequest): AuthenticatedUser | null {
   try {
-    const token = req.cookies.get("token")?.value;
+    // Buscar token en cookies primero (para compatibilidad)
+    let token = req.cookies.get("token")?.value;
+    
+    // Si no hay token en cookies, buscar en headers de Authorization
+    if (!token) {
+      const authHeader = req.headers.get("authorization");
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        token = authHeader.substring(7); // Remover "Bearer "
+      }
+    }
     
     if (!token) {
       return null;

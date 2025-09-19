@@ -28,6 +28,8 @@ import {
 import ProfileCardSkeleton from "@/components/lotes/ProfileCardSkeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUser } from "@/context/UserContext";
+import { Badge } from "@/components/ui/badge";
+import { User, MapPin } from "lucide-react";
 
 const profileFormSchema = z.object({
   nombre: z.string().min(2, {
@@ -57,6 +59,16 @@ export default function UserProfileEditPage() {
   const [minTimePassed, setMinTimePassed] = useState(false);
   const [roles, setRoles] = useState<string[]>([]);
   const { user: currentUser, loading: loadingUser } = useUser();
+
+  // Debug logs
+  console.log('🎯 UserProfileEditPage - Estado actual:');
+  console.log('  - loading:', loading);
+  console.log('  - user:', user);
+  console.log('  - user?.nombre:', user?.nombre);
+  console.log('  - user?.apellido:', user?.apellido);
+  console.log('  - user?.mail:', user?.mail);
+  console.log('  - user?.rol:', user?.rol);
+  console.log('  - params.user:', params.user);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -232,6 +244,80 @@ export default function UserProfileEditPage() {
         <h1 className="text-3xl font-bold tracking-tight">Editar Perfil de Usuario</h1>
         <p className="text-muted-foreground">Administra la información personal y de la cuenta de este usuario.</p>
       </div>
+
+      {/* Panel de Depuración - visible temporalmente hasta confirmación */}
+      <Card className="border-yellow-300">
+        <CardHeader>
+          <CardTitle className="text-yellow-700">Debug Usuario</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm space-y-2">
+            <p><strong>loading:</strong> {String(loading)}</p>
+            <p><strong>user existe:</strong> {user ? 'true' : 'false'}</p>
+            <p><strong>params.user:</strong> {params.user}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <p><strong>user.nombre:</strong> {user?.nombre ?? 'null'}</p>
+              <p><strong>user.apellido:</strong> {user?.apellido ?? 'null'}</p>
+              <p><strong>user.mail:</strong> {user?.mail ?? 'null'}</p>
+              <p><strong>user.rol:</strong> {user?.rol ?? 'null'}</p>
+            </div>
+            <div>
+              <p className="font-medium">user (JSON):</p>
+              <pre className="text-xs bg-muted/50 p-2 rounded overflow-auto max-h-64">{JSON.stringify(user, null, 2)}</pre>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Información del Usuario - Solo Lectura */}
+      {user && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Información del Usuario
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-start gap-6">
+              <Avatar className="h-20 w-20">
+                <AvatarImage src={user?.foto_perfil || user?.avatarUrl || ''} alt="Foto de perfil" />
+                <AvatarFallback className="text-lg">
+                  {getInitials(user?.nombre, user?.apellido)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Nombre Completo</Label>
+                    <p className="text-lg font-semibold">
+                      {user?.nombre && user?.apellido 
+                        ? `${user.nombre} ${user.apellido}`.trim()
+                        : user?.nombre || "No especificado"
+                      }
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Usuario</Label>
+                    <p className="text-lg font-semibold">{params.user || "No especificado"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Email</Label>
+                    <p className="text-lg font-semibold">{user?.mail || user?.email || "No especificado"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Rol</Label>
+                    <Badge variant="secondary" className="text-sm">
+                      {user?.rol || user?.role || "Usuario"}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Editar Perfil</CardTitle>
@@ -263,7 +349,12 @@ export default function UserProfileEditPage() {
                     <FormItem>
                       <FormLabel>Nombre</FormLabel>
                       <FormControl>
-                        <Input placeholder="Nombre" {...field} disabled={!editMode} />
+                        <Input 
+                          placeholder={editMode ? "Nombre" : ""} 
+                          {...field} 
+                          disabled={!editMode}
+                          value={editMode ? (field.value ?? "") : (user?.nombre || "")}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -276,7 +367,12 @@ export default function UserProfileEditPage() {
                     <FormItem>
                       <FormLabel>Apellido</FormLabel>
                       <FormControl>
-                        <Input placeholder="Apellido" {...field} disabled={!editMode} />
+                        <Input 
+                          placeholder={editMode ? "Apellido" : ""} 
+                          {...field} 
+                          disabled={!editMode}
+                          value={editMode ? (field.value ?? "") : (user?.apellido || "")}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -310,7 +406,13 @@ export default function UserProfileEditPage() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="email@ejemplo.com" {...field} disabled={!editMode} />
+                      <Input 
+                        type="email" 
+                        placeholder={editMode ? "email@ejemplo.com" : ""} 
+                        {...field} 
+                        disabled={!editMode}
+                        value={editMode ? (field.value ?? "") : (user?.mail || user?.email || "")}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

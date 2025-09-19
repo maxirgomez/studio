@@ -8,6 +8,7 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'dev_secret') {
 
 // Rutas públicas que no requieren autenticación
 const PUBLIC_PATHS = [
+  '/', // Página principal (login)
   '/login',
   '/api/login',
   '/favicon.ico',
@@ -17,8 +18,8 @@ const PUBLIC_PATHS = [
   '/api/test-db/',
   '/api/test-db/route',
   '/api/reset-password-request',
-  '/api/me', // Permitir acceso a /api/me sin redirección
   '/api/debug-jwt', // Endpoint de debug de JWT
+  '/api/debug-token', // Endpoint de debug de token
 ];
 
 // Rutas de API que requieren autenticación pero no redirección
@@ -61,9 +62,9 @@ export function middleware(req: NextRequest) {
       );
     }
     
-    // Para rutas de página, redirigir a login
+    // Para rutas de página, redirigir a login (que está en /)
     const url = req.nextUrl.clone();
-    url.pathname = '/login';
+    url.pathname = '/';
     url.searchParams.set('next', pathname);
     return NextResponse.redirect(url);
   }
@@ -75,6 +76,6 @@ export function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     // Proteger todas las rutas excepto las públicas
-    '/((?!_next|favicon.ico|login|api/login|api/me|api/public|api/test-db|api/reset-password-request|api/debug-jwt).*)',
+    '/((?!_next|favicon.ico|^$|login|api/login|api/public|api/test-db|api/reset-password-request|api/debug-jwt|api/debug-token).*)',
   ],
 }; 

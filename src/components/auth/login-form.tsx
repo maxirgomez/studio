@@ -140,6 +140,7 @@ export function LoginForm() {
       // Almacenar el token en localStorage
       if (data.token) {
         localStorage.setItem('auth_token', data.token);
+        console.log('🔑 Login - Token guardado en localStorage');
       }
       
       toast({
@@ -147,6 +148,10 @@ export function LoginForm() {
         description: `¡Bienvenido de nuevo, ${data.user.user || data.user.email}!`,
       });
       setPostLoginLoading(true);
+      
+      // Esperar un poco para asegurar que el token se guarde
+      await new Promise(resolve => setTimeout(resolve, 100));
+      console.log('🔄 Login - Llamando a refreshUser después del login');
       await refreshUser();
       // Si next es '/' o vacío, redirige a /lotes
       if (!nextUrl || nextUrl === "/") {
