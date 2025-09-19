@@ -17,6 +17,8 @@ const PUBLIC_PATHS = [
   '/api/test-db/',
   '/api/test-db/route',
   '/api/reset-password-request',
+  '/api/me', // Permitir acceso a /api/me sin redirección
+  '/api/debug-rate-limit', // Endpoint de debug
 ];
 
 // Rutas de API que requieren autenticación pero no redirección
@@ -73,6 +75,6 @@ export function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     // Proteger todas las rutas excepto las públicas
-    '/((?!_next|favicon.ico|login|api/login|api/me|api/public|api/test-db).*)',
+    '/((?!_next|favicon.ico|login|api/login|api/me|api/public|api/test-db|api/reset-password-request|api/debug-rate-limit).*)',
   ],
 }; 

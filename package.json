@@ -7,9 +7,13 @@
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "build": "next build",
+    "build:prod": "npm run optimize:static && next build",
     "start": "next start",
+    "start:prod": "NODE_ENV=production next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "optimize:static": "node scripts/optimize-static-files.js",
+    "analyze": "ANALYZE=true npm run build"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.8.0",

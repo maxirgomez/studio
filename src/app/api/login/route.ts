@@ -113,9 +113,10 @@ export async function POST(req: NextRequest) {
       response.cookies.set("token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "strict", // Cambiar a strict para mayor seguridad
+        sameSite: "lax", // Cambiar a lax para mejor compatibilidad en producción
         maxAge: 60 * 60, // 1 hora
         path: "/",
+        domain: process.env.NODE_ENV === "production" ? undefined : undefined, // Permitir subdominios en producción
       });
       
       return response;
@@ -156,9 +157,10 @@ export async function POST(req: NextRequest) {
     response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict", // Cambiar a strict para mayor seguridad
+      sameSite: "lax", // Cambiar a lax para mejor compatibilidad en producción
       maxAge: 60 * 60, // 1 hora
       path: "/",
+      domain: process.env.NODE_ENV === "production" ? undefined : undefined, // Permitir subdominios en producción
     });
     
     return response;

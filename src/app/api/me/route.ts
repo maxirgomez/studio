@@ -9,8 +9,11 @@ export async function GET(req: NextRequest) {
   const token = req.cookies.get("token")?.value;
   
   // Log para debugging
+  console.log('[API/ME] Token recibido:', token ? 'Presente' : 'Ausente');
+  console.log('[API/ME] Headers:', Object.fromEntries(req.headers.entries()));
   
   if (!token) {
+    console.log('[API/ME] Error: No hay token en las cookies');
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
   

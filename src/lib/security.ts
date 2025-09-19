@@ -12,8 +12,8 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h";
 
 // Rate limiting simple en memoria (en producción usar Redis)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutos
-const RATE_LIMIT_MAX_ATTEMPTS = 5;
+const RATE_LIMIT_WINDOW = 5 * 60 * 1000; // 5 minutos (reducido)
+const RATE_LIMIT_MAX_ATTEMPTS = 20; // Aumentado para producción
 
 export interface AuthenticatedUser {
   user: string;
