@@ -2,8 +2,8 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
-  // Configuración para Docker
-  output: 'standalone',
+  // Configuración para Docker (comentado para archivos estáticos)
+  // output: 'standalone',
   
   typescript: {
     ignoreBuildErrors: true,
@@ -27,6 +27,16 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/avatars/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        // Cache para archivos estáticos de Next.js
+        source: '/_next/static/:path*',
         headers: [
           {
             key: 'Cache-Control',
