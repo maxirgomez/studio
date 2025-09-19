@@ -15,12 +15,24 @@ export function SessionGuard() {
     let expired = false;
     const checkSession = async () => {
       try {
-        const res = await fetch("/api/me");
+        const token = localStorage.getItem('auth_token');
+        if (!token) {
+          if (!expired) {
+            expired = true;
+            router.push(`/?next=${encodeURIComponent(pathname)}`);
+          }
+          return;
+        }
         
-        const now = new Date();
+        const res = await fetch("/api/me", {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         
         if ((res.status === 401 || res.status === 403) && !expired) {
           expired = true;
+          localStorage.removeItem('auth_token'); // Limpiar token inválido
           toast({
             title: "Sesión expirada",
             description: "Por favor, inicia sesión nuevamente.",
@@ -29,6 +41,12 @@ export function SessionGuard() {
           router.push(`/?next=${encodeURIComponent(pathname)}`);
         }
       } catch (e) {
+        // En caso de error, limpiar token y redirigir
+        localStorage.removeItem('auth_token');
+        if (!expired) {
+          expired = true;
+          router.push(`/?next=${encodeURIComponent(pathname)}`);
+        }
       }
     };
     checkSession();

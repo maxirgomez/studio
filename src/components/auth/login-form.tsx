@@ -136,6 +136,12 @@ export function LoginForm() {
         });
         return;
       }
+      
+      // Almacenar el token en localStorage
+      if (data.token) {
+        localStorage.setItem('auth_token', data.token);
+      }
+      
       toast({
         title: "Login exitoso",
         description: `¡Bienvenido de nuevo, ${data.user.user || data.user.email}!`,

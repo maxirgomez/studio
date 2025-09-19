@@ -106,18 +106,13 @@ export async function POST(req: NextRequest) {
       // Generar JWT seguro
       const token = generateSecureToken(payload);
       
-      // Enviar respuesta con headers de seguridad
-      const response = NextResponse.json({ success: true, user: payload });
-      applySecurityHeaders(response);
-      
-      response.cookies.set("token", token, {
-        httpOnly: true,
-        secure: false, // Cambiar a false para IP directa (HTTP)
-        sameSite: "lax", // Cambiar a lax para mejor compatibilidad en producción
-        maxAge: 60 * 60, // 1 hora
-        path: "/",
-        // No especificar domain para permitir que funcione en cualquier subdominio
+      // Enviar respuesta con token en JSON (sin cookies)
+      const response = NextResponse.json({ 
+        success: true, 
+        user: payload,
+        token: token // Token en el response para que el cliente lo maneje
       });
+      applySecurityHeaders(response);
       
       return response;
     }
@@ -150,18 +145,13 @@ export async function POST(req: NextRequest) {
     };
     const token = generateSecureToken(payload);
 
-    // Enviar el token en una cookie httpOnly con headers de seguridad
-    const response = NextResponse.json({ success: true, user: payload });
-    applySecurityHeaders(response);
-    
-    response.cookies.set("token", token, {
-      httpOnly: true,
-      secure: false, // Cambiar a false para IP directa (HTTP)
-      sameSite: "lax", // Cambiar a lax para mejor compatibilidad en producción
-      maxAge: 60 * 60, // 1 hora
-      path: "/",
-      // No especificar domain para permitir que funcione en cualquier subdominio
+    // Enviar el token en JSON (sin cookies)
+    const response = NextResponse.json({ 
+      success: true, 
+      user: payload,
+      token: token // Token en el response para que el cliente lo maneje
     });
+    applySecurityHeaders(response);
     
     return response;
   } catch (error) {

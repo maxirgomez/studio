@@ -10,7 +10,6 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'dev_secret') {
 const PUBLIC_PATHS = [
   '/login',
   '/api/login',
-  '/api/login-token', // Nuevo endpoint que devuelve token en response
   '/favicon.ico',
   '/_next',
   '/api/public',
@@ -19,9 +18,7 @@ const PUBLIC_PATHS = [
   '/api/test-db/route',
   '/api/reset-password-request',
   '/api/me', // Permitir acceso a /api/me sin redirección
-  '/api/debug-rate-limit', // Endpoint de debug
-  '/api/debug-auth', // Endpoint de debug de autenticación
-  '/api/test-cookies', // Endpoint de test de cookies
+  '/api/debug-jwt', // Endpoint de debug de JWT
 ];
 
 // Rutas de API que requieren autenticación pero no redirección
@@ -78,6 +75,6 @@ export function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     // Proteger todas las rutas excepto las públicas
-    '/((?!_next|favicon.ico|login|api/login|api/login-token|api/me|api/public|api/test-db|api/reset-password-request|api/debug-rate-limit|api/debug-auth|api/test-cookies).*)',
+    '/((?!_next|favicon.ico|login|api/login|api/me|api/public|api/test-db|api/reset-password-request|api/debug-jwt).*)',
   ],
 }; 

@@ -6,22 +6,11 @@ import bcrypt from "bcryptjs";
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret";
 
 export async function GET(req: NextRequest) {
-  // Intentar obtener el token de múltiples fuentes
-  const token = req.cookies.get("token")?.value || 
-                req.headers.get("authorization")?.replace("Bearer ", "") ||
+  // Solo obtener token de headers (más simple y confiable)
+  const token = req.headers.get("authorization")?.replace("Bearer ", "") ||
                 req.headers.get("x-auth-token");
   
-  // Log para debugging
-  console.log('[API/ME] Token recibido:', token ? 'Presente' : 'Ausente');
-  console.log('[API/ME] Cookies:', req.cookies.getAll().map(c => `${c.name}=${c.value ? 'Presente' : 'Ausente'}`));
-  console.log('[API/ME] Headers de autorización:', {
-    authorization: req.headers.get("authorization"),
-    'x-auth-token': req.headers.get("x-auth-token"),
-    cookie: req.headers.get("cookie")
-  });
-  
   if (!token) {
-    console.log('[API/ME] Error: No hay token en las cookies ni headers');
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
   
