@@ -328,9 +328,22 @@ export default function NuevoLotePage() {
     } else {
       setNumeroSugerencias([]);
       setNumeroSugerenciasCompletas([]);
+      setRangoCompletoSeleccionado(''); // Limpiar rango seleccionado cuando no hay calle
       setLoadingNumero(false);
     }
   }, [completedFrenteValue]);
+
+  // Limpiar estado cuando se borran los campos
+  useEffect(() => {
+    if (!frenteValue && !numeroValue) {
+      setRangoCompletoSeleccionado('');
+      setCalleSugerencias([]);
+      setNumeroSugerencias([]);
+      setNumeroSugerenciasCompletas([]);
+      setMostrarCalleSug(false);
+      setMostrarNumeroSug(false);
+    }
+  }, [frenteValue, numeroValue]);
 
   // Filtrar sugerencias de número en tiempo real con límite inteligente
   const numeroSugerenciasFiltradas = numeroSugerencias
@@ -424,8 +437,12 @@ export default function NuevoLotePage() {
     // Usar el rango completo seleccionado si está disponible, sino buscar en los rangos
     let rangoCompleto = rangoCompletoSeleccionado;
     
-    if (!rangoCompleto) {
-      // Si no hay rango seleccionado, buscar en los rangos disponibles
+    // Si no hay rango seleccionado o las sugerencias están vacías, buscar directamente
+    if (!rangoCompleto || numeroSugerenciasCompletas.length === 0) {
+      // Si no hay sugerencias cargadas, buscar directamente sin validación de rango
+      console.log('Buscando directamente sin validación de rango');
+    } else {
+      // Validar que el número existe en las sugerencias
       const numeroExisteEnCalle = numeroSugerenciasCompletas.some(numero => {
         // Expandir rangos de números (ej: "1820.1824.1828" -> ["1820", "1824", "1828"])
         const numerosIndividuales = String(numero).split('.').filter(n => n.trim() !== '');
