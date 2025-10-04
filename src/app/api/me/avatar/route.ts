@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import pool from "@/lib/db";
-import { promises as fs } from "fs";
-import path from "path";
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret";
-const AVATAR_DIR = path.join(process.cwd(), "public", "avatars");
 
 export async function POST(req: NextRequest) {
   try {
@@ -46,42 +43,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Tipo de archivo no permitido. Solo imágenes JPG, PNG, GIF o WebP" }, { status: 400 });
     }
 
-    // Crear carpeta si no existe
-    try {
-      await fs.mkdir(AVATAR_DIR, { recursive: true });
-    } catch (err) {
-      console.error('Error creando directorio de avatares:', err);
-      return NextResponse.json({ error: "Error del servidor al crear directorio" }, { status: 500 });
-    }
-
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-    const fileName = `${userId}_${Date.now()}.${ext}`;
-    const filePath = path.join(AVATAR_DIR, fileName);
-    
+    // Convertir imagen a base64
     try {
       const arrayBuffer = await file.arrayBuffer();
-      await fs.writeFile(filePath, Buffer.from(arrayBuffer));
-    } catch (err) {
-      console.error('Error escribiendo archivo:', err);
-      return NextResponse.json({ error: "Error del servidor al guardar archivo" }, { status: 500 });
-    }
-
-    // Guardar la URL en la base de datos
-    const avatarUrl = `/avatars/${fileName}`;
-    try {
+      const base64 = Buffer.from(arrayBuffer).toString('base64');
+      const avatarUrl = `data:${file.type};base64,${base64}`;
+      
+      // Guardar la URL base64 en la base de datos
       await pool.query('UPDATE public.prefapp_users SET foto_perfil = $1 WHERE "user" = $2', [avatarUrl, userId]);
+      
+      return NextResponse.json({ success: true, avatarUrl });
     } catch (err) {
-      console.error('Error actualizando base de datos:', err);
-      // Intentar eliminar el archivo si falló la BD
-      try {
-        await fs.unlink(filePath);
-      } catch (unlinkErr) {
-        console.error('Error eliminando archivo tras fallo de BD:', unlinkErr);
-      }
-      return NextResponse.json({ error: "Error del servidor al actualizar perfil" }, { status: 500 });
+      console.error('Error procesando imagen:', err);
+      return NextResponse.json({ error: "Error del servidor al procesar imagen" }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, avatarUrl });
   } catch (error) {
     console.error('Error general en /api/me/avatar:', error);
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
