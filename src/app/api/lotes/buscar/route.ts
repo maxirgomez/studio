@@ -276,9 +276,9 @@ export async function GET(req: Request) {
         idx++;
       }
       if (num_dom) {
-        // Búsqueda por número que contenga el valor ingresado en el rango
-        query += ` AND fp.num_dom::text LIKE $${idx}`;
-        values.push(`%${num_dom}%`);
+        // Búsqueda precisa por número usando string_to_array para coincidencias exactas en rangos
+        query += ` AND $${idx}::text = ANY(string_to_array(fp.num_dom, '.'))`;
+        values.push(num_dom);
         idx++;
       }
       
