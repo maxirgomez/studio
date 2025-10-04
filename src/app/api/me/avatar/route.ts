@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import pool from "@/lib/db";
+import { uploadAvatarPromise } from "@/lib/cloudinary";
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret";
 
@@ -43,19 +44,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Tipo de archivo no permitido. Solo imágenes JPG, PNG, GIF o WebP" }, { status: 400 });
     }
 
-    // Convertir imagen a base64
+    // Subir imagen a Cloudinary
     try {
-      const arrayBuffer = await file.arrayBuffer();
-      const base64 = Buffer.from(arrayBuffer).toString('base64');
-      const avatarUrl = `data:${file.type};base64,${base64}`;
+      console.log('☁️ Subiendo a Cloudinary...');
+      const uploadResult = await uploadAvatarPromise(file, userId);
       
-      // Guardar la URL base64 en la base de datos
-      await pool.query('UPDATE public.prefapp_users SET foto_perfil = $1 WHERE "user" = $2', [avatarUrl, userId]);
+      console.log('✅ Imagen subida a Cloudinary:', uploadResult.secure_url);
       
-      return NextResponse.json({ success: true, avatarUrl });
+      // Guardar la URL de Cloudinary en la base de datos
+      await pool.query('UPDATE public.prefapp_users SET foto_perfil = $1 WHERE "user" = $2', [uploadResult.secure_url, userId]);
+      
+      console.log('💾 URL guardada en base de datos');
+      
+      return NextResponse.json({ 
+        success: true, 
+        avatarUrl: uploadResult.secure_url,
+        publicId: uploadResult.public_id 
+      });
     } catch (err) {
-      console.error('Error procesando imagen:', err);
-      return NextResponse.json({ error: "Error del servidor al procesar imagen" }, { status: 500 });
+      console.error('❌ Error subiendo a Cloudinary:', err);
+      return NextResponse.json({ error: "Error del servidor al subir imagen" }, { status: 500 });
     }
 
   } catch (error) {
