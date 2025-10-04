@@ -7,6 +7,7 @@ import UserDialog from "@/components/users/UserDialog";
 import { users } from "@/lib/data";
 import { useUser } from "@/context/UserContext";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Plus, Eye } from "lucide-react";
 import { getStatusStyles } from "@/lib/status-colors";
 
@@ -88,9 +89,12 @@ export default function ProfilePage() {
               return (
                 <div key={user.mail || user.email} className="border rounded-lg p-6 bg-white flex flex-col justify-between h-full shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center gap-4 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-700 text-lg">
-                      {user.nombre?.[0]?.toUpperCase() || "U"}
-                    </div>
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={user.foto_perfil || ''} alt={`Foto de ${nombreCompleto}`} />
+                      <AvatarFallback className="bg-blue-100 text-blue-700 font-bold text-lg">
+                        {user.nombre?.[0]?.toUpperCase() || user.apellido?.[0]?.toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
                     <div>
                       <div className="font-bold text-lg">{nombreCompleto}</div>
                       <div className="text-sm text-muted-foreground">{email}</div>

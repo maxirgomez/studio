@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { X, ChevronDown, ArrowUp, ArrowDown } from "lucide-react";
 import React from "react";
 
@@ -31,7 +32,7 @@ interface LotesFiltersProps {
   uniqueOrigens: string[];
   uniqueStatuses: string[];
   uniqueNeighborhoods: string[];
-  uniqueAgents: { user: string; nombre: string; apellido: string; iniciales: string }[];
+  uniqueAgents: { user: string; nombre: string; apellido: string; foto_perfil: string | null; iniciales: string }[];
   users: any[];
   sliderValue: [number, number];
   minArea: number;
@@ -191,7 +192,13 @@ const LotesFilters: React.FC<LotesFiltersProps> = ({
                   checked={agentFilters.includes(agente.user)}
                   onCheckedChange={() => handleMultiSelectFilterChange('agent', agente.user)}
                 >
-                  {displayName} ({agente.iniciales})
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-5 w-5">
+                      <AvatarImage src={agente.foto_perfil || ''} alt={`Foto de ${agente.nombre} ${agente.apellido}`} />
+                      <AvatarFallback className="text-xs">{agente.iniciales}</AvatarFallback>
+                    </Avatar>
+                    <span>{displayName}</span>
+                  </div>
                 </DropdownMenuCheckboxItem>
               );
             })}

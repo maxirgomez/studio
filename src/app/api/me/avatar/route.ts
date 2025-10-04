@@ -8,10 +8,11 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev_secret";
 const AVATAR_DIR = path.join(process.cwd(), "public", "avatars");
 
 export async function POST(req: NextRequest) {
-  const authHeader = req.headers.get("authorization");
-  const tokenFromHeader = authHeader && authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  const token = tokenFromHeader || req.cookies.get("token")?.value;
-  // console.log('🖼️ /api/me/avatar - Token por header:', tokenFromHeader ? 'SÍ' : 'NO', '| por cookie:', token && !tokenFromHeader ? 'SÍ' : 'NO');
+  // Usar la misma lógica que /api/me para consistencia
+  const token = req.headers.get("authorization")?.replace("Bearer ", "") ||
+                req.headers.get("x-auth-token");
+  
+  // console.log('🖼️ /api/me/avatar - Token recibido:', token ? 'SÍ' : 'NO');
   if (!token) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }

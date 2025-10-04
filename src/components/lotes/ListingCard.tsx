@@ -2,7 +2,7 @@ import Image from "next/image";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { SafeImage } from "@/components/ui/SafeImage";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MapPin, Scan, Ruler } from "lucide-react";
 import { getStatusStyles } from "@/lib/data";
 
@@ -16,6 +16,7 @@ export interface Listing {
     user: string;
     nombre: string | null;
     apellido: string | null;
+    foto_perfil: string | null;
     initials: string;
   };
   imageUrl: string | null;
@@ -132,6 +133,7 @@ const ListingCard = ({ listing }: ListingCardProps) => (
         </Badge>
         <div className="flex items-center gap-2">
             <Avatar className="h-6 w-6">
+                <AvatarImage src={listing.agent?.foto_perfil || ''} alt={`Foto de ${listing.agent?.nombre} ${listing.agent?.apellido}`} />
                 <AvatarFallback>{listing.agent?.initials || 'NA'}</AvatarFallback>
             </Avatar>
             <span className="text-xs text-muted-foreground">

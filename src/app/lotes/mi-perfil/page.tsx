@@ -556,12 +556,10 @@ export default function MyProfilePage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <Avatar className="h-8 w-8">
-                          {lote.usuarioInfo?.foto_perfil ? (
-                            <AvatarImage 
-                              src={lote.usuarioInfo.foto_perfil} 
-                              alt={`Foto de ${lote.usuarioInfo.nombre} ${lote.usuarioInfo.apellido}`} 
-                            />
-                          ) : null}
+                          <AvatarImage 
+                            src={lote.usuarioInfo?.foto_perfil || ''} 
+                            alt={`Foto de ${lote.usuarioInfo?.nombre || ''} ${lote.usuarioInfo?.apellido || ''}`} 
+                          />
                           <AvatarFallback className="text-xs">
                             {lote.usuarioInfo?.iniciales || lote.usuarioSolicitante[0].toUpperCase()}
                           </AvatarFallback>

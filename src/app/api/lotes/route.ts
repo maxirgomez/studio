@@ -30,6 +30,7 @@ function mapLote(row: any, agenteUsuario: any = null) {
       user: row.agente,
       nombre: agenteUsuario?.nombre || null,
       apellido: agenteUsuario?.apellido || null,
+      foto_perfil: agenteUsuario?.foto_perfil || null,
       initials: agenteUsuario ? `${(agenteUsuario.nombre?.[0] || '').toUpperCase()}${(agenteUsuario.apellido?.[0] || '').toUpperCase()}` : (row.agente ? row.agente[0].toUpperCase() : "")
     },
     imageUrl: row.foto_lote,
@@ -268,7 +269,7 @@ export async function GET(req: Request) {
   // Agregar paginación
   const pagValues = [...values, limit, offset];
   const query = `
-    SELECT l.*, u.nombre, u.apellido
+    SELECT l.*, u.nombre, u.apellido, u.foto_perfil
     FROM public.prefapp_lotes l
     LEFT JOIN public.prefapp_users u ON LOWER(l.agente) = LOWER(u.user)
     ${where} 
@@ -288,7 +289,8 @@ export async function GET(req: Request) {
       const agenteUsuario = row.nombre && row.apellido ? {
         nombre: row.nombre,
         apellido: row.apellido,
-        user: row.agente
+        user: row.agente,
+        foto_perfil: row.foto_perfil
       } : null;
       return mapLote(row, agenteUsuario);
     });
