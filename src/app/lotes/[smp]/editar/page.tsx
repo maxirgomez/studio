@@ -293,6 +293,8 @@ export default function LoteEditPage() {
     try {
       // Obtener token para autenticación
       const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+      console.log('🔑 Frontend - Token encontrado:', token ? 'SÍ' : 'NO');
+      console.log('🔑 Frontend - Enviando PUT a:', `/api/lotes/${params.smp}`);
       
       const res = await fetch(`/api/lotes/${params.smp}`, {
         method: 'PUT',

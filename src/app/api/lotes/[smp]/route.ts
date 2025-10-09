@@ -193,7 +193,13 @@ export async function PUT(req: NextRequest, context: any) {
   }
 
   // Validación de seguridad: verificar que el usuario tenga permisos para editar este lote
+  console.log('🔐 PUT - Intentando validar token...');
+  console.log('🔐 PUT - Headers:', req.headers.get('authorization') ? 'Authorization header presente' : 'Sin Authorization header');
+  console.log('🔐 PUT - Cookies:', req.cookies.get('token') ? 'Cookie token presente' : 'Sin cookie token');
+  
   const currentUser = extractAndValidateToken(req);
+  
+  console.log('🔐 PUT - Usuario validado:', currentUser ? `${currentUser.user} (${currentUser.role})` : 'null');
   
   if (!currentUser) {
     return NextResponse.json({ error: 'Usuario no autenticado' }, { status: 401 });
