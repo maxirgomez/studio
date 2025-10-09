@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import pool from '@/lib/db';
+import { extractAndValidateToken } from '@/lib/security';
 
 function mapLote(row: any, plusvaliaData: any = null) {
   function cleanPhone(val: any) {
@@ -88,7 +89,7 @@ function mapLote(row: any, plusvaliaData: any = null) {
   };
 }
 
-export async function GET(req: Request, context: any) {
+export async function GET(req: NextRequest, context: any) {
   let smp: string | undefined;
   if (context?.params && typeof context.params.then === 'function') {
     const awaitedParams = await context.params;
@@ -173,7 +174,7 @@ export async function GET(req: Request, context: any) {
   }
 }
 
-export async function PUT(req: Request, context: any) {
+export async function PUT(req: NextRequest, context: any) {
   let smp: string | undefined;
   if (context?.params && typeof context.params.then === 'function') {
     const awaitedParams = await context.params;
@@ -191,25 +192,13 @@ export async function PUT(req: Request, context: any) {
   }
 
   // Validación de seguridad: verificar que el usuario tenga permisos para editar este lote
-  try {
-    // Obtener información del usuario actual desde la sesión
-    const userResponse = await fetch(`${req.headers.get('origin') || 'http://localhost:3000'}/api/me`, {
-      headers: {
-        'Cookie': req.headers.get('cookie') || '',
-      },
-    });
-    
-    if (!userResponse.ok) {
-      return NextResponse.json({ error: 'Usuario no autenticado' }, { status: 401 });
-    }
-    
-    const userData = await userResponse.json();
-    const currentUser = userData.user;
-    
-    if (!currentUser) {
-      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 401 });
-    }
+  const currentUser = extractAndValidateToken(req);
+  
+  if (!currentUser) {
+    return NextResponse.json({ error: 'Usuario no autenticado' }, { status: 401 });
+  }
 
+  try {
     // Obtener información del lote para verificar permisos
     const { rows: loteRows } = await pool.query(
       `SELECT agente FROM public.prefapp_lotes WHERE smp = $1 LIMIT 1`,
@@ -225,7 +214,7 @@ export async function PUT(req: Request, context: any) {
     const currentUserValue = currentUser.user;
 
     // Solo los administradores tienen acceso total
-    const isAdmin = currentUser?.rol === 'Administrador';
+    const isAdmin = currentUser?.role === 'Administrador';
     
     // El usuario asignado al lote también puede editarlo
     const isAssignedAgent = currentUserValue && agenteValue &&
