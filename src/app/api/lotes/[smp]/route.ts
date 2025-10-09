@@ -28,6 +28,7 @@ function mapLote(row: any, plusvaliaData: any = null) {
       return existingFotoLote;
     }
     
+    
     // Si no hay URL existente, generar una nueva
     if (smp) {
       const fotoUrl = `https://fotos.usig.buenosaires.gob.ar/getFoto?smp=${smp.toUpperCase()}`;
