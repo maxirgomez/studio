@@ -191,9 +191,15 @@ export default function MyProfilePage() {
     
     setTransferiendo(smp);
     try {
+      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+      
       const res = await fetch(`/api/lotes/${smp}/solicitar/${user.user}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        credentials: 'include',
         body: JSON.stringify({
           accion: 'aceptar',
           agenteActual: user.user,
@@ -233,9 +239,15 @@ export default function MyProfilePage() {
     
     setTransferiendo(smp);
     try {
+      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+      
       const res = await fetch(`/api/lotes/${smp}/solicitar/${user.user}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        credentials: 'include',
         body: JSON.stringify({
           accion: 'rechazar',
           agenteActual: user.user,
