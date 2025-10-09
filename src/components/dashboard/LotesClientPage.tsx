@@ -91,6 +91,7 @@ export default function LotesClientPage() {
   const [uniqueNeighborhoods, setUniqueNeighborhoods] = useState<string[]>([]);
   const [uniqueStatuses, setUniqueStatuses] = useState<string[]>([]);
   const [uniqueOrigens, setUniqueOrigens] = useState<string[]>([]);
+  const [uniqueTipos, setUniqueTipos] = useState<string[]>([]);
   const [uniqueAgents, setUniqueAgents] = useState<any[]>([]);
 
   useEffect(() => {
@@ -127,6 +128,15 @@ export default function LotesClientPage() {
       setUniqueAgents(data.agentes || []);
     }
     fetchAgentes();
+  }, []);
+
+  useEffect(() => {
+    async function fetchTipos() {
+      const res = await fetch('/api/lotes/tipos');
+      const data = await res.json();
+      setUniqueTipos(data.tipos || []);
+    }
+    fetchTipos();
   }, []);
 
   useEffect(() => {
@@ -429,6 +439,7 @@ export default function LotesClientPage() {
           uniqueOrigens={uniqueOrigens}
           uniqueStatuses={uniqueStatuses}
           uniqueNeighborhoods={uniqueNeighborhoods}
+          uniqueTipos={uniqueTipos}
           uniqueAgents={uniqueAgents}
           users={users}
           sliderValue={sliderValue}

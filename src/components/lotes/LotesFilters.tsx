@@ -32,6 +32,7 @@ interface LotesFiltersProps {
   uniqueOrigens: string[];
   uniqueStatuses: string[];
   uniqueNeighborhoods: string[];
+  uniqueTipos: string[];
   uniqueAgents: { user: string; nombre: string; apellido: string; foto_perfil: string | null; iniciales: string }[];
   users: any[];
   sliderValue: [number, number];
@@ -70,6 +71,7 @@ const LotesFilters: React.FC<LotesFiltersProps> = ({
   uniqueOrigens,
   uniqueStatuses,
   uniqueNeighborhoods,
+  uniqueTipos,
   uniqueAgents,
   users,
   sliderValue,
@@ -217,18 +219,15 @@ const LotesFilters: React.FC<LotesFiltersProps> = ({
           <DropdownMenuContent className="w-[250px]">
             <DropdownMenuLabel>Filtrar por Tipo</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuCheckboxItem
-              checked={tipoFilters.includes('Lote')}
-              onCheckedChange={() => handleMultiSelectFilterChange('tipo', 'Lote')}
-            >
-              Lote
-            </DropdownMenuCheckboxItem>
-            <DropdownMenuCheckboxItem
-              checked={tipoFilters.includes('Local')}
-              onCheckedChange={() => handleMultiSelectFilterChange('tipo', 'Local')}
-            >
-              Local
-            </DropdownMenuCheckboxItem>
+            {uniqueTipos.map((tipo) => (
+              <DropdownMenuCheckboxItem
+                key={tipo}
+                checked={tipoFilters.includes(tipo)}
+                onCheckedChange={() => handleMultiSelectFilterChange('tipo', tipo)}
+              >
+                {tipo}
+              </DropdownMenuCheckboxItem>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

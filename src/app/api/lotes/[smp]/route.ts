@@ -7,6 +7,11 @@ function mapLote(row: any, plusvaliaData: any = null) {
     return String(val).replace(/\.0+$/, "");
   }
   
+  function cleanNumericString(val: any): string {
+    if (val === null || val === undefined) return "";
+    return String(val).replace(/\.0+$/, "");
+  }
+  
   function formatCuitCuil(cuitcuil: any): string {
     if (!cuitcuil) return '';
     const str = String(cuitcuil).replace(/\.0+$/, ''); // Eliminar .0000000000
@@ -42,6 +47,7 @@ function mapLote(row: any, plusvaliaData: any = null) {
     agente: row.agente, 
     foto_lote: generateFotoLoteUrl(row.smp, row.foto_lote),
     origen: row.origen,
+    tipo: row.tipo,
     codigoUrbanistico: row.codigo_urbanistico,
     cur: row.cur,
     cpu: [row.cpu, row.dist_cpu_1].filter(Boolean).join(' - '),
@@ -62,7 +68,7 @@ function mapLote(row: any, plusvaliaData: any = null) {
     propietario: row.propietario,
     direccion: row.direccion,
     localidad: row.localidad,
-    cp: row.cp,
+    cp: cleanNumericString(row.cp),
     direccionalt: row.direccionalt,
     fallecido: row.fallecido,
     email: row.email,
@@ -247,6 +253,11 @@ export async function PUT(req: Request, context: any) {
       }
     }
     
+    // Normalizar el campo tipo (capitalizar primera letra)
+    if (body.tipo && typeof body.tipo === 'string') {
+      body.tipo = body.tipo.charAt(0).toUpperCase() + body.tipo.slice(1).toLowerCase();
+    }
+    
     // Limpiar formato del CUIT/CUIL si existe
     if (body.cuitcuil) {
       body.cuitcuil = String(body.cuitcuil).replace(/[^0-9]/g, ''); // Solo números
@@ -264,7 +275,7 @@ export async function PUT(req: Request, context: any) {
       'propietario', 'direccion', 'localidad', 'cp', 'direccionalt', 'fallecido', 'email', 'cuitcuil',
       'tel1', 'tel2', 'tel3', 'cel1', 'cel2', 'cel3',
       'm2vendibles', 'vventa', 'inctasada', 'fpago', 'fventa',
-      'agente', 'estado', 'foto_lote' // Agregar campo foto_lote
+      'agente', 'estado', 'tipo', 'foto_lote' // Agregar campos tipo y foto_lote
     ];
     const updates = [];
     const values = [];

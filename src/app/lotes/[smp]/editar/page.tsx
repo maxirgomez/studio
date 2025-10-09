@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { useToast } from "@/hooks/use-toast"
-import { ArrowLeft, MapPin, Scan, Ruler, Building, FileText, User, Home, Mailbox, Phone, Smartphone, Mail, Info, XCircle, Scaling, Percent, CreditCard, DollarSign, Library, Calendar as CalendarIcon, Edit } from "lucide-react"
+import { ArrowLeft, MapPin, Scan, Ruler, Building, FileText, User, Home, Mailbox, Phone, Smartphone, Mail, Info, XCircle, Scaling, Percent, CreditCard, DollarSign, Library, Calendar as CalendarIcon, Edit, Layers } from "lucide-react"
 import { listings } from "@/lib/data"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -317,6 +317,7 @@ export default function LoteEditPage() {
           fventa: safeData.fechaVenta ? safeData.fechaVenta.toISOString().split('T')[0] : null, // CAMBIO fechaventa -> fventa
           agente: listing?.agente, // Agregar campo agente
           estado: listing?.status, // Agregar campo estado (mapeado desde status)
+          tipo: listing?.tipo, // Agregar campo tipo
         }),
       });
       if (res.ok) {
@@ -507,6 +508,30 @@ export default function LoteEditPage() {
                   ) : (
                     <span className="ml-auto text-muted-foreground">
                       {agenteUsuario ? `${agenteUsuario.nombre || ''} ${agenteUsuario.apellido || ''}`.trim() : 'Sin asignar'}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center">
+                  <Layers className="h-5 w-5 mr-3 text-muted-foreground" />
+                  <span className="font-medium">Tipo:</span>
+                  {user?.rol === 'Administrador' || user?.rol === 'Asesor' ? (
+                    <div className="ml-auto">
+                      <Select
+                        value={listing?.tipo || ''}
+                        onValueChange={val => setListing((prev: any) => ({ ...prev, tipo: val }))}
+                      >
+                        <SelectTrigger className="w-40">
+                          <SelectValue placeholder="Seleccionar tipo..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Lote">Lote</SelectItem>
+                          <SelectItem value="Local">Local</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : (
+                    <span className="ml-auto text-muted-foreground">
+                      {listing?.tipo || 'N/A'}
                     </span>
                   )}
                 </div>

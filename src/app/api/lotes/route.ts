@@ -351,6 +351,10 @@ export async function POST(req: Request) {
       }
     }
     
+    // Normalizar el campo tipo (capitalizar primera letra)
+    if (body.tipo && typeof body.tipo === 'string') {
+      body.tipo = body.tipo.charAt(0).toUpperCase() + body.tipo.slice(1).toLowerCase();
+    }
     
     // Chequear si ya existe un lote con ese SMP
     const { rows: existingRows } = await pool.query(

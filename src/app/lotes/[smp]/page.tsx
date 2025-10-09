@@ -48,6 +48,7 @@ import {
   Calendar,
   CreditCard as CreditCardIcon,
   X,
+  Layers,
   HandHeart,
 } from "lucide-react";
 import {
@@ -1362,6 +1363,13 @@ export default function LoteDetailPage() {
                       {superficieParcela
                         ? `${superficieParcela.toLocaleString("es-AR")} m²`
                         : "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex items-center">
+                    <Layers className="h-5 w-5 mr-3 text-muted-foreground" />
+                    <span className="font-medium">Tipo:</span>
+                    <span className="ml-auto text-muted-foreground">
+                      {listing.tipo || "N/A"}
                     </span>
                   </div>
                   <div className="d-flex flex-column">
