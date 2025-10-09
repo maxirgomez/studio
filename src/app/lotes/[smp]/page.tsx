@@ -738,7 +738,7 @@ export default function LoteDetailPage() {
       const noteToEdit = notes[editingNoteId];
       if (!noteToEdit) return;
 
-      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+      const token = localStorage.getItem('auth_token');
       
       const res = await fetch(`/api/lotes/${params.smp}/notas/update`, {
         method: "PUT",

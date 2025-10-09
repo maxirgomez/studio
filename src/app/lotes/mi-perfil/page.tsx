@@ -191,7 +191,7 @@ export default function MyProfilePage() {
     
     setTransferiendo(smp);
     try {
-      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+      const token = localStorage.getItem('auth_token');
       
       const res = await fetch(`/api/lotes/${smp}/solicitar/${user.user}`, {
         method: 'PUT',
@@ -239,7 +239,7 @@ export default function MyProfilePage() {
     
     setTransferiendo(smp);
     try {
-      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+      const token = localStorage.getItem('auth_token');
       
       const res = await fetch(`/api/lotes/${smp}/solicitar/${user.user}`, {
         method: 'PUT',

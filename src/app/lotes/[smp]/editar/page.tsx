@@ -291,17 +291,23 @@ export default function LoteEditPage() {
       incidenciaTasadaUSD: data.incidenciaTasadaUSD === undefined || isNaN(data.incidenciaTasadaUSD as number) ? null : data.incidenciaTasadaUSD,
     };
     try {
-      // Obtener token para autenticación
-      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+      // Obtener token para autenticación (desde localStorage)
+      const token = localStorage.getItem('auth_token');
       console.log('🔑 Frontend - Token encontrado:', token ? 'SÍ' : 'NO');
       console.log('🔑 Frontend - Enviando PUT a:', `/api/lotes/${params.smp}`);
       
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        console.log('🔑 Frontend - Header Authorization agregado');
+      }
+      
       const res = await fetch(`/api/lotes/${params.smp}`, {
         method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        },
+        headers: headers,
         credentials: 'include',
         body: JSON.stringify({
           propietario: safeData.propietario,
