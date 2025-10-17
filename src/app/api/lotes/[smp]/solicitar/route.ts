@@ -70,7 +70,7 @@ export async function POST(req: Request, context: any) {
     await pool.query(
       `INSERT INTO prefapp_notas (smp, agente, notas, fecha) 
        VALUES ($1, $2, $3, NOW())`,
-      [smp, usuarioSolicitante, `Solicita transferencia del lote "${direccionLote}". Motivo: ${motivo || 'No especificado'}`]
+      [smp, usuarioSolicitante, `Solicita transferencia del lote "${direccionLote}"`]
     );
     
     return NextResponse.json({ 

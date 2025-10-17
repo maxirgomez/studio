@@ -15,6 +15,7 @@ import { UserNav } from "@/components/dashboard/user-nav"
 import { cn } from "@/lib/utils"
 import { usePathname } from "next/navigation"
 import { BaigunRealtyLogo } from "@/components/ui/logo"
+import { QueryProvider } from "@/providers/query-provider"
 
 export default function DashboardLayout({
   children,
@@ -55,58 +56,60 @@ export default function DashboardLayout({
   );
   
   return (
-    <div className="flex min-h-screen w-full flex-col">
-      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-header px-6 text-header-foreground">
-        <div className="flex items-center gap-4">
-          <Link
-              href="/lotes"
-              className="flex items-center gap-2 text-lg font-semibold"
-            >
-              <BaigunRealtyLogo className="h-8 w-auto" />
-              <span className="sr-only">Baigun Realty</span>
-            </Link>
-        </div>
-
-        <div className="flex items-center gap-6">
-          <nav className="hidden md:flex md:items-center md:gap-5 lg:gap-6">
-            {navItems.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className={cn(
-                  "text-sm font-medium transition-opacity",
-                  pathname === item.href
-                    ? "opacity-100"
-                    : "opacity-70 hover:opacity-100"
-                )}
+    <QueryProvider>
+      <div className="flex min-h-screen w-full flex-col">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-header px-6 text-header-foreground">
+          <div className="flex items-center gap-4">
+            <Link
+                href="/lotes"
+                className="flex items-center gap-2 text-lg font-semibold"
               >
-                {item.label}
+                <BaigunRealtyLogo className="h-8 w-auto" />
+                <span className="sr-only">Baigun Realty</span>
               </Link>
-            ))}
-          </nav>
-          
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className="shrink-0 md:hidden"
-              >
-                <PanelLeft className="h-5 w-5" />
-                <span className="sr-only">Toggle navigation menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col">
-              {mobileNav}
-            </SheetContent>
-          </Sheet>
+          </div>
 
-          <UserNav />
-        </div>
-      </header>
-      <main className="flex flex-1 flex-col gap-4 p-4 md:p-6 lg:p-8 bg-background">
-        {children}
-      </main>
-    </div>
+          <div className="flex items-center gap-6">
+            <nav className="hidden md:flex md:items-center md:gap-5 lg:gap-6">
+              {navItems.map((item) => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={cn(
+                    "text-sm font-medium transition-opacity",
+                    pathname === item.href
+                      ? "opacity-100"
+                      : "opacity-70 hover:opacity-100"
+                  )}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+            
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0 md:hidden"
+                >
+                  <PanelLeft className="h-5 w-5" />
+                  <span className="sr-only">Toggle navigation menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="flex flex-col">
+                {mobileNav}
+              </SheetContent>
+            </Sheet>
+
+            <UserNav />
+          </div>
+        </header>
+        <main className="flex flex-1 flex-col gap-4 p-4 md:p-6 lg:p-8 bg-background">
+          {children}
+        </main>
+      </div>
+    </QueryProvider>
   )
 }

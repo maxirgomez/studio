@@ -228,6 +228,61 @@ export default function MapPage() {
         const feature = data.features[0];
         const properties = feature.properties;
         
+       
+        
+        const smp = properties.smp;
+  
+        
+        // Si el SMP existe, obtener datos completos desde nuestra API
+        if (smp && smp !== 'N/A') {
+          
+          try {
+            // Obtener token de autenticación
+            const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+            const headers: HeadersInit = {
+              'Content-Type': 'application/json'
+            };
+            if (token) {
+              headers['Authorization'] = `Bearer ${token}`;
+            }
+            
+            const apiResponse = await fetch(`/api/lotes/${smp}`, { headers });
+            if (apiResponse.ok) {
+              const apiData = await apiResponse.json();
+              
+              // Convertir strings a números donde sea necesario
+              const parseNumber = (value: any): number | undefined => {
+                if (value === null || value === undefined || value === '') return undefined;
+                const num = typeof value === 'string' ? parseFloat(value) : value;
+                return isNaN(num) ? undefined : num;
+              };
+              
+              const loteInfo: LoteInfo = {
+                smp: apiData.lote.smp || smp,
+                direccion: apiData.lote.address || properties.dir_lote || properties.direccion || 'Sin dirección',
+                barrio: apiData.lote.neighborhood || properties.barrio || 'Sin barrio',
+                estado: apiData.lote.status || properties.estado || 'Sin estado',
+                agente: apiData.lote.agente || properties.agente || 'Sin agente',
+                // Usar 'area' de la API o m2aprox de GeoServer
+                m2aprox: parseNumber(apiData.lote.area) || parseNumber(apiData.lote.m2aprox) || properties.m2aprox || 0,
+                origen: apiData.lote.origen || properties.origen || 'Sin origen',
+                propietario: apiData.lote.propietario || properties.propietario,
+                vventa: parseNumber(apiData.lote.vventa),
+                m2vendibles: parseNumber(apiData.lote.m2vendibles),
+                inctasada: parseNumber(apiData.lote.inctasada)
+              };
+              
+              console.log('📦 Lote final:', loteInfo);
+              setSelectedLote(loteInfo);
+              setPopupOpen(true);
+              return;
+            }
+          } catch (apiError) {
+            console.error('❌ Error al obtener datos desde API:', apiError);
+          }
+        }
+        
+        // Fallback: usar datos de GeoServer
         const loteInfo: LoteInfo = {
           smp: properties.smp || 'N/A',
           direccion: properties.dir_lote || properties.direccion || 'Sin dirección',
@@ -238,7 +293,7 @@ export default function MapPage() {
           origen: properties.origen || 'Sin origen',
           propietario: properties.propietario,
           vventa: properties.vventa,
-          m2vendibles: properties.m2vendibles,
+          m2vendibles: properties.m2vendibles || properties.m2_vendibles || properties.m2Vendibles,
           inctasada: properties.inctasada
         };
         
@@ -386,8 +441,9 @@ export default function MapPage() {
     }).format(value);
   };
 
-  const formatArea = (value: number | undefined) => {
-    if (!value) return 'No disponible';
+  const formatArea = (value: number | undefined | null) => {
+    if (value === null || value === undefined) return 'No disponible';
+    if (value === 0) return '0 m²';
     return `${value.toLocaleString('es-AR')} m²`;
   };
 

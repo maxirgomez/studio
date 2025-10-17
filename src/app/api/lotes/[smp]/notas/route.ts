@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 import jwt from "jsonwebtoken";
+import { extractAndValidateToken } from "@/lib/security";
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret";
 
@@ -50,35 +51,18 @@ export async function POST(req: NextRequest, { params }: any) {
   const smp = awaitedParams?.smp;
   
   if (!smp) {
-    
     return NextResponse.json({ error: "SMP no especificado" }, { status: 400 });
   }
-  const token = req.cookies.get("token")?.value;
-  if (!token) {
-    
+  
+  // ✅ Verificar autenticación (cookies O header Authorization)
+  const decoded = extractAndValidateToken(req);
+  if (!decoded) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
-  let payload;
-  try {
-    payload = jwt.verify(token, JWT_SECRET);
-    
-  } catch (err) {
-    
-    return NextResponse.json({ error: "Token inválido o expirado" }, { status: 401 });
-  }
-  // El usuario logueado
-  const agente = typeof payload === 'object' && 'user' in payload ? payload.user : null;
-  const nombre = typeof payload === 'object' && 'nombre' in payload ? payload.nombre : null;
-  const apellido = typeof payload === 'object' && 'apellido' in payload ? payload.apellido : null;
-  const avatarUrl = typeof payload === 'object' && 'avatarUrl' in payload ? payload.avatarUrl : null;
-  const aiHint = typeof payload === 'object' && 'aiHint' in payload ? payload.aiHint : null;
-  const initials = typeof payload === 'object' && 'initials' in payload ? payload.initials : null;
-  const rol = typeof payload === 'object' && 'rol' in payload ? payload.rol : null;
   
-  if (!agente) {
-    
-    return NextResponse.json({ error: "Usuario no encontrado en el token" }, { status: 401 });
-  }
+  // Extraer datos del usuario del token
+  const agente = decoded.user;
+  const rol = decoded.role;
 
   // Verificar que el lote existe
   try {
@@ -110,7 +94,9 @@ export async function POST(req: NextRequest, { params }: any) {
     return NextResponse.json({ error: "Nota vacía" }, { status: 400 });
   }
   // Guardar la fecha como YYYY-MM-DD (compatible con columna date)
-  const fecha = new Date().toISOString().slice(0, 10);
+  const fechaActual = new Date();
+  const fecha = fechaActual.toISOString().slice(0, 10); // YYYY-MM-DD
+  
   try {
     // Insertar la nota
     const insertQuery = `INSERT INTO prefapp_notas (smp, agente, notas, fecha) VALUES ($1, $2, $3, $4)`;
@@ -123,24 +109,24 @@ export async function POST(req: NextRequest, { params }: any) {
     );
     
     const userInfo = userRows[0] || {
-      nombre: nombre || '',
-      apellido: apellido || '',
-      foto_perfil: avatarUrl || '',
-      initials: initials || ''
+      nombre: '',
+      apellido: '',
+      foto_perfil: '',
+      initials: ''
     };
     
     const notaInsertada = {
-      id: Date.now(), // ID temporal único
+      id: `${agente}-${fecha}`, // ✅ ID único: usuario-2025-10-09
       smp: smp,
-        agente: {
-          user: agente,
-          nombre: userInfo.nombre,
-          apellido: userInfo.apellido,
-          avatarUrl: userInfo.foto_perfil,
-          initials: userInfo.initials
-        },
+      agente: {
+        user: agente,
+        nombre: userInfo.nombre,
+        apellido: userInfo.apellido,
+        avatarUrl: userInfo.foto_perfil,
+        initials: userInfo.initials
+      },
       notas: nota,
-      fecha: fecha,
+      fecha: fecha, // YYYY-MM-DD
     };
     
     

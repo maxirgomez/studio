@@ -31,7 +31,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
-import { useUser } from "@/context/UserContext"
+import { useUser } from "@/context/UserContext";
+import { useInvalidateLote } from "@/hooks/use-lote-full";
+import { useInvalidateLotesList } from "@/hooks/use-lotes-list"
 
 const editLoteFormSchema = z.object({
   propietario: z.string().optional(),
@@ -135,6 +137,8 @@ export default function LoteEditPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useUser();
+  const { invalidateLote } = useInvalidateLote(); // ✅ Hook para invalidar caché del detalle
+  const { invalidateAllLists } = useInvalidateLotesList(); // ✅ Hook para invalidar caché de listados
 
   // Estado para el lote real
   const [listing, setListing] = useState<any | null>(null);
@@ -293,8 +297,9 @@ export default function LoteEditPage() {
     try {
       // Obtener token para autenticación (desde localStorage)
       const token = localStorage.getItem('auth_token');
-      console.log('🔑 Frontend - Token encontrado:', token ? 'SÍ' : 'NO');
-      console.log('🔑 Frontend - Enviando PUT a:', `/api/lotes/${params.smp}`);
+      // console.log('🔑 Frontend - Token encontrado:', token ? 'SÍ' : 'NO');
+      // console.log('🔑 Frontend - Token (primeros 20 chars):', token?.substring(0, 20));
+      // console.log('🔑 Frontend - Enviando PUT a:', `/api/lotes/${params.smp}`);
       
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
@@ -302,8 +307,12 @@ export default function LoteEditPage() {
       
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-        console.log('🔑 Frontend - Header Authorization agregado');
+        // console.log('🔑 Frontend - Header Authorization agregado:', headers['Authorization']?.substring(0, 30));
+      } else {
+        console.error('❌ Frontend - NO HAY TOKEN! El usuario debe iniciar sesión nuevamente.');
       }
+      
+      // console.log('🔑 Frontend - Headers finales:', headers);
       
       const res = await fetch(`/api/lotes/${params.smp}`, {
         method: 'PUT',
@@ -337,6 +346,10 @@ export default function LoteEditPage() {
       });
       if (res.ok) {
         setSuccess(true);
+        // ✅ Invalidar caché del lote después de editar
+        invalidateLote(params.smp);
+        // ✅ Invalidar caché de listados (para que se reflejen los cambios)
+        invalidateAllLists();
         toast({
           title: "Lote Actualizado",
           description: `Los datos del lote en ${listing?.address} han sido guardados.`,
@@ -392,6 +405,8 @@ export default function LoteEditPage() {
         setIsEditDialogOpen(false);
         setSelectedFile(null);
         setPreviewUrl(null);
+        // ✅ Invalidar caché después de actualizar foto
+        invalidateLote(params.smp);
         toast({ title: 'Foto actualizada', description: 'La foto del lote fue actualizada correctamente.' });
       } else {
         toast({ title: 'Error al subir la foto', description: 'No se pudo subir la imagen.', variant: 'destructive' });

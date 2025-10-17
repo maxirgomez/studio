@@ -82,14 +82,14 @@ export async function PUT(req: Request, context: any) {
       await pool.query(
         `INSERT INTO prefapp_notas (smp, agente, notas, fecha) 
          VALUES ($1, $2, $3, NOW())`,
-        [smp, agenteActual, `Transferencia aceptada. Lote "${direccionLote}" asignado a ${nuevoAgente}. Motivo: ${motivo || 'No especificado'}`]
+        [smp, agenteActual, `Transferencia aceptada. Lote "${direccionLote}" asignado a ${nuevoAgente}`]
       );
       
       // Crear nota para el nuevo agente
       await pool.query(
         `INSERT INTO prefapp_notas (smp, agente, notas, fecha) 
          VALUES ($1, $2, $3, NOW())`,
-        [smp, nuevoAgente, `Lote "${direccionLote}" transferido desde ${agenteActual}. Motivo: ${motivo || 'No especificado'}`]
+        [smp, nuevoAgente, `Lote "${direccionLote}" transferido desde ${agenteActual}`]
       );
       
       // Después de un tiempo, cambiar a estado normal (simulamos proceso)
@@ -133,7 +133,7 @@ export async function PUT(req: Request, context: any) {
       await pool.query(
         `INSERT INTO prefapp_notas (smp, agente, notas, fecha) 
          VALUES ($1, $2, $3, NOW())`,
-        [smp, agenteActual, `Solicitud de transferencia rechazada para "${direccionLote}". Motivo: ${motivo || 'No especificado'}`]
+        [smp, agenteActual, `Solicitud de transferencia rechazada para "${direccionLote}"`]
       );
       
       // Crear nota para el usuario solicitante

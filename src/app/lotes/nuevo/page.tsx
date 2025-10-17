@@ -440,7 +440,7 @@ export default function NuevoLotePage() {
     // Si no hay rango seleccionado o las sugerencias están vacías, buscar directamente
     if (!rangoCompleto || numeroSugerenciasCompletas.length === 0) {
       // Si no hay sugerencias cargadas, buscar directamente sin validación de rango
-      console.log('Buscando directamente sin validación de rango');
+      // console.log('Buscando directamente sin validación de rango');
     } else {
       // Validar que el número existe en las sugerencias
       const numeroExisteEnCalle = numeroSugerenciasCompletas.some(numero => {

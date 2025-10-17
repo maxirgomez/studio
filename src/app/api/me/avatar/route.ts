@@ -46,15 +46,15 @@ export async function POST(req: NextRequest) {
 
     // Subir imagen a Cloudinary
     try {
-      console.log('☁️ Subiendo a Cloudinary...');
+      // console.log('☁️ Subiendo a Cloudinary...');
       const uploadResult = await uploadAvatarPromise(file, userId);
       
-      console.log('✅ Imagen subida a Cloudinary:', uploadResult.secure_url);
+      // console.log('✅ Imagen subida a Cloudinary:', uploadResult.secure_url);
       
       // Guardar la URL de Cloudinary en la base de datos
       await pool.query('UPDATE public.prefapp_users SET foto_perfil = $1 WHERE "user" = $2', [uploadResult.secure_url, userId]);
       
-      console.log('💾 URL guardada en base de datos');
+      // console.log('💾 URL guardada en base de datos');
       
       return NextResponse.json({ 
         success: true, 

@@ -70,6 +70,7 @@ import { getStatusStyles } from "@/lib/data";
 import { useSpinner } from "@/components/ui/SpinnerProvider";
 import { useUser } from "@/context/UserContext";
 import { use } from "react";
+import { useLoteFull } from "@/hooks/use-lote-full";
 
 // Función helper para mostrar "Sin información" cuando fallecido sea "No"
 function formatFallecido(value: string | null | undefined): string {
@@ -546,8 +547,21 @@ function formatDecimal(value: any) {
 export default function LoteDetailPage() {
   const params = useParams<{ smp: string }>();
   const { user: currentUser } = useUser();
-  const [listing, setListing] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
+  
+  // ✅ REACT QUERY: Hook con caché inteligente
+  const {
+    lote: listing,
+    agenteUsuario,
+    notas: notes,
+    frentes,
+    superficieParcela,
+    isEsquina,
+    docs,
+    isLoading: loading,
+    isError,
+    invalidate: invalidateLoteCache,
+  } = useLoteFull(params.smp);
+  
   const [notFound, setNotFound] = useState(false);
 
   // Detectar parámetro de dirección específica
@@ -561,33 +575,22 @@ export default function LoteDetailPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const [notes, setNotes] = useState<any[]>([]);
-  const [notesLoading, setNotesLoading] = useState(true);
+  // Estados locales para UI (no afectados por caché)
   const [newNote, setNewNote] = useState("");
-
-  // Estados para editar notas
-  const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null); // ✅ Cambiar a string para ID único
   const [editingNoteText, setEditingNoteText] = useState("");
   const pdfContentRef = useRef<HTMLDivElement>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const { hide } = useSpinner();
-  const [agenteUsuario, setAgenteUsuario] = useState<any | null>(null);
   const [solicitando, setSolicitando] = useState(false);
-
-  // --- Frentes del lote ---
-  const [frentes, setFrentes] = useState<any[]>([]);
-  const [frentesLoading, setFrentesLoading] = useState(true);
-  const [superficieParcela, setSuperficieParcela] = useState<number | null>(
-    null
-  );
-  const [isEsquina, setIsEsquina] = useState(false);
-
-  // --- Archivos adjuntos ---
-  const [docs, setDocs] = useState<any[]>([]);
-  const [docsLoading, setDocsLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Estados de loading separados (para compatibilidad con código existente)
+  const notesLoading = loading;
+  const frentesLoading = loading;
+  const docsLoading = loading;
 
   // Detectar parámetro de dirección en la URL
   useEffect(() => {
@@ -597,97 +600,13 @@ export default function LoteDetailPage() {
       setDireccionEspecifica(direccion);
     }
   }, []);
-
+  
+  // Manejar estado de error de React Query
   useEffect(() => {
-    async function fetchLote() {
-      setLoading(true);
-      setNotFound(false);
-      try {
-        const res = await fetch(`/api/lotes/${params.smp}`);
-        if (res.status === 404) {
-          setNotFound(true);
-          setListing(null);
-          setAgenteUsuario(null);
-        } else {
-          const data = await res.json();
-          setListing(data.lote);
-          setAgenteUsuario(data.agenteUsuario || null);
-        }
-      } catch (e) {
-        setNotFound(true);
-        setListing(null);
-        setAgenteUsuario(null);
-      }
-      setLoading(false);
+    if (isError) {
+      setNotFound(true);
     }
-    fetchLote();
-  }, [params.smp, currentUser]);
-
-  // Fetch notas reales
-  useEffect(() => {
-    async function fetchNotas() {
-      setNotesLoading(true);
-      try {
-        const res = await fetch(`/api/lotes/${params.smp}/notas`);
-        if (res.ok) {
-          const data = await res.json();
-          setNotes(data.notas || []);
-        } else {
-          setNotes([]);
-        }
-      } catch {
-        setNotes([]);
-      }
-      setNotesLoading(false);
-    }
-    fetchNotas();
-  }, [params.smp]);
-
-  // Fetch frentes del lote
-  useEffect(() => {
-    async function fetchFrentes() {
-      setFrentesLoading(true);
-      try {
-        const res = await fetch(`/api/lotes/${params.smp}/frentes`);
-        if (res.ok) {
-          const data = await res.json();
-          setFrentes(data.frentes || []);
-          setSuperficieParcela(data.superficieParcela || null);
-          setIsEsquina(data.isEsquina || false);
-        } else {
-          setFrentes([]);
-          setSuperficieParcela(null);
-          setIsEsquina(false);
-        }
-      } catch {
-        setFrentes([]);
-        setSuperficieParcela(null);
-        setIsEsquina(false);
-      }
-      setFrentesLoading(false);
-    }
-    fetchFrentes();
-  }, [params.smp]);
-
-  // Fetch docs
-  useEffect(() => {
-    async function fetchDocs() {
-      setDocsLoading(true);
-      try {
-        const res = await fetch(`/api/lotes/${params.smp}/docs`);
-        if (res.ok) {
-          const data = await res.json();
-          setDocs(data.docs || []);
-        } else {
-          setDocs([]);
-        }
-      } catch {
-        setDocs([]);
-      }
-      setDocsLoading(false);
-    }
-    fetchDocs();
-  }, [params.smp]);
+  }, [isError]);
 
   useEffect(() => {
     hide();
@@ -696,14 +615,21 @@ export default function LoteDetailPage() {
   const handleAddNote = async () => {
     if (newNote.trim() === "" || !listing || !currentUser) return;
     try {
+      // ✅ Obtener token para autenticación
+      const token = localStorage.getItem('auth_token');
+      
       const res = await fetch(`/api/lotes/${params.smp}/notas`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(token && { 'Authorization': `Bearer ${token}` }) // ✅ Agregar token
+        },
+        credentials: 'include',
         body: JSON.stringify({ nota: newNote }),
       });
       if (res.ok) {
-        const data = await res.json();
-        setNotes([data.nota, ...notes]);
+        // ✅ Invalidar caché para recargar datos frescos
+        invalidateLoteCache();
         setNewNote("");
         toast({
           title: "Nota Agregada",
@@ -725,8 +651,8 @@ export default function LoteDetailPage() {
     }
   };
 
-  const handleEditNote = (noteIndex: number, currentText: string) => {
-    setEditingNoteId(noteIndex);
+  const handleEditNote = (noteId: string, currentText: string) => {
+    setEditingNoteId(noteId);
     setEditingNoteText(currentText);
   };
 
@@ -734,11 +660,16 @@ export default function LoteDetailPage() {
     if (editingNoteId === null || !editingNoteText.trim()) return;
 
     try {
-      // Obtener la nota que se está editando
-      const noteToEdit = notes[editingNoteId];
+      // ✅ Buscar la nota por ID único
+      const noteToEdit = notes.find(note => note.id === editingNoteId);
       if (!noteToEdit) return;
 
       const token = localStorage.getItem('auth_token');
+      
+      // ✅ Convertir fecha a formato ISO (YYYY-MM-DD) para que coincida con la BD
+      const fechaISO = noteToEdit.fecha instanceof Date
+        ? noteToEdit.fecha.toISOString().split('T')[0]
+        : String(noteToEdit.fecha).split('T')[0];
       
       const res = await fetch(`/api/lotes/${params.smp}/notas/update`, {
         method: "PUT",
@@ -749,18 +680,14 @@ export default function LoteDetailPage() {
         credentials: 'include',
         body: JSON.stringify({
           agente: noteToEdit.agente?.user || noteToEdit.agente,
-          fecha: noteToEdit.fecha,
+          fecha: fechaISO, // ✅ Usar formato ISO consistente
           nota: editingNoteText,
         }),
       });
 
       if (res.ok) {
-        // Actualizar la nota en el estado local
-        setNotes(
-          notes.map((note, index) =>
-            index === editingNoteId ? { ...note, notas: editingNoteText } : note
-          )
-        );
+        // ✅ Invalidar caché para recargar datos frescos
+        invalidateLoteCache();
         setEditingNoteId(null);
         setEditingNoteText("");
         toast({
@@ -784,26 +711,38 @@ export default function LoteDetailPage() {
     setEditingNoteText("");
   };
 
-  const handleDeleteNote = async (noteIndex: number) => {
+  const handleDeleteNote = async (noteId: string) => {
     if (!confirm("¿Estás seguro de que quieres eliminar esta nota?")) return;
 
     try {
-      // Obtener la nota que se va a eliminar
-      const noteToDelete = notes[noteIndex];
+      // ✅ Buscar la nota por ID único
+      const noteToDelete = notes.find(note => note.id === noteId);
       if (!noteToDelete) return;
+
+      const token = localStorage.getItem('auth_token');
+      
+      // ✅ Convertir fecha a formato ISO (YYYY-MM-DD) para que coincida con la BD
+      const fechaISO = noteToDelete.fecha instanceof Date
+        ? noteToDelete.fecha.toISOString().split('T')[0]
+        : String(noteToDelete.fecha).split('T')[0];
+      
+      const headers: HeadersInit = { "Content-Type": "application/json" };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
 
       const res = await fetch(`/api/lotes/${params.smp}/notas/delete`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           agente: noteToDelete.agente?.user || noteToDelete.agente,
-          fecha: noteToDelete.fecha,
+          fecha: fechaISO, // ✅ Usar formato ISO consistente
         }),
       });
 
       if (res.ok) {
-        // Remover la nota del estado local
-        setNotes(notes.filter((_, index) => index !== noteIndex));
+        // ✅ Invalidar caché para recargar datos frescos
+        invalidateLoteCache();
         toast({
           title: "Nota eliminada",
           description: "La nota se ha eliminado correctamente.",
@@ -944,11 +883,8 @@ export default function LoteDetailPage() {
       });
       if (res.ok) {
         setUploadError(null);
-        // Refrescar lista
-        const data = await fetch(`/api/lotes/${params.smp}/docs`).then((r) =>
-          r.json()
-        );
-        setDocs(data.docs || []);
+        // ✅ Invalidar caché para recargar datos frescos
+        invalidateLoteCache();
         toast({
           title: "Archivo subido",
           description: "El PDF fue adjuntado correctamente.",
@@ -977,7 +913,8 @@ export default function LoteDetailPage() {
         }
       );
       if (res.ok) {
-        setDocs(docs.filter((doc) => doc.ruta !== ruta));
+        // ✅ Invalidar caché para recargar datos frescos
+        invalidateLoteCache();
         toast({
           title: "Archivo eliminado",
           description: "El PDF fue eliminado correctamente.",
@@ -1022,12 +959,8 @@ export default function LoteDetailPage() {
           description: `Tu solicitud ha sido enviada al agente ${listing.agente}.`,
         });
 
-        // Refrescar datos del lote
-        const loteRes = await fetch(`/api/lotes/${params.smp}`);
-        if (loteRes.ok) {
-          const loteData = await loteRes.json();
-          setListing(loteData.lote);
-        }
+        // ✅ Invalidar caché para recargar datos frescos
+        invalidateLoteCache();
       } else {
         throw new Error(data.error || "Error al enviar solicitud");
       }
@@ -1290,7 +1223,7 @@ export default function LoteDetailPage() {
                     </div>
                   ) : (
                     <ul className="space-y-2">
-                      {docs.map((doc, idx) => (
+                      {docs.map((doc: any, idx: number) => (
                         <li
                           key={doc.ruta}
                           className="flex items-center gap-2 border-b pb-1"
@@ -1391,7 +1324,7 @@ export default function LoteDetailPage() {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {frentes.map((frente, index) => (
+                        {frentes.map((frente: any, index: number) => (
                           <div
                             key={index}
                             className="flex items-center justify-between"
@@ -1765,15 +1698,20 @@ export default function LoteDetailPage() {
                         No hay notas aún.
                       </div>
                     )}
-                    {notes.map((note, index) => {
+                    {notes.map((note: any) => {
                       // Verificar si el usuario actual puede editar/eliminar esta nota
                       const isCurrentUserNote =
                         currentUser &&
                         (currentUser.user === note.agente?.user ||
                           currentUser.user === note.agente);
+                      
+                      // Los administradores pueden eliminar cualquier nota
+                      const isAdmin = currentUser?.rol === 'Administrador';
+                      const canDelete = isCurrentUserNote || isAdmin;
+                      const canEdit = isCurrentUserNote; // Solo el dueño puede editar
 
                       return (
-                        <div key={index} className="flex gap-4">
+                        <div key={note.id} className="flex gap-4">
                           <Avatar>
                             <AvatarImage
                               src={
@@ -1807,32 +1745,34 @@ export default function LoteDetailPage() {
                                     ? format(parseISO(note.fecha), "dd/MM/yyyy")
                                     : ""}
                                 </p>
-                                {isCurrentUserNote &&
-                                  editingNoteId !== index && (
-                                    <div className="flex gap-1">
+                                {editingNoteId !== note.id && (
+                                  <div className="flex gap-1">
+                                    {canEdit && (
                                       <Button
                                         size="sm"
                                         variant="ghost"
-                                        onClick={() =>
-                                          handleEditNote(index, note.notas)
-                                        }
+                                        onClick={() => handleEditNote(note.id, note.notas)}
                                         className="h-6 w-6 p-0"
                                       >
                                         <Edit className="h-3 w-3" />
                                       </Button>
+                                    )}
+                                    {canDelete && (
                                       <Button
                                         size="sm"
                                         variant="ghost"
-                                        onClick={() => handleDeleteNote(index)}
+                                        onClick={() => handleDeleteNote(note.id)}
                                         className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                        title={isAdmin && !isCurrentUserNote ? "Eliminar como administrador" : "Eliminar nota"}
                                       >
                                         <X className="h-3 w-3" />
                                       </Button>
-                                    </div>
-                                  )}
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             </div>
-                            {editingNoteId === index ? (
+                            {editingNoteId === note.id ? (
                               <div className="mt-2 space-y-2">
                                 <Textarea
                                   value={editingNoteText}

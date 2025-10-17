@@ -51,6 +51,8 @@ import { Listing } from "@/components/lotes/ListingCard";
 import LotesPagination from "@/components/lotes/LotesPagination";
 import ListingCardSkeleton from "@/components/lotes/ListingCardSkeleton";
 import { useUser } from "@/context/UserContext";
+import { useBarrios, useEstados, useOrigenes, useTipos, useAgentes, useAreaRange, useFrenteRange } from "@/hooks/use-lotes-filters";
+import { useLotesList } from "@/hooks/use-lotes-list";
 
 
 
@@ -88,82 +90,29 @@ export default function LotesClientPage() {
   const [frenteInput, setFrenteInput] = useState<[string, string]>(['', '']);
   const [frenteSliderValue, setFrenteSliderValue] = useState<[number, number]>([minFrente, maxFrente]);
   
-  const [uniqueNeighborhoods, setUniqueNeighborhoods] = useState<string[]>([]);
-  const [uniqueStatuses, setUniqueStatuses] = useState<string[]>([]);
-  const [uniqueOrigens, setUniqueOrigens] = useState<string[]>([]);
-  const [uniqueTipos, setUniqueTipos] = useState<string[]>([]);
-  const [uniqueAgents, setUniqueAgents] = useState<any[]>([]);
+  // ✅ REACT QUERY: Usar hooks con caché para opciones de filtros
+  const { data: uniqueNeighborhoods = [] } = useBarrios();
+  const { data: uniqueStatuses = [] } = useEstados();
+  const { data: uniqueOrigens = [] } = useOrigenes();
+  const { data: uniqueTipos = [] } = useTipos();
+  const { data: uniqueAgents = [] } = useAgentes();
+  const { data: areaRangeData } = useAreaRange();
+  const { data: frenteRangeData } = useFrenteRange();
+
+  // Actualizar minArea/maxArea cuando lleguen los datos del caché
+  useEffect(() => {
+    if (areaRangeData) {
+      setMinArea(areaRangeData.minArea);
+      setMaxArea(areaRangeData.maxArea);
+    }
+  }, [areaRangeData]);
 
   useEffect(() => {
-    async function fetchBarrios() {
-      const res = await fetch('/api/lotes/barrios');
-      const data = await res.json();
-      setUniqueNeighborhoods(data.barrios || []);
+    if (frenteRangeData) {
+      setMinFrente(frenteRangeData.minFrente);
+      setMaxFrente(frenteRangeData.maxFrente);
     }
-    fetchBarrios();
-  }, []);
-
-  useEffect(() => {
-    async function fetchEstados() {
-      const res = await fetch('/api/lotes/estados');
-      const data = await res.json();
-      setUniqueStatuses(data.estados || []);
-    }
-    fetchEstados();
-  }, []);
-  
-  useEffect(() => {
-    async function fetchOrigenes() {
-      const res = await fetch('/api/lotes/origenes');
-      const data = await res.json();
-      setUniqueOrigens(data.origenes || []);
-    }
-    fetchOrigenes();
-  }, []);
-
-  useEffect(() => {
-    async function fetchAgentes() {
-      const res = await fetch('/api/lotes/agentes');
-      const data = await res.json();
-      setUniqueAgents(data.agentes || []);
-    }
-    fetchAgentes();
-  }, []);
-
-  useEffect(() => {
-    async function fetchTipos() {
-      const res = await fetch('/api/lotes/tipos');
-      const data = await res.json();
-      setUniqueTipos(data.tipos || []);
-    }
-    fetchTipos();
-  }, []);
-
-  useEffect(() => {
-    async function fetchAreaRange() {
-      try {
-        const res = await fetch('/api/lotes/area-range');
-        const data = await res.json();
-        setMinArea(data.minArea || 0);
-        setMaxArea(data.maxArea || 1000);
-      } catch (error) {
-      }
-    }
-    fetchAreaRange();
-  }, []);
-
-  useEffect(() => {
-    async function fetchFrenteRange() {
-      try {
-        const res = await fetch('/api/lotes/frente-range');
-        const data = await res.json();
-        setMinFrente(data.minFrente || 0);
-        setMaxFrente(data.maxFrente || 50);
-      } catch (error) {
-      }
-    }
-    fetchFrenteRange();
-  }, []);
+  }, [frenteRangeData]);
   
   useEffect(() => {
     // Solo mostrar valores en los inputs si hay un filtro activo (no es el rango completo)
@@ -344,87 +293,43 @@ export default function LotesClientPage() {
       });
   }
 
-  const [loadingReal, setLoadingReal] = useState(true);
-  const [minTimePassed, setMinTimePassed] = useState(false);
+  // ✅ REACT QUERY: Usar hook con caché para listado de lotes
+  const { 
+    lotes: realListings, 
+    total, 
+    isLoading: loadingRealListings,
+    prefetchNextPage 
+  } = useLotesList({
+    page: currentPage,
+    limit: listingsPerPage,
+    agent: agentFilters.length > 0 ? agentFilters : undefined,
+    neighborhood: neighborhoodFilters.length > 0 ? neighborhoodFilters : undefined,
+    status: statusFilters.length > 0 ? statusFilters : undefined,
+    origen: origenFilters.length > 0 ? origenFilters : undefined,
+    tipo: tipoFilters.length > 0 ? tipoFilters : undefined,
+    esquina: esquinaFilters.length > 0 ? esquinaFilters : undefined,
+    minArea: minAreaFilter !== minArea ? minAreaFilter : undefined,
+    maxArea: maxAreaFilter !== maxArea ? maxAreaFilter : undefined,
+    minFrente: minFrenteFilter !== minFrente ? minFrenteFilter : undefined,
+    maxFrente: maxFrenteFilter !== maxFrente ? maxFrenteFilter : undefined,
+    search: searchFilter || undefined,
+    sortBy: sortBy !== 'gid' ? sortBy : undefined,
+    sortOrder: sortOrder !== 'asc' ? sortOrder : undefined,
+  });
+
+  // Prefetch de página siguiente para navegación más rápida
   useEffect(() => {
-    setLoadingReal(true);
-    setMinTimePassed(false);
-    const timer = setTimeout(() => setMinTimePassed(true), 1000);
-    const realTimer = setTimeout(() => setLoadingReal(false), 1500); // Simulación de carga real
-    return () => {
-      clearTimeout(timer);
-      clearTimeout(realTimer);
-    };
-  }, [searchParams]);
-  const loading = loadingReal || !minTimePassed;
+    if (!loadingRealListings && total > 0) {
+      prefetchNextPage();
+    }
+  }, [currentPage, total, loadingRealListings, prefetchNextPage]);
 
-  // Estado para los lotes reales
-  const [realListings, setRealListings] = useState<Listing[]>([]);
-  const [loadingRealListings, setLoadingRealListings] = useState(true);
-  const [total, setTotal] = useState(0);
-  const [searchTerm, setSearchTerm] = useState('');
-
-  // Filtrar lotes por término de búsqueda
-  const filteredRealListings = useMemo(() => {
-    if (!searchTerm.trim()) return realListings;
-    
-    const term = searchTerm.toLowerCase().trim();
-    return realListings.filter(lote => 
-      lote.smp?.toLowerCase().includes(term) ||
-      lote.address?.toLowerCase().includes(term) ||
-      lote.neighborhood?.toLowerCase().includes(term)
-    );
-  }, [realListings, searchTerm]);
-
+  // Redirigir a página 1 si no hay lotes en la página actual
   useEffect(() => {
-    setLoadingRealListings(true);
-    const fetchLotes = async () => {
-      const offset = (currentPage - 1) * listingsPerPage;
-      const params = new URLSearchParams();
-      params.set('limit', String(listingsPerPage));
-      params.set('offset', String(offset));
-      if (agentFilters.length > 0) params.set('agent', agentFilters.join(','));
-      if (neighborhoodFilters.length > 0) params.set('neighborhood', neighborhoodFilters.join(','));
-      if (statusFilters.length > 0) params.set('status', statusFilters.join(','));
-      if (origenFilters.length > 0) params.set('origen', origenFilters.join(','));
-      if (tipoFilters.length > 0) params.set('tipo', tipoFilters.join(','));
-      if (esquinaFilters.length > 0) params.set('esquina', esquinaFilters.join(','));
-      if (minAreaFilter !== minArea) params.set('minArea', String(minAreaFilter));
-      if (maxAreaFilter !== maxArea) params.set('maxArea', String(maxAreaFilter));
-      if (minFrenteFilter !== minFrente) params.set('minFrente', String(minFrenteFilter));
-      if (maxFrenteFilter !== maxFrente) params.set('maxFrente', String(maxFrenteFilter));
-      if (searchFilter) params.set('search', searchFilter);
-      if (sortBy !== 'gid') params.set('sortBy', sortBy);
-      if (sortOrder !== 'asc') params.set('sortOrder', sortOrder);
-      
-      // // Debug: Ver qué parámetros se están enviando
-      // console.log('=== PARÁMETROS ENVIADOS AL API ===');
-      // console.log('URL completa:', `/api/lotes?${params.toString()}`);
-      // console.log('minFrenteFilter:', minFrenteFilter, 'maxFrenteFilter:', maxFrenteFilter);
-      // console.log('minAreaFilter:', minAreaFilter, 'maxAreaFilter:', maxAreaFilter);
-      // console.log('esquinaFilters:', esquinaFilters);
-      
-      const res = await fetch(`/api/lotes?${params.toString()}`);
-      const data = await res.json();
-      const lotes = (data.lotes || []).map((lote: any) => ({
-        ...lote,
-        listingDate: lote.listingDate ? new Date(lote.listingDate) : null,
-        saleDate: lote.saleDate ? new Date(lote.saleDate) : null,
-      }));
-      setRealListings(lotes);
-      setTotal(data.total || 0);
-      setLoadingRealListings(false);
-      
-      // Debug: Verificar que el total se calcula correctamente con filtros
-      // console.log('Total de lotes filtrados:', data.total, 'Páginas totales:', Math.ceil((data.total || 0) / listingsPerPage));
-      
-      // Si no hay lotes en esta página y no es la página 1, redirigir a la página 1
-      if (lotes.length === 0 && currentPage > 1) {
-        router.push(`${pathname}?${createQueryString({ page: 1 })}`, { scroll: false });
-      }
-    };
-    fetchLotes();
-     }, [currentPage, agentFilters, neighborhoodFilters, statusFilters, origenFilters, tipoFilters, esquinaFilters, minAreaFilter, maxAreaFilter, minFrenteFilter, maxFrenteFilter, searchFilter, sortBy, sortOrder, router, pathname, createQueryString]);
+    if (!loadingRealListings && realListings.length === 0 && currentPage > 1) {
+      router.push(`${pathname}?${createQueryString({ page: 1 })}`, { scroll: false });
+    }
+  }, [realListings, loadingRealListings, currentPage, router, pathname, createQueryString]);
 
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 lg:grid-cols-[280px_1fr]">

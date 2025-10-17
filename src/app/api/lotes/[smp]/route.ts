@@ -110,60 +110,62 @@ export async function GET(req: NextRequest, context: any) {
   //console.log('Buscando lote con SMP:', smp);
   
   try {
-    // Obtener datos básicos del lote
+    // ✅ OPTIMIZACIÓN: Query consolidada con CTEs (3 queries → 1 query)
     const { rows } = await pool.query(
-      `SELECT l.*
-       FROM public.prefapp_lotes l 
-       WHERE l.smp = $1 LIMIT 1`,
+      `WITH lote_base AS (
+         SELECT l.* FROM public.prefapp_lotes l WHERE l.smp = $1 LIMIT 1
+       ),
+       plusvalia AS (
+         SELECT a1, a2, "A1-A2", b, "AxB"
+         FROM public.prefapp_m2_parcela
+         WHERE LOWER(smp) = LOWER($1)
+         LIMIT 1
+       ),
+       agente_info AS (
+         SELECT u.user, u.nombre, u.apellido, u.foto_perfil
+         FROM lote_base lb
+         LEFT JOIN public.prefapp_users u ON LOWER(lb.agente) = LOWER(u.user)
+       )
+       SELECT 
+         lb.*,
+         p.a1, p.a2, p."A1-A2", p.b, p."AxB",
+         a.user as agente_user,
+         a.nombre as agente_nombre,
+         a.apellido as agente_apellido,
+         a.foto_perfil as agente_foto
+       FROM lote_base lb
+       LEFT JOIN plusvalia p ON TRUE
+       LEFT JOIN agente_info a ON TRUE`,
       [smp]
     );
-    
-    //console.log('Resultados encontrados:', rows.length);
-    if (rows.length > 0) {
-      //console.log('Primer resultado:', rows[0].smp);
-    }
     
     if (rows.length === 0) {
       return NextResponse.json({ error: 'Lote no encontrado' }, { status: 404 });
     }
     
-    // Obtener datos de plusvalía por separado
-    let plusvaliaData = null;
-    try {
-      const { rows: plusvaliaRows } = await pool.query(
-        `SELECT a1, a2, "A1-A2", b, "AxB"
-         FROM public.prefapp_m2_parcela 
-         WHERE LOWER(smp) = LOWER($1) LIMIT 1`,
-        [smp]
-      );
-      
-      if (plusvaliaRows.length > 0) {
-        plusvaliaData = plusvaliaRows[0];
-      }
-    } catch (plusvaliaError) {
-      //console.log('Error al obtener datos de plusvalía:', plusvaliaError);
-      
-      // Continuamos sin datos de plusvalía
-    }
+    const row = rows[0];
     
-    const lote = mapLote(rows[0], plusvaliaData);
-    // Buscar usuario (agente) asociado usando JOIN
+    // Preparar datos de plusvalía
+    const plusvaliaData = {
+      a1: row.a1,
+      a2: row.a2,
+      "A1-A2": row["A1-A2"],
+      b: row.b,
+      "AxB": row["AxB"]
+    };
+    
+    const lote = mapLote(row, plusvaliaData);
+    
+    // Preparar datos del agente
     let agenteUsuario = null;
-    if (lote.agente) {
-      const { rows: userRows } = await pool.query(
-        `SELECT u.user, u.nombre, u.apellido, u.foto_perfil FROM public.prefapp_lotes l JOIN public.prefapp_users u ON LOWER(l.agente) = LOWER(u.user) WHERE l.smp = $1 LIMIT 1`,
-        [lote.smp]
-      );
-      if (userRows.length > 0) {
-        const user = userRows[0];
-        agenteUsuario = {
-          user: user.user,
-          nombre: user.nombre,
-          apellido: user.apellido,
-          foto_perfil: user.foto_perfil,
-          iniciales: `${(user.nombre?.[0] || '').toUpperCase()}${(user.apellido?.[0] || '').toUpperCase()}`,
-        };
-      }
+    if (row.agente_user) {
+      agenteUsuario = {
+        user: row.agente_user,
+        nombre: row.agente_nombre,
+        apellido: row.agente_apellido,
+        foto_perfil: row.agente_foto,
+        iniciales: `${(row.agente_nombre?.[0] || '').toUpperCase()}${(row.agente_apellido?.[0] || '').toUpperCase()}`,
+      };
     }
     
     return NextResponse.json({ lote, agenteUsuario });
@@ -193,22 +195,26 @@ export async function PUT(req: NextRequest, context: any) {
   }
 
   // Validación de seguridad: verificar que el usuario tenga permisos para editar este lote
-  console.log('🔐 PUT - Intentando validar token...');
-  console.log('🔐 PUT - Headers:', req.headers.get('authorization') ? 'Authorization header presente' : 'Sin Authorization header');
-  console.log('🔐 PUT - Cookies:', req.cookies.get('token') ? 'Cookie token presente' : 'Sin cookie token');
+  // console.log('🔐 PUT - Intentando validar token...');
+  // console.log('🔐 PUT - Headers:', req.headers.get('authorization') ? 'Authorization header presente' : 'Sin Authorization header');
+  // console.log('🔐 PUT - Cookies:', req.cookies.get('token') ? 'Cookie token presente' : 'Sin cookie token');
   
   const currentUser = extractAndValidateToken(req);
   
-  console.log('🔐 PUT - Usuario validado:', currentUser ? `${currentUser.user} (${currentUser.role})` : 'null');
+  // console.log('🔐 PUT - Usuario validado:', currentUser ? `${currentUser.user} (${currentUser.role})` : 'null');
   
   if (!currentUser) {
     return NextResponse.json({ error: 'Usuario no autenticado' }, { status: 401 });
   }
 
+  // Variables para almacenar info del lote
+  let agenteValue: string | null = null;
+  let direccionLote: string | null = null;
+
   try {
-    // Obtener información del lote para verificar permisos
+    // Obtener información del lote para verificar permisos y dirección
     const { rows: loteRows } = await pool.query(
-      `SELECT agente FROM public.prefapp_lotes WHERE smp = $1 LIMIT 1`,
+      `SELECT agente, direccion FROM public.prefapp_lotes WHERE smp = $1 LIMIT 1`,
       [smp]
     );
     
@@ -217,7 +223,8 @@ export async function PUT(req: NextRequest, context: any) {
     }
     
     const lote = loteRows[0];
-    const agenteValue = lote.agente;
+    agenteValue = lote.agente;
+    direccionLote = lote.direccion;
     const currentUserValue = currentUser.user;
 
     // Solo los administradores tienen acceso total
@@ -291,6 +298,31 @@ export async function PUT(req: NextRequest, context: any) {
     values.push(smp);
     const updateQuery = `UPDATE public.prefapp_lotes SET ${updates.join(', ')} WHERE smp = $${idx}`;
     await pool.query(updateQuery, values);
+    
+    // Si se cambió el agente, crear una nota automática
+    if (body.agente !== undefined && body.agente !== agenteValue) {
+      const nuevoAgente = body.agente;
+      const agenteAnterior = agenteValue || 'Sin asignar';
+      
+      // Nota para el agente anterior (si existe)
+      if (agenteAnterior && agenteAnterior !== 'Sin asignar') {
+        await pool.query(
+          `INSERT INTO prefapp_notas (smp, agente, notas, fecha) 
+           VALUES ($1, $2, $3, NOW())`,
+          [smp, agenteAnterior, `Lote "${direccionLote}" reasignado a ${nuevoAgente || 'Sin asignar'} por ${currentUser.user}`]
+        );
+      }
+      
+      // Nota para el nuevo agente (si existe)
+      if (nuevoAgente) {
+        await pool.query(
+          `INSERT INTO prefapp_notas (smp, agente, notas, fecha) 
+           VALUES ($1, $2, $3, NOW())`,
+          [smp, nuevoAgente, `Lote "${direccionLote}" reasignado desde ${agenteAnterior} por ${currentUser.user}`]
+        );
+      }
+    }
+    
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json(

@@ -10,17 +10,14 @@ export function SessionGuard() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    console.log('🛡️ SessionGuard - pathname:', pathname);
     // No chequear sesión en "/" (login) ni rutas públicas
     if (pathname === "/" || pathname.startsWith("/login")) return;
     let expired = false;
     const checkSession = async () => {
       try {
         const token = localStorage.getItem('auth_token');
-        console.log('🛡️ SessionGuard - Token:', token ? 'ENCONTRADO' : 'NO ENCONTRADO');
         
         if (!token) {
-          console.log('🛡️ SessionGuard - Sin token, redirigiendo a login');
           if (!expired) {
             expired = true;
             router.push(`/?next=${encodeURIComponent(pathname)}`);
@@ -28,17 +25,14 @@ export function SessionGuard() {
           return;
         }
         
-        console.log('🛡️ SessionGuard - Verificando sesión con /api/me...');
         const res = await fetch("/api/me", {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
         
-        console.log('🛡️ SessionGuard - Respuesta:', res.status, res.statusText);
         
         if ((res.status === 401 || res.status === 403) && !expired) {
-          console.log('🛡️ SessionGuard - Sesión expirada, limpiando token');
           expired = true;
           localStorage.removeItem('auth_token'); // Limpiar token inválido
           toast({
@@ -49,7 +43,6 @@ export function SessionGuard() {
           router.push(`/?next=${encodeURIComponent(pathname)}`);
         }
       } catch (e) {
-        console.log('🛡️ SessionGuard - Error:', e);
         // En caso de error, limpiar token y redirigir
         localStorage.removeItem('auth_token');
         if (!expired) {

@@ -22,6 +22,7 @@ const PUBLIC_PATHS = [
   '/api/reset-password-request',
   '/api/debug-jwt', // Endpoint de debug de JWT
   '/api/debug-token', // Endpoint de debug de token
+  '/api/debug-user-token', // Endpoint de debug de usuario y token
 ];
 
 // Rutas de API que requieren autenticación pero no redirección
@@ -53,17 +54,13 @@ export function middleware(req: NextRequest) {
   }
 
   // Verificar autenticación
-  console.log('🛡️ Middleware - Verificando ruta:', pathname);
-  console.log('🛡️ Middleware - Authorization header:', req.headers.get('authorization') ? 'presente' : 'ausente');
   
   const user = extractAndValidateToken(req);
   
-  console.log('🛡️ Middleware - Usuario:', user ? `${user.user}` : 'null');
   
   if (!user) {
     // Si es una ruta de API, devolver error JSON
     if (API_PATHS.some((path) => pathname.startsWith(path))) {
-      console.log('🛡️ Middleware - Bloqueando acceso a API (401)');
       return NextResponse.json(
         { error: "No autenticado" },
         { status: 401 }
@@ -84,6 +81,6 @@ export function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     // Proteger todas las rutas excepto las públicas y archivos estáticos
-    '/((?!_next/static|_next/image|_next/webpack-hmr|favicon.ico|^$|login|api/login|api/public|api/test-db|api/reset-password-request|api/debug-jwt|api/debug-token).*)',
+    '/((?!_next/static|_next/image|_next/webpack-hmr|favicon.ico|^$|login|api/login|api/public|api/test-db|api/reset-password-request|api/debug-jwt|api/debug-token|api/debug-user-token).*)',
   ],
 }; 

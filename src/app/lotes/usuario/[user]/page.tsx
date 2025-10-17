@@ -245,78 +245,7 @@ export default function UserProfileEditPage() {
         <p className="text-muted-foreground">Administra la información personal y de la cuenta de este usuario.</p>
       </div>
 
-      {/* Panel de Depuración - visible temporalmente hasta confirmación */}
-      <Card className="border-yellow-300">
-        <CardHeader>
-          <CardTitle className="text-yellow-700">Debug Usuario</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-sm space-y-2">
-            <p><strong>loading:</strong> {String(loading)}</p>
-            <p><strong>user existe:</strong> {user ? 'true' : 'false'}</p>
-            <p><strong>params.user:</strong> {params.user}</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              <p><strong>user.nombre:</strong> {user?.nombre ?? 'null'}</p>
-              <p><strong>user.apellido:</strong> {user?.apellido ?? 'null'}</p>
-              <p><strong>user.mail:</strong> {user?.mail ?? 'null'}</p>
-              <p><strong>user.rol:</strong> {user?.rol ?? 'null'}</p>
-            </div>
-            <div>
-              <p className="font-medium">user (JSON):</p>
-              <pre className="text-xs bg-muted/50 p-2 rounded overflow-auto max-h-64">{JSON.stringify(user, null, 2)}</pre>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Información del Usuario - Solo Lectura */}
-      {user && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Información del Usuario
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-start gap-6">
-              <Avatar className="h-20 w-20">
-                <AvatarImage src={user?.foto_perfil || user?.avatarUrl || ''} alt="Foto de perfil" />
-                <AvatarFallback className="text-lg">
-                  {getInitials(user?.nombre, user?.apellido)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Nombre Completo</Label>
-                    <p className="text-lg font-semibold">
-                      {user?.nombre && user?.apellido 
-                        ? `${user.nombre} ${user.apellido}`.trim()
-                        : user?.nombre || "No especificado"
-                      }
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Usuario</Label>
-                    <p className="text-lg font-semibold">{params.user || "No especificado"}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Email</Label>
-                    <p className="text-lg font-semibold">{user?.mail || user?.email || "No especificado"}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Rol</Label>
-                    <Badge variant="secondary" className="text-sm">
-                      {user?.rol || user?.role || "Usuario"}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      
 
       <Card>
         <CardHeader>

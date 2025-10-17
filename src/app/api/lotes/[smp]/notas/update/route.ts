@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
-import jwt from "jsonwebtoken";
-
-const JWT_SECRET = process.env.JWT_SECRET || "dev_secret";
+import { extractAndValidateToken } from "@/lib/security";
 
 // PUT: Actualizar una nota específica usando agente y fecha
 export async function PUT(req: NextRequest, { params }: any) {
@@ -14,13 +12,12 @@ export async function PUT(req: NextRequest, { params }: any) {
   }
 
   try {
-    // Verificar autenticación
-    const token = req.cookies.get('token')?.value;
-    if (!token) {
+    // ✅ Verificar autenticación (cookies O header Authorization)
+    const decoded = extractAndValidateToken(req);
+    if (!decoded) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
     const currentUser = decoded.user;
 
     const body = await req.json();
@@ -50,9 +47,6 @@ export async function PUT(req: NextRequest, { params }: any) {
       nota: updatedRows[0] 
     });
   } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      return NextResponse.json({ error: "Token inválido" }, { status: 401 });
-    }
     return NextResponse.json({ error: "Error al editar nota", details: (error as Error).message }, { status: 500 });
   }
 }

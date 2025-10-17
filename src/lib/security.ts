@@ -64,29 +64,29 @@ export function extractAndValidateToken(req: NextRequest): AuthenticatedUser | n
   try {
     // Buscar token en cookies primero (para compatibilidad)
     let token = req.cookies.get("token")?.value;
-    console.log('🔓 extractAndValidateToken - Cookie token:', token ? 'presente' : 'ausente');
+    // console.log('🔓 extractAndValidateToken - Cookie token:', token ? 'presente' : 'ausente');
     
     // Si no hay token en cookies, buscar en headers de Authorization
     if (!token) {
       const authHeader = req.headers.get("authorization");
-      console.log('🔓 extractAndValidateToken - Authorization header:', authHeader ? 'presente' : 'ausente');
+      // console.log('🔓 extractAndValidateToken - Authorization header:', authHeader ? 'presente' : 'ausente');
       if (authHeader && authHeader.startsWith("Bearer ")) {
         token = authHeader.substring(7); // Remover "Bearer "
-        console.log('🔓 extractAndValidateToken - Token extraído de header');
+        // console.log('🔓 extractAndValidateToken - Token extraído de header');
       }
     }
     
     if (!token) {
-      console.log('🔓 extractAndValidateToken - No se encontró token');
+      // console.log('🔓 extractAndValidateToken - No se encontró token');
       return null;
     }
     
     const payload = jwt.verify(token, JWT_SECRET) as any;
-    console.log('🔓 extractAndValidateToken - Token verificado exitosamente');
+    // console.log('🔓 extractAndValidateToken - Token verificado exitosamente');
     
     // Validar estructura del payload
     if (!payload.user || !payload.mail) {
-      console.log('🔓 extractAndValidateToken - Payload inválido (falta user o mail)');
+      // console.log('🔓 extractAndValidateToken - Payload inválido (falta user o mail)');
       return null;
     }
     

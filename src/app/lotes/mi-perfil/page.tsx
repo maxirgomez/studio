@@ -17,6 +17,7 @@ import {
 import { auth } from "@/lib/firebase"
 import { useUser } from "@/context/UserContext"
 import { useNotification } from "@/context/NotificationContext"
+import { useAsignacionesRecientes } from "@/hooks/use-asignaciones-recientes"
 
 import {
   Card,
@@ -95,6 +96,9 @@ export default function MyProfilePage() {
   const [lotesSolicitados, setLotesSolicitados] = useState<any[]>([]);
   const [loadingSolicitudes, setLoadingSolicitudes] = useState(true);
   const [transferiendo, setTransferiendo] = useState<string | null>(null);
+  
+  // Hook para asignaciones recientes
+  const { asignaciones: asignacionesRecientes, refreshAsignaciones } = useAsignacionesRecientes();
   
   // Estado para debug del token
   const [tokenStatus, setTokenStatus] = useState<string>('verificando...');
@@ -550,6 +554,102 @@ export default function MyProfilePage() {
           </Form>
         </CardContent>
       </Card>
+
+      {/* Sección de Lotes Asignados Recientemente */}
+      {minTimePassed && asignacionesRecientes.length > 0 && (
+        <Card className="border-green-200">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-green-700">
+                <User className="h-5 w-5" />
+                Lotes Asignados Recientemente ({asignacionesRecientes.length})
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => refreshAsignaciones()}
+                className="text-xs"
+              >
+                Actualizar
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {asignacionesRecientes.map((asignacion) => (
+                <div key={asignacion.smp} className="border rounded-lg p-4 bg-green-50 border-green-200">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage 
+                            src={asignacion.agenteInfo?.foto_perfil || ''} 
+                            alt={`Foto de ${asignacion.agenteInfo?.nombre || ''} ${asignacion.agenteInfo?.apellido || ''}`} 
+                          />
+                          <AvatarFallback className="text-xs bg-green-100">
+                            {asignacion.agenteInfo?.iniciales || asignacion.agenteAnterior[0]?.toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-sm">
+                            {asignacion.agenteInfo 
+                              ? `${asignacion.agenteInfo.nombre} ${asignacion.agenteInfo.apellido}`.trim()
+                              : asignacion.agenteAnterior
+                            }
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            te ha asignado este lote
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="ml-11">
+                        <div className="flex items-center gap-2 mb-1">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium text-sm">{asignacion.direccion}</span>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            <span>{asignacion.barrio}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Ruler className="h-3 w-3" />
+                            <span>{asignacion.m2aprox} m²</span>
+                          </div>
+                          {asignacion.vventa && (
+                            <div className="flex items-center gap-1">
+                              <DollarSign className="h-3 w-3" />
+                              <span>${asignacion.vventa.toLocaleString('es-AR')}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="mt-2 flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">
+                            SMP: {asignacion.smp}
+                          </Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            {new Date(asignacion.fecha).toLocaleDateString('es-AR')}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2 ml-4">
+                      <Button 
+                        size="sm"
+                        onClick={() => window.open(`/lotes/${asignacion.smp}`, '_blank')}
+                      >
+                        Ver Lote
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Sección de Lotes Solicitados */}
       {minTimePassed && lotesSolicitados.length > 0 && (

@@ -182,7 +182,7 @@ const LotesFilters: React.FC<LotesFiltersProps> = ({
               <ChevronDown className="h-4 w-4 opacity-50" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-[250px]">
+          <DropdownMenuContent className="w-[250px] max-h-[200px] overflow-y-auto">
             <DropdownMenuLabel>Filtrar por Agente</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {uniqueAgents.map((agente) => {
