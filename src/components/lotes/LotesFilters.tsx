@@ -197,7 +197,9 @@ const LotesFilters: React.FC<LotesFiltersProps> = ({
                   <div className="flex items-center gap-2">
                     <Avatar className="h-5 w-5">
                       <AvatarImage src={agente.foto_perfil || ''} alt={`Foto de ${agente.nombre} ${agente.apellido}`} />
-                      <AvatarFallback className="text-xs">{agente.iniciales}</AvatarFallback>
+                      <AvatarFallback className="text-xs">
+                        {typeof agente.iniciales === 'string' ? agente.iniciales : (agente.nombre?.[0] || agente.apellido?.[0] || '?')}
+                      </AvatarFallback>
                     </Avatar>
                     <span>{displayName}</span>
                   </div>

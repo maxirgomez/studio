@@ -1204,18 +1204,61 @@ export default function SmpDetailView({
                       const isCurrentUserNote = currentUser && (currentUser.user === note.agente?.user || currentUser.user === note.agente);
                       const isEditing = editingNoteId === note.id;
                       
+                      // Función helper para obtener iniciales de forma segura
+                      const getAgenteInitials = () => {
+                        try {
+                          if (!note.agente) return "?";
+                          
+                          // Si es un string, devolver la primera letra
+                          if (typeof note.agente === 'string') {
+                            const firstChar = note.agente.trim()[0];
+                            return firstChar ? firstChar.toUpperCase() : "?";
+                          }
+                          
+                          // Si es un objeto
+                          if (typeof note.agente === 'object' && note.agente !== null && !Array.isArray(note.agente)) {
+                            // Verificar initials si es string válido
+                            if (note.agente.initials && typeof note.agente.initials === 'string' && note.agente.initials.trim().length > 0) {
+                              return note.agente.initials.trim().substring(0, 2).toUpperCase();
+                            }
+                            
+                            // Intentar generar desde nombre y apellido
+                            const nombre = typeof note.agente.nombre === 'string' ? note.agente.nombre.trim() : '';
+                            const apellido = typeof note.agente.apellido === 'string' ? note.agente.apellido.trim() : '';
+                            
+                            if (nombre) {
+                              const firstLetter = nombre[0] || '';
+                              const lastLetter = apellido ? apellido[0] || '' : '';
+                              const initials = `${firstLetter}${lastLetter}`.trim().toUpperCase();
+                              if (initials) return initials;
+                            }
+                            
+                            // Intentar desde user
+                            const user = typeof note.agente.user === 'string' ? note.agente.user.trim() : '';
+                            if (user) {
+                              const firstChar = user[0];
+                              return firstChar ? firstChar.toUpperCase() : "?";
+                            }
+                          }
+                          
+                          return "?";
+                        } catch (error) {
+                          console.error('Error al obtener iniciales del agente:', error);
+                          return "?";
+                        }
+                      };
                       
                       return (
                         <div key={note.id || index} className="flex gap-4">
                           <Avatar>
                             <AvatarImage src={note.agente?.avatarUrl || "https://placehold.co/100x100.png"} alt={`Foto de perfil de ${note.agente?.nombre || 'agente'}`} data-ai-hint={note.agente?.aiHint || "person"} />
                             <AvatarFallback>
-                              {note.agente?.initials || (note.agente?.nombre ? `${note.agente.nombre[0] || ''}${note.agente.apellido?.[0] || ''}`.toUpperCase() : (note.agente || "?"))}
+                              {getAgenteInitials()}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1">
                             <div className="flex items-center justify-between">
-                              <p className="text-sm font-medium">{note.agente?.nombre ? `${note.agente.nombre} ${note.agente.apellido}` : note.agente || "-"}</p>
+                              <p className="text-sm font-medium">{note.agente?.nombre ? `${note.agente.nombre} ${note.agente.apellido}` : (note.agente?.user || (typeof note.agente === 'string' ? note.agente : "-"))}</p>
                               <div className="flex items-center gap-2">
                                 <p className="text-xs text-muted-foreground">
                                   {note.fecha ? format(parseISO(note.fecha), "dd/MM/yyyy") : ""}

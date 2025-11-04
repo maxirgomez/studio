@@ -995,6 +995,12 @@ export default function LoteDetailPage() {
     );
   }
 
+  // LOG AL INICIO DEL RENDER
+  
+  if (notes && notes.length > 0) {
+  
+  }
+
   // LOGS para depuración de datos de tasación
 
   return (
@@ -1693,52 +1699,208 @@ export default function LoteDetailPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {notes.length === 0 && (
-                      <div className="text-center text-muted-foreground">
-                        No hay notas aún.
-                      </div>
-                    )}
-                    {notes.map((note: any) => {
-                      // Verificar si el usuario actual puede editar/eliminar esta nota
-                      const isCurrentUserNote =
-                        currentUser &&
-                        (currentUser.user === note.agente?.user ||
-                          currentUser.user === note.agente);
-                      
-                      // Los administradores pueden eliminar cualquier nota
-                      const isAdmin = currentUser?.rol === 'Administrador';
-                      const canDelete = isCurrentUserNote || isAdmin;
-                      const canEdit = isCurrentUserNote; // Solo el dueño puede editar
-
-                      return (
-                        <div key={note.id} className="flex gap-4">
-                          <Avatar>
-                            <AvatarImage
-                              src={
-                                note.agente?.avatarUrl ||
-                                "https://placehold.co/100x100.png"
-                              }
-                              alt={`Foto de perfil de ${
-                                note.agente?.nombre || "agente"
-                              }`}
-                              data-ai-hint={note.agente?.aiHint || "person"}
-                            />
-                            <AvatarFallback>
-                              {note.agente?.initials ||
-                                (note.agente?.nombre
-                                  ? `${note.agente.nombre[0] || ""}${
-                                      note.agente.apellido?.[0] || ""
-                                    }`.toUpperCase()
-                                  : note.agente || "?")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <p className="text-sm font-medium">
-                                {note.agente?.nombre
-                                  ? `${note.agente.nombre} ${note.agente.apellido}`
-                                  : note.agente || "-"}
-                              </p>
+                                         {notes.length === 0 && (
+                       <div className="text-center text-muted-foreground">
+                         No hay notas aún.
+                       </div>
+                     )}
+                     {(() => {
+                       
+                       return null;
+                     })()}
+                     {notes.map((note, index) => {
+                       // LOG MUY VISIBLE AL INICIO
+                       
+                       
+                       // LOGS DE DEBUG DETALLADOS
+                       
+                       
+                       if (note.agente && typeof note.agente === 'object' && note.agente !== null) {
+                       
+                       }
+                       
+                       // Verificar si el usuario actual puede editar/eliminar esta nota
+                       // MEJORAR: Manejar correctamente cuando note.agente es un objeto
+                       let agenteUserValue: string | null = null;
+                       if (typeof note.agente === 'string') {
+                         agenteUserValue = note.agente;
+                         
+                       } else if (note.agente && typeof note.agente === 'object' && note.agente !== null) {
+                         agenteUserValue = (note.agente as any).user || null;
+                         
+                       }
+                       
+                       const isCurrentUserNote = currentUser && currentUser.user && agenteUserValue && 
+                         (currentUser.user.toLowerCase() === agenteUserValue.toLowerCase());
+                       
+                       
+                       
+                       // Los administradores pueden eliminar cualquier nota
+                       const isAdmin = currentUser?.rol === 'Administrador';
+                       const canDelete = isCurrentUserNote || isAdmin;
+                       const canEdit = isCurrentUserNote; // Solo el dueño puede editar
+                       const isEditing = editingNoteId === note.id;
+                       
+                       // Función helper para obtener el string seguro del agente
+                       const getAgenteDisplayName = (): string => {
+                         try {
+                           
+                           
+                           if (!note.agente) {
+                           
+                             return "-";
+                           }
+                           
+                           if (typeof note.agente === 'string') {
+                           
+                             return note.agente;
+                           }
+                           
+                           if (typeof note.agente === 'object' && note.agente !== null && !Array.isArray(note.agente)) {
+                             const agenteObj = note.agente as any;
+                           
+                             
+                             const nombre = typeof agenteObj.nombre === 'string' ? agenteObj.nombre.trim() : '';
+                             const apellido = typeof agenteObj.apellido === 'string' ? agenteObj.apellido.trim() : '';
+                             
+                           
+                             
+                             if (nombre && apellido) {
+                               const result = `${nombre} ${apellido}`;
+                           
+                               return result;
+                             }
+                             if (nombre) {
+                           
+                               return nombre;
+                             }
+                             if (apellido) {
+                           
+                               return apellido;
+                             }
+                             const user = typeof agenteObj.user === 'string' ? agenteObj.user.trim() : '';
+                             if (user) {
+                           
+                               return user;
+                             }
+                           }
+                           
+                           // NUNCA retornar el objeto directamente
+                           
+                           return "-";
+                         } catch (error) {
+                           console.error('❌ [ERROR] getAgenteDisplayName:', error);
+                           return "-";
+                         }
+                       };
+                       
+                       const getAgenteInitials = (): string => {
+                         try {
+                           
+                           
+                           if (!note.agente) {
+                             
+                             return "?";
+                           }
+                           
+                           // Si es un string, devolver la primera letra
+                           if (typeof note.agente === 'string') {
+                             const firstChar = note.agente.trim()[0];
+                             const result = firstChar ? firstChar.toUpperCase() : "?";
+                             
+                             return result;
+                           }
+                           
+                           // Si es un objeto
+                           if (typeof note.agente === 'object' && note.agente !== null && !Array.isArray(note.agente)) {
+                             const agenteObj = note.agente as any;
+                             
+                             
+                             // PRIMERO: Intentar usar initials si existe y es string válido
+                             if (agenteObj.initials && typeof agenteObj.initials === 'string' && agenteObj.initials.trim().length > 0) {
+                               const result = agenteObj.initials.trim().substring(0, 2).toUpperCase();
+                             
+                               return result;
+                             }
+                             
+                             // SEGUNDO: Intentar generar desde nombre y apellido
+                             const nombre = typeof agenteObj.nombre === 'string' ? agenteObj.nombre.trim() : '';
+                             const apellido = typeof agenteObj.apellido === 'string' ? agenteObj.apellido.trim() : '';
+                             
+                             
+                             
+                             if (nombre) {
+                               const firstLetter = nombre[0] || '';
+                               const lastLetter = apellido ? apellido[0] || '' : '';
+                               const initials = `${firstLetter}${lastLetter}`.trim().toUpperCase();
+                               if (initials) {
+                             
+                                 return initials;
+                               }
+                             }
+                             
+                             // TERCERO: Intentar desde user
+                             const user = typeof agenteObj.user === 'string' ? agenteObj.user.trim() : '';
+                             if (user) {
+                               const firstChar = user[0];
+                               if (firstChar) {
+                                 const result = firstChar.toUpperCase();
+                             
+                                 return result;
+                               }
+                             }
+                           }
+                           
+                           // Fallback: siempre retornar string
+                           
+                           return "?";
+                         } catch (error) {
+                           console.error('❌ [ERROR] getAgenteInitials:', error);
+                           return "?";
+                         }
+                       };
+                       
+                       // Obtener valores ANTES de renderizar
+                       const agenteDisplayName = getAgenteDisplayName();
+                       const agenteInitials = getAgenteInitials();
+                       
+                       
+                       
+                                              // Validación final: asegurar que son strings
+                       if (typeof agenteDisplayName !== 'string') {
+                         console.error('❌ [ERROR CRÍTICO] agenteDisplayName NO es string:', agenteDisplayName);
+                       }
+                       if (typeof agenteInitials !== 'string') {
+                         console.error('❌ [ERROR CRÍTICO] agenteInitials NO es string:', agenteInitials);
+                       }
+                       
+                       // FORZAR conversión a string por seguridad - NUNCA pasar objetos
+                       const safeDisplayName: string = typeof agenteDisplayName === 'string' ? agenteDisplayName : String(agenteDisplayName || '-');
+                       const safeInitials: string = typeof agenteInitials === 'string' ? agenteInitials : String(agenteInitials || '?');
+                       
+                       
+                       
+                       return (
+                         <div key={note.id || index} className="flex gap-4">
+                           <Avatar>
+                             <AvatarImage 
+                               src={
+                                 (note.agente && typeof note.agente === 'object' && note.agente !== null)
+                                   ? (note.agente as any).avatarUrl || "https://placehold.co/100x100.png"
+                                   : "https://placehold.co/100x100.png"
+                               } 
+                               alt={`Foto de perfil de ${safeDisplayName}`} 
+                               data-ai-hint="person" 
+                             />
+                             <AvatarFallback name={safeDisplayName}>
+                               {safeInitials}
+                             </AvatarFallback>
+                           </Avatar>
+                           <div className="flex-1">
+                             <div className="flex items-center justify-between">
+                               <p className="text-sm font-medium">
+                                 {safeDisplayName}
+                               </p>
                               <div className="flex items-center gap-2">
                                 <p className="text-xs text-muted-foreground">
                                   {note.fecha
@@ -1831,3 +1993,4 @@ export default function LoteDetailPage() {
     </div>
   );
 }
+
