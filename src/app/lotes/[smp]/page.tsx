@@ -717,27 +717,133 @@ export default function LoteDetailPage() {
     try {
       // ✅ Buscar la nota por ID único
       const noteToDelete = notes.find(note => note.id === noteId);
-      if (!noteToDelete) return;
+      if (!noteToDelete) {
+        toast({
+          title: "Error",
+          description: "No se encontró la nota a eliminar.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       const token = localStorage.getItem('auth_token');
+      const isAdmin = currentUser?.rol === 'Administrador';
+      
+      // ✅ Extraer el usuario del agente (puede ser objeto o string)
+      let agenteUsuario: string | null = null;
+      
+      // Debug: verificar la estructura de la nota
+      console.log('🔍 Nota a eliminar:', {
+        id: noteToDelete.id,
+        agente: noteToDelete.agente,
+        tipoAgente: typeof noteToDelete.agente,
+        agenteUser: noteToDelete.agente?.user,
+        isAdmin,
+      });
+      
+      if (typeof noteToDelete.agente === 'string') {
+        // El agente es directamente un string
+        agenteUsuario = noteToDelete.agente || null;
+      } else if (noteToDelete.agente && typeof noteToDelete.agente === 'object') {
+        // El agente es un objeto, extraer el user
+        agenteUsuario = (noteToDelete.agente as any)?.user || null;
+      } else if (!noteToDelete.agente) {
+        // El agente es null o undefined
+        agenteUsuario = null;
+      }
+      
+      // Si no hay agente y el usuario no es admin, no puede eliminar
+      if (!agenteUsuario && !isAdmin) {
+        console.error('❌ No se pudo obtener el agente de la nota:', noteToDelete);
+        toast({
+          title: "Error",
+          description: "Esta nota no tiene un agente asignado. Solo los administradores pueden eliminarla.",
+          variant: "destructive",
+        });
+        return;
+      }
       
       // ✅ Convertir fecha a formato ISO (YYYY-MM-DD) para que coincida con la BD
-      const fechaISO = noteToDelete.fecha instanceof Date
-        ? noteToDelete.fecha.toISOString().split('T')[0]
-        : String(noteToDelete.fecha).split('T')[0];
+      let fechaISO: string | null = null;
+      const notaSinFecha = !noteToDelete.fecha || noteToDelete.fecha === null;
+      
+      // Si la nota no tiene fecha, solo los administradores pueden eliminarla
+      if (notaSinFecha && !isAdmin) {
+        console.error('❌ La nota no tiene fecha y el usuario no es admin:', noteToDelete);
+        toast({
+          title: "Error",
+          description: "Esta nota no tiene una fecha válida. Solo los administradores pueden eliminarla.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Si la nota tiene fecha, normalizarla
+      if (!notaSinFecha) {
+        try {
+          if (noteToDelete.fecha instanceof Date) {
+            fechaISO = noteToDelete.fecha.toISOString().split('T')[0];
+          } else if (typeof noteToDelete.fecha === 'string') {
+            // Validar que no sea el string "null" o vacío
+            if (noteToDelete.fecha === 'null' || noteToDelete.fecha.trim() === '') {
+              throw new Error('Fecha inválida: string vacío o "null"');
+            }
+            fechaISO = noteToDelete.fecha.split('T')[0].split(' ')[0];
+            // Validar formato básico
+            if (!fechaISO || fechaISO.length < 10 || !/^\d{4}-\d{2}-\d{2}/.test(fechaISO)) {
+              throw new Error('Formato de fecha inválido');
+            }
+          } else {
+            // Intentar convertir otros tipos a string
+            const fechaStr = String(noteToDelete.fecha);
+            if (fechaStr === 'null' || fechaStr === 'undefined' || fechaStr.trim() === '') {
+              throw new Error('Fecha inválida: no se pudo convertir a fecha válida');
+            }
+            fechaISO = fechaStr.split('T')[0].split(' ')[0];
+            if (!fechaISO || fechaISO.length < 10 || !/^\d{4}-\d{2}-\d{2}/.test(fechaISO)) {
+              throw new Error('Formato de fecha inválido después de conversión');
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error al convertir fecha:', error, { fecha: noteToDelete.fecha });
+          toast({
+            title: "Error",
+            description: "No se pudo procesar la fecha de la nota. Por favor, contacta al administrador.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
       
       const headers: HeadersInit = { "Content-Type": "application/json" };
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
+      // Preparar body: si no hay fecha, enviar el contenido de la nota como identificador alternativo
+      const body: any = {
+        agente: agenteUsuario || null,
+      };
+      
+      if (fechaISO) {
+        body.fecha = fechaISO;
+      } else if (isAdmin && notaSinFecha) {
+        // Si es admin y no hay fecha, usar el contenido de la nota como identificador
+        body.notas = noteToDelete.notas || null;
+        body.sinFecha = true; // Flag para indicar que no hay fecha
+      } else {
+        toast({
+          title: "Error",
+          description: "No se pudo identificar la nota para eliminar.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const res = await fetch(`/api/lotes/${params.smp}/notas/delete`, {
         method: "DELETE",
         headers,
-        body: JSON.stringify({
-          agente: noteToDelete.agente?.user || noteToDelete.agente,
-          fecha: fechaISO, // ✅ Usar formato ISO consistente
-        }),
+        body: JSON.stringify(body),
       });
 
       if (res.ok) {
@@ -748,12 +854,14 @@ export default function LoteDetailPage() {
           description: "La nota se ha eliminado correctamente.",
         });
       } else {
-        throw new Error("Error al eliminar nota");
+        const errorData = await res.json().catch(() => ({ error: "Error desconocido" }));
+        throw new Error(errorData.error || "Error al eliminar nota");
       }
     } catch (error) {
+      console.error('Error al eliminar nota:', error);
       toast({
         title: "Error",
-        description: "No se pudo eliminar la nota.",
+        description: error instanceof Error ? error.message : "No se pudo eliminar la nota.",
         variant: "destructive",
       });
     }

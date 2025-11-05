@@ -206,21 +206,24 @@ export async function GET(req: NextRequest, context: any) {
     }
 
     // Mapear notas (usar agente + fecha como ID único)
-    const notas = notasResult.rows.map((nota) => {
+    const notas = notasResult.rows.map((nota, index) => {
       // ✅ Formatear fecha a ISO string (YYYY-MM-DD) para ID consistente
       const fechaISO = nota.fecha instanceof Date 
         ? nota.fecha.toISOString().split('T')[0]
         : String(nota.fecha).split('T')[0];
       
+      // ✅ Asegurar que el agente siempre tenga un valor válido
+      const agenteUser = nota.agente || 'unknown';
+      
       return {
-        id: `${nota.agente}-${fechaISO}`, // ID único: usuario-2025-10-09
+        id: agenteUser !== 'unknown' ? `${agenteUser}-${fechaISO}` : `note-${index + 1}-${fechaISO}`, // ID único: usuario-2025-10-09 o fallback
         smp: nota.smp,
         agente: {
-          user: nota.agente,
-          nombre: nota.nombre,
-          apellido: nota.apellido,
-          avatarUrl: nota.foto_perfil,
-          initials: nota.initials
+          user: nota.agente || null, // Mantener null si no hay agente
+          nombre: nota.nombre || null,
+          apellido: nota.apellido || null,
+          avatarUrl: nota.foto_perfil || null,
+          initials: nota.initials || null
         },
         notas: nota.notas,
         fecha: nota.fecha 
