@@ -61,7 +61,7 @@ interface LotesFiltersProps {
   currentUser?: any;
 }
 
-const LotesFilters: React.FC<LotesFiltersProps> = ({
+const LotesFilters: React.FC<LotesFiltersProps> = React.memo(({
   origenFilters,
   statusFilters,
   neighborhoodFilters,
@@ -360,6 +360,8 @@ const LotesFilters: React.FC<LotesFiltersProps> = ({
       )}
     </CardFooter>
   </Card>
-);
+));
+
+LotesFilters.displayName = 'LotesFilters';
 
 export default LotesFilters; 

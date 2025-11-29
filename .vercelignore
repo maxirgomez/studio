@@ -1,0 +1,24 @@
+# Archivos de Firebase (no usados en Vercel)
+firebase.json
+apphosting.yaml
+dataconnect/
+functions/
+
+# Archivos de desarrollo
+*.md
+docs/
+scripts/
+prefapp-mapa.html
+static-files-report.json
+
+# Tests
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Otros
+.git/
+.github/
+node_modules/
+.next/

@@ -23,29 +23,52 @@ const LotesPagination: React.FC<LotesPaginationProps> = ({ currentPage, totalPag
   // (esto debería ser manejado por la lógica de redirección en el componente padre)
   if (currentPage > totalPages) return null;
 
-  // Calcular las páginas a mostrar de manera compacta
-  const pages = [];
+   // Calcular las páginas a mostrar de manera dinámica
+  const pages: (number | string)[] = [];
   
-  if (totalPages <= 5) {
-    // Si hay 5 páginas o menos, mostrar todas
+  if (totalPages <= 7) {
+    // Si hay 7 páginas o menos, mostrar todas
     for (let i = 1; i <= totalPages; i++) {
       pages.push(i);
     }
   } else {
-    // Si hay más de 5 páginas, mostrar formato compacto: 1, 2, 3 ... último
+    // Lógica para mostrar páginas alrededor de la actual
+    // Siempre mostrar la primera página
     pages.push(1);
-    pages.push(2);
-    pages.push(3);
     
-    // Siempre mostrar puntos suspensivos si hay más de 4 páginas
-    if (totalPages > 4) {
+    // Determinar el rango de páginas a mostrar alrededor de currentPage
+    let startPage = Math.max(2, currentPage - 1);
+    let endPage = Math.min(totalPages - 1, currentPage + 1);
+    
+    // Ajustar si estamos cerca del inicio
+    if (currentPage <= 3) {
+      startPage = 2;
+      endPage = Math.min(4, totalPages - 1);
+    }
+    
+    // Ajustar si estamos cerca del final
+    if (currentPage >= totalPages - 2) {
+      startPage = Math.max(2, totalPages - 3);
+      endPage = totalPages - 1;
+    }
+    
+    // Agregar "..." si hay gap entre 1 y startPage
+    if (startPage > 2) {
       pages.push('...');
     }
     
-    // Siempre mostrar la última página si hay más de 3 páginas
-    if (totalPages > 3) {
-      pages.push(totalPages);
+    // Agregar páginas del rango
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
     }
+    
+    // Agregar "..." si hay gap entre endPage y última página
+    if (endPage < totalPages - 1) {
+      pages.push('...');
+    }
+    
+    // Siempre mostrar la última página
+    pages.push(totalPages);
   }
   
   // Debug: Ver qué páginas se están generando

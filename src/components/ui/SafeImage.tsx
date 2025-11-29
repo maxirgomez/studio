@@ -8,6 +8,8 @@ interface SafeImageProps {
   height?: number;
   className?: string;
   fallback?: React.ReactNode;
+  priority?: boolean;
+  sizes?: string;
   [key: string]: any;
 }
 
@@ -18,6 +20,8 @@ export function SafeImage({
   height = 400, 
   className = "", 
   fallback,
+  priority = false,
+  sizes = "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw",
   ...props 
 }: SafeImageProps) {
   const [hasError, setHasError] = useState(false);
@@ -80,7 +84,8 @@ export function SafeImage({
           }
         }}
         style={{ width: '100%', height: 'auto', objectFit: 'cover' }}
-        loading="lazy"
+        loading={priority ? "eager" : "lazy"}
+        decoding="async"
         referrerPolicy="no-referrer"
         crossOrigin="anonymous"
         {...props}
@@ -96,6 +101,9 @@ export function SafeImage({
       width={width}
       height={height}
       className={className}
+      sizes={sizes}
+      priority={priority}
+      loading={priority ? undefined : "lazy"}
       onError={(e) => {
         setHasError(true);
       }}

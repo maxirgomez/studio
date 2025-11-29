@@ -51,7 +51,7 @@ import { Listing } from "@/components/lotes/ListingCard";
 import LotesPagination from "@/components/lotes/LotesPagination";
 import ListingCardSkeleton from "@/components/lotes/ListingCardSkeleton";
 import { useUser } from "@/context/UserContext";
-import { useBarrios, useEstados, useOrigenes, useTipos, useAgentes, useAreaRange, useFrenteRange } from "@/hooks/use-lotes-filters";
+import { useLotesFiltersUnified } from "@/hooks/use-lotes-filters-unified";
 import { useLotesList } from "@/hooks/use-lotes-list";
 
 
@@ -90,14 +90,16 @@ export default function LotesClientPage() {
   const [frenteInput, setFrenteInput] = useState<[string, string]>(['', '']);
   const [frenteSliderValue, setFrenteSliderValue] = useState<[number, number]>([minFrente, maxFrente]);
   
-  // ✅ REACT QUERY: Usar hooks con caché para opciones de filtros
-  const { data: uniqueNeighborhoods = [] } = useBarrios();
-  const { data: uniqueStatuses = [] } = useEstados();
-  const { data: uniqueOrigens = [] } = useOrigenes();
-  const { data: uniqueTipos = [] } = useTipos();
-  const { data: uniqueAgents = [] } = useAgentes();
-  const { data: areaRangeData } = useAreaRange();
-  const { data: frenteRangeData } = useFrenteRange();
+  // ✅ OPTIMIZACIÓN: Una sola request para todos los filtros (antes eran 7)
+  const { data: filtrosData, isLoading: loadingFiltros } = useLotesFiltersUnified();
+  
+  const uniqueNeighborhoods = filtrosData?.barrios || [];
+  const uniqueStatuses = filtrosData?.estados || [];
+  const uniqueOrigens = filtrosData?.origenes || [];
+  const uniqueTipos = filtrosData?.tipos || [];
+  const uniqueAgents = filtrosData?.agentes || [];
+  const areaRangeData = filtrosData?.areaRange;
+  const frenteRangeData = filtrosData?.frenteRange;
 
   // Actualizar minArea/maxArea cuando lleguen los datos del caché
   useEffect(() => {
@@ -116,7 +118,7 @@ export default function LotesClientPage() {
   
   useEffect(() => {
     // Solo mostrar valores en los inputs si hay un filtro activo (no es el rango completo)
-    if (minAreaFilter > minArea || maxAreaFilter < maxArea) {
+    if (minAreaFilter !== minArea || maxAreaFilter !== maxArea) {
       setAreaInput([String(minAreaFilter), String(maxAreaFilter)]);
       setSliderValue([minAreaFilter, maxAreaFilter]);
     } else {
@@ -128,7 +130,7 @@ export default function LotesClientPage() {
 
   useEffect(() => {
     // Solo mostrar valores en los inputs si hay un filtro activo (no es el rango completo)
-    if (minFrenteFilter > minFrente || maxFrenteFilter < maxFrente) {
+    if (minFrenteFilter !== minFrente || maxFrenteFilter !== maxFrente) {
       setFrenteInput([String(minFrenteFilter), String(maxFrenteFilter)]);
       setFrenteSliderValue([minFrenteFilter, maxFrenteFilter]);
     } else {

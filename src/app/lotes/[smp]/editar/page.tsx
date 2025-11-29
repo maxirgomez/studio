@@ -285,6 +285,10 @@ export default function LoteEditPage() {
     );
   }
   
+  // Detectar si el usuario actual es el agente asignado
+  const isAssignedAgent = user?.user && listing?.agente && 
+    user.user.toLowerCase() === listing.agente.toLowerCase();
+  
   async function onSubmit(data: EditLoteFormValues) {
     setSaving(true);
     // Normalizar campos numéricos vacíos a null
@@ -509,7 +513,7 @@ export default function LoteEditPage() {
                 <div className="flex items-center">
                   <Scan className="h-5 w-5 mr-3 text-muted-foreground" />
                   <span className="font-medium">Agente:</span>
-                  {user?.rol === 'Administrador' || user?.rol === 'Asesor' ? (
+                  {user?.rol === 'Administrador' || user?.rol === 'Asesor' || isAssignedAgent ? (
                     <div className="ml-auto">
                       <Select
                         value={listing?.agente || ''}
@@ -544,7 +548,7 @@ export default function LoteEditPage() {
                 <div className="flex items-center">
                   <Layers className="h-5 w-5 mr-3 text-muted-foreground" />
                   <span className="font-medium">Tipo:</span>
-                  {user?.rol === 'Administrador' || user?.rol === 'Asesor' ? (
+                  {user?.rol === 'Administrador' || user?.rol === 'Asesor' || isAssignedAgent ? (
                     <div className="ml-auto">
                       <Select
                         value={listing?.tipo || ''}
@@ -568,7 +572,7 @@ export default function LoteEditPage() {
                 <div className="flex items-center">
                   <Library className="h-5 w-5 mr-3 text-muted-foreground" />
                   <span className="font-medium">Estado:</span>
-                  {user?.rol === 'Administrador' || user?.rol === 'Asesor' ? (
+                  {user?.rol === 'Administrador' || user?.rol === 'Asesor' || isAssignedAgent ? (
                     <div className="ml-auto">
                       <Select
                         value={listing?.status || ''}

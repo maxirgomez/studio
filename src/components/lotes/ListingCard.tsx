@@ -1,3 +1,4 @@
+import React from "react";
 import Image from "next/image";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { SafeImage } from "@/components/ui/SafeImage";
@@ -54,7 +55,7 @@ function formatBarrioName(barrio: string): string {
 
 
 
-const ListingCard = ({ listing }: ListingCardProps) => (
+const ListingCard = React.memo(({ listing }: ListingCardProps) => (
   <Card className="overflow-hidden hover:shadow-lg transition-shadow">
     <CardContent className="p-0">
       <div className="relative">
@@ -62,9 +63,10 @@ const ListingCard = ({ listing }: ListingCardProps) => (
           <SafeImage
             src={listing.imageUrl}
             alt={listing.address}
-            width={600}
-            height={400}
+            width={400}
+            height={267}
             className="aspect-video object-cover"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
             data-ai-hint={listing.aiHint}
           />
         ) : (
@@ -144,6 +146,8 @@ const ListingCard = ({ listing }: ListingCardProps) => (
         </div>
     </CardFooter>
   </Card>
-);
+));
+
+ListingCard.displayName = 'ListingCard';
 
 export default ListingCard; 

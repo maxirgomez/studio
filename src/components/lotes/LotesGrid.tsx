@@ -1,11 +1,8 @@
 'use client'
 
 import ListingCard, { Listing } from "@/components/lotes/ListingCard";
-import Link from "next/link";
 import React from "react";
 import ListingCardSkeleton from "@/components/lotes/ListingCardSkeleton";
-import { useRouter } from "next/navigation";
-import { useSpinner } from "@/components/ui/SpinnerProvider";
 
 interface LotesGridProps {
   listings: Listing[];
@@ -13,8 +10,10 @@ interface LotesGridProps {
 }
 
 const LotesGrid: React.FC<LotesGridProps> = ({ listings, loading = false }) => {
-  const router = useRouter();
-  const { show } = useSpinner();
+  const handleCardClick = (smp: string) => {
+    window.open(`/lotes/${smp}`, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
       {loading
@@ -22,11 +21,13 @@ const LotesGrid: React.FC<LotesGridProps> = ({ listings, loading = false }) => {
         : listings.map((listing) => (
             <div
               key={listing.smp}
-              className="block cursor-pointer"
-              onClick={() => {
-                show();
-                router.push(`/lotes/${listing.smp}`);
+              onClick={(e) => {
+                // Solo abrir si no se hizo clic en un enlace interno
+                if ((e.target as HTMLElement).tagName !== 'A') {
+                  handleCardClick(listing.smp);
+                }
               }}
+              className="block cursor-pointer hover:opacity-90 transition-opacity"
             >
               <ListingCard listing={listing} />
             </div>
@@ -35,4 +36,4 @@ const LotesGrid: React.FC<LotesGridProps> = ({ listings, loading = false }) => {
   );
 };
 
-export default LotesGrid; 
+export default LotesGrid;
