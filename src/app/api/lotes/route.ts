@@ -50,6 +50,7 @@ function mapLote(row: any, agenteUsuario: any = null) {
     m2Vendibles: row.m2_vendibles,
     incidenciaTasadaUSD: row.incidencia_tasada_usd,
     formaDePago: row.forma_pago,
+    lastNoteDate: row.last_note_date || null,
   };
 }
 
@@ -269,7 +270,14 @@ export async function GET(req: Request) {
   // Agregar paginación
   const pagValues = [...values, limit, offset];
   const query = `
-    SELECT l.*, u.nombre, u.apellido, u.foto_perfil
+    SELECT 
+      l.*, 
+      u.nombre, u.apellido, u.foto_perfil,
+      (
+        SELECT MAX(n.fecha)
+        FROM public.prefapp_notas n
+        WHERE n.smp = l.smp
+      ) AS last_note_date
     FROM public.prefapp_lotes l
     LEFT JOIN public.prefapp_users u ON LOWER(l.agente) = LOWER(u.user)
     ${where} 

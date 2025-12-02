@@ -17,6 +17,7 @@ function mapLoteForDashboard(row: any, agenteUsuario: any = null) {
     origen: row.origen,
     listingDate: null, // No tenemos fecha de publicación
     saleDate: row.fventa,
+    lastNoteDate: row.last_note_date || null,
   };
 }
 
@@ -76,11 +77,16 @@ export async function GET(req: Request) {
     // Query para los lotes paginados (solo campos necesarios)
     const lotesQuery = `
       SELECT 
-        smp, dir_lote, barrio, m2aprox, estado, agente, 
-        vventa, origen, fventa
-      FROM public.prefapp_lotes 
+        l.smp, l.dir_lote, l.barrio, l.m2aprox, l.estado, l.agente, 
+        l.vventa, l.origen, l.fventa,
+        (
+          SELECT MAX(n.fecha)
+          FROM public.prefapp_notas n
+          WHERE n.smp = l.smp
+        ) AS last_note_date
+      FROM public.prefapp_lotes l
       ${whereClause}
-      ORDER BY gid 
+      ORDER BY l.gid 
       LIMIT $${idx} OFFSET $${idx + 1}
     `;
 
