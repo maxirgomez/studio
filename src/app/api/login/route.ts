@@ -42,7 +42,13 @@ export async function POST(req: NextRequest) {
     }
     
     // Primero, intentar conectar directamente con las credenciales del usuario
-    const connectionSuccess = await testUserConnection(sanitizedUser, sanitizedPassword);
+    let connectionSuccess = false;
+    try {
+      connectionSuccess = await testUserConnection(sanitizedUser, sanitizedPassword);
+    } catch (err) {
+      // Si el método lanza, lo tratamos como fallo de auth en lugar de 500
+      connectionSuccess = false;
+    }
     
     if (!connectionSuccess) {
       // Si la autenticación directa falla, buscar en la tabla de usuarios
@@ -62,6 +68,11 @@ export async function POST(req: NextRequest) {
       }
       
       // Validar contraseña usando bcrypt
+      // Si no hay hash almacenado, rechazar
+      if (!user.password) {
+        return NextResponse.json({ error: "Usuario o contraseña incorrectos" }, { status: 401 });
+      }
+
       const passwordMatch = await verifyPassword(sanitizedPassword, user.password);
       
       if (!passwordMatch) {
