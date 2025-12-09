@@ -45,6 +45,23 @@ const profileFormSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
+// Genera un usuario: primera letra del nombre + apellido completo, sin espacios ni acentos, en minúsculas
+function generateUsername(nombre: string, apellido: string): string {
+  const first = (nombre || "").trim().charAt(0);
+  const last = (apellido || "").trim();
+  const combined = `${first}${last}`;
+  return sanitizeUserInput(combined);
+}
+
+// Elimina espacios y normaliza a minúsculas sin acentos
+function sanitizeUserInput(value: string): string {
+  return (value || "")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}+/gu, "")
+    .replace(/\s+/g, "")
+    .toLowerCase();
+}
+
 export default function UserCreatePage() {
   const { toast } = useToast();
   const router = useRouter();
@@ -93,7 +110,7 @@ export default function UserCreatePage() {
       formData.append("apellido", data.apellido);
       formData.append("mail", data.mail);
       formData.append("rol", data.rol);
-      formData.append("user", data.user);
+      formData.append("user", sanitizeUserInput(data.user));
       formData.append("password", data.password);
       if (selectedFile) {
         formData.append("avatar", selectedFile);
@@ -212,7 +229,11 @@ export default function UserCreatePage() {
                     <FormItem>
                       <FormLabel>Usuario</FormLabel>
                       <FormControl>
-                        <Input placeholder="Nombre de usuario" {...field} />
+                        <Input
+                          placeholder="Nombre de usuario"
+                          {...field}
+                          onChange={(e) => field.onChange(sanitizeUserInput(e.target.value))}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
