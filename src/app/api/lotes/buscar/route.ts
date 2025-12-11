@@ -247,8 +247,15 @@ export async function GET(req: Request) {
       // console.log('Final query:', query);
       // console.log('Query values:', values);
     } else if (isExactSearch) {
-      // Búsqueda exacta: buscar en frentesparcelas y obtener información normativa
+      // Búsqueda exacta en dos pasos: 1) obtener SMP por frente+num_dom, 2) traer datos normativos del SMP
       query = `
+        WITH picked AS (
+          SELECT smp
+          FROM public.frentesparcelas
+          WHERE LOWER(frente) = LOWER($${idx})
+            AND $${idx + 1}::text = ANY(string_to_array(num_dom, '.'))
+          LIMIT 1
+        )
         SELECT 
           fp.*,
           pc.cur as codigo_urbanistico,
@@ -257,33 +264,18 @@ export async function GET(req: Request) {
           cp.partida,
           ROUND(CAST(pc.inc_uva AS DECIMAL), 2) as incidencia_uva,
           ROUND(CAST(pc.fot_em_1 AS DECIMAL), 2) as fot,
-          ROUND(CAST(pc.alicuota AS DECIMAL), 2) as alicuota
-        FROM public.frentesparcelas fp
+          ROUND(CAST(pc.alicuota AS DECIMAL), 2) as alicuota,
+          pm.m2_vendible,
+          pm.sup_parcela
+        FROM picked p
+        JOIN public.frentesparcelas fp ON LOWER(fp.smp) = LOWER(p.smp)
         LEFT JOIN public.parcelascur pc ON fp.smp = pc.smp
         LEFT JOIN public.cur_parcelas cp ON fp.smp = cp.smp
-        WHERE 1=1
+        LEFT JOIN public.prefapp_m2_parcela pm ON LOWER(fp.smp) = LOWER(pm.smp)
+        LIMIT 1
       `;
-      
-      if (smp) {
-        query += ` AND LOWER(fp.smp) = LOWER($${idx})`;
-        values.push(smp);
-        idx++;
-      }
-      if (frente) {
-        // Búsqueda más flexible por frente (puede ser parte del nombre)
-        query += ` AND LOWER(fp.frente) LIKE LOWER($${idx})`;
-        values.push(`%${frente}%`);
-        idx++;
-      }
-      if (num_dom) {
-        // Búsqueda precisa por número usando string_to_array para coincidencias exactas en rangos
-        query += ` AND $${idx}::text = ANY(string_to_array(fp.num_dom, '.'))`;
-        values.push(num_dom);
-        idx++;
-      }
-      
-      // Para búsquedas exactas, limitar a 1 resultado
-      query += ' LIMIT 1';
+      values.push(frente);
+      values.push(num_dom);
     }
 
     
@@ -332,8 +324,8 @@ export async function GET(req: Request) {
         // Información normativa desde parcelascur, cur_parcelas usando el SMP de frentesparcelas
         codigoUrbanistico: row.codigo_urbanistico, // Desde parcelascur.cur
         barrio: row.barrio, // Desde parcelascur.barrio
-        m2_estimados: 0, // Valor por defecto ya que no tenemos la tabla prefapp_m2
-        sup_parcela: 0, // Valor por defecto ya que no tenemos la tabla prefapp_m2
+        m2_estimados: row.m2_vendible ?? 0,
+        sup_parcela: row.sup_parcela ?? 0,
         cpu: row.cpu, // Desde parcelascur.dist_cpu_1
         partida: row.partida, // Desde cur_parcelas.partida
         incidenciaUVA: row.incidencia_uva, // Desde parcelascur.inc_uva
