@@ -345,6 +345,17 @@ export default function NuevoLotePage() {
     }
   }, [frenteValue, numeroValue]);
 
+  // Limpiar SMP cuando se modifica calle o número después de una búsqueda
+  useEffect(() => {
+    const currentSmp = form.getValues('smp');
+    if (currentSmp) {
+      form.setValue('smp', '', { shouldValidate: false });
+      setSmpEditable(false);
+    }
+    // Limpiar el rango seleccionado para evitar usar datos viejos
+    setRangoCompletoSeleccionado('');
+  }, [frenteValue, numeroValue, form]);
+
   // Filtrar sugerencias de número en tiempo real con límite inteligente
   const numeroSugerenciasFiltradas = numeroSugerencias
     .flatMap(num => {
@@ -412,10 +423,19 @@ export default function NuevoLotePage() {
 
   // Función para buscar SMP y datos normativos (solo cuando se hace clic en "Buscar")
   const buscarSMP = async () => {
-    const searchFrente = completedFrenteValue.trim();
-    const searchNumero = completedNumeroValue.trim();
+    console.log('=== INICIO BÚSQUEDA SMP ===');
+    console.log('Timestamp:', new Date().toISOString());
+    console.log('Stack trace:', new Error().stack);
+    
+    const searchFrente = (form.getValues('frente') || '').trim();
+    const searchNumero = (form.getValues('numero') || '').trim();
+    
+    console.log('searchFrente:', searchFrente);
+    console.log('searchNumero:', searchNumero);
+    console.log('rangoCompletoSeleccionado:', rangoCompletoSeleccionado);
     
     if (!searchFrente || !searchNumero) {
+      console.log('ERROR: Campos vacíos');
       toast({
         title: "Campos requeridos",
         description: "Por favor, ingresa calle y número antes de buscar.",
@@ -426,6 +446,7 @@ export default function NuevoLotePage() {
     
     // Validar que el número tenga al menos 2 caracteres
     if (searchNumero.length < 2) {
+      console.log('ERROR: Número muy corto');
       toast({
         title: "Número muy corto",
         description: "Por favor, ingresa al menos 2 dígitos para el número.",
@@ -434,61 +455,29 @@ export default function NuevoLotePage() {
       return;
     }
     
-    // Usar el rango completo seleccionado si está disponible, sino buscar en los rangos
-    let rangoCompleto = rangoCompletoSeleccionado;
-    
-    // Si no hay rango seleccionado o las sugerencias están vacías, buscar directamente
-    if (!rangoCompleto || numeroSugerenciasCompletas.length === 0) {
-      // Si no hay sugerencias cargadas, buscar directamente sin validación de rango
-      // console.log('Buscando directamente sin validación de rango');
-    } else {
-      // Validar que el número existe en las sugerencias
-      const numeroExisteEnCalle = numeroSugerenciasCompletas.some(numero => {
-        // Expandir rangos de números (ej: "1820.1824.1828" -> ["1820", "1824", "1828"])
-        const numerosIndividuales = String(numero).split('.').filter(n => n.trim() !== '');
-        
-        // Normalizar el número ingresado
-        const cleanInput = searchNumero.replace(/,/g, '').replace(/\.0*$/, '');
-        
-        // Verificar si alguno de los números individuales coincide exactamente
-        const existe = numerosIndividuales.some(numIndividual => {
-          const cleanIndividual = numIndividual.trim().replace(/,/g, '').replace(/\.0*$/, '');
-          return cleanIndividual === cleanInput;
-        });
-        
-        // Guardar el rango completo
-        if (existe) {
-          rangoCompleto = numero; // Guardar el rango completo para la búsqueda
-        }
-        
-        return existe;
-      });
-      
-      if (!numeroExisteEnCalle) {
-        toast({
-          title: "Número no válido",
-          description: `El número "${searchNumero}" no existe en "${searchFrente}". Selecciona un número de las sugerencias o verifica que esté escrito correctamente.`,
-          variant: 'destructive',
-        });
-        return;
-      }
-    }
+    // Usar el rango completo seleccionado si está disponible, sino usar el número directo
+    const numeroParaBuscar = rangoCompletoSeleccionado || searchNumero;
+    console.log('numeroParaBuscar:', numeroParaBuscar);
     
     setSmpEditable(false);
     setLoadingSMP(true);
     
     try {
-      // Usar el rango completo para la búsqueda del SMP
-      const numeroParaBuscar = rangoCompleto || searchNumero;
-      
       const params = new URLSearchParams({ frente: searchFrente, num_dom: numeroParaBuscar });
       const url = `/api/lotes/buscar?${params.toString()}`;
+      
+      console.log('URL generada:', url);
       
       const response = await fetch(url);
       const data = await response.json();
       
+      console.log('Respuesta API:', data);
+      
       if (data.found && data.lotes.length > 0) {
         const lote = data.lotes[0];
+        console.log('SMP ENCONTRADO:', lote.smp);
+        console.log('Datos cargados:', lote);
+        
         form.setValue('smp', lote.smp || '', { shouldValidate: true });
         form.setValue('neighborhood', lote.barrio || '', { shouldValidate: true });
         form.setValue('partida', lote.partida || '', { shouldValidate: true });
@@ -511,6 +500,7 @@ export default function NuevoLotePage() {
           description: `SMP ${lote.smp} encontrado y datos cargados.`,
         });
       } else {
+        console.log('SMP NO ENCONTRADO');
         form.setValue('smp', '', { shouldValidate: false });
         setSmpEditable(true);
         
@@ -521,12 +511,14 @@ export default function NuevoLotePage() {
         });
       }
     } catch (error) {
+      console.error('ERROR EN buscarSMP:', error);
       toast({
         title: "Error al buscar",
         description: "Hubo un error al buscar el SMP. Intenta nuevamente.",
         variant: 'destructive',
       });
     } finally {
+      console.log('=== FIN BÚSQUEDA SMP ===');
       setLoadingSMP(false);
     }
   };
@@ -899,11 +891,6 @@ export default function NuevoLotePage() {
                               <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '100%' }}></div>
                             </div>
                             <div className="text-xs text-gray-600 mt-1">Cargando...</div>
-                          </div>
-                        )}
-                        {(frenteTyping.isTyping || numeroTyping.isTyping) && !loadingSMP && (
-                          <div className="mt-2">
-                            <div className="text-xs text-blue-600">Detectando escritura...</div>
                           </div>
                         )}
                       </div>

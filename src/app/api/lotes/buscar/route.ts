@@ -219,10 +219,18 @@ export async function GET(req: Request) {
     let idx = 1;
 
     if (isAutocomplete) {
-      // Búsqueda para autocompletado de calles desde frentesparcelas
-      const { conditions, values: searchValues } = createSearchConditions(frente);
+      // Autocompletado de calles: evitar falsos positivos de substring (ej: "Arce" no debe traer "Balcarce")
+      // Estrategia: matchear por prefijo de token (palabra) usando variaciones normalizadas.
+      const variations = generateSearchVariations(frente || '');
+      const conditions: string[] = [];
+      variations.forEach((v) => {
+        const paramIndex = values.length + 1;
+        // Busca que algún token (separado por espacio) comience con el prefijo buscado
+        conditions.push(`EXISTS (SELECT 1 FROM unnest(string_to_array(LOWER(frente), ' ')) t WHERE t LIKE $${paramIndex})`);
+        values.push(`${v}%`);
+      });
+
       query = `SELECT DISTINCT frente FROM public.frentesparcelas WHERE (${conditions.join(' OR ')}) ORDER BY frente`;
-      values.push(...searchValues);
     } else if (isNumberSearch) {
       // Búsqueda para autocompletado de números desde frentesparcelas
       // console.log('Number search triggered for frente:', frente);
@@ -247,15 +255,96 @@ export async function GET(req: Request) {
       // console.log('Final query:', query);
       // console.log('Query values:', values);
     } else if (isExactSearch) {
-      // Búsqueda exacta en dos pasos: 1) obtener SMP por frente+num_dom, 2) traer datos normativos del SMP
-      query = `
-        WITH picked AS (
-          SELECT smp
+      // Búsqueda exacta robusta: 1) localizar SMP priorizando coincidencia exacta de calle, 2) fallback a prefijo de token, 3) traer normativa
+      const streetVariations = generateSearchVariations(frente || '');
+      console.log('[buscar] exact search start', { frente, num_dom, streetVariations });
+      const cleanNum = normalizeNumDom(num_dom || '');
+      const cleanNumInt = Number.isFinite(parseInt(cleanNum, 10)) ? parseInt(cleanNum, 10) : null;
+      console.log('[buscar] cleanNum pre-query', { cleanNum, cleanNumInt });
+
+      // Preferir coincidencias exactas de calle para evitar falsos positivos (ej: "arce" no debe devolver "balcarce")
+      let streetRows: { smp: string; num_dom: string }[] = [];
+      if (streetVariations.length > 0) {
+        const exactConditions = streetVariations.map((_, i) => `LOWER(frente) = LOWER($${i + 1})`).join(' OR ');
+        const distanceParamIndex = streetVariations.length + 1;
+        const exactQuery = `
+          SELECT smp, num_dom
           FROM public.frentesparcelas
-          WHERE LOWER(frente) = LOWER($${idx})
-            AND $${idx + 1}::text = ANY(string_to_array(num_dom, '.'))
-          LIMIT 1
-        )
+          WHERE ${exactConditions}
+          ORDER BY 
+            CASE 
+              WHEN num_dom ~ '^[0-9]' THEN ABS(COALESCE(NULLIF(regexp_replace(split_part(num_dom, '.', 1), '[^0-9]', '', 'g'), '')::int, 1000000000) - COALESCE($${distanceParamIndex}, 0))
+              ELSE 2000000000
+            END,
+            char_length(num_dom) ASC,
+            smp ASC
+          LIMIT 500
+        `;
+        console.log('[buscar] exactQuery', exactQuery, [...streetVariations, cleanNumInt]);
+        const exactResult = await pool.query(exactQuery, [...streetVariations, cleanNumInt]);
+        console.log('[buscar] exactResult rows', exactResult.rows.length);
+        streetRows = exactResult.rows;
+      }
+
+      // Si no hay coincidencia exacta, usar la estrategia de prefijo por token (igual que el autocompletado)
+      if (streetRows.length === 0) {
+        const prefixConditions: string[] = [];
+        const prefixValues: string[] = [];
+        streetVariations.forEach((v) => {
+          const paramIndex = prefixValues.length + 1;
+          prefixConditions.push(`EXISTS (SELECT 1 FROM unnest(string_to_array(LOWER(frente), ' ')) t WHERE t LIKE $${paramIndex})`);
+          prefixValues.push(`${v}%`);
+        });
+
+        if (prefixConditions.length > 0) {
+          const distanceParamIndex = prefixValues.length + 1;
+          const prefixQuery = `
+            SELECT smp, num_dom
+            FROM public.frentesparcelas
+            WHERE (${prefixConditions.join(' OR ')})
+            ORDER BY 
+              CASE 
+                WHEN num_dom ~ '^[0-9]' THEN ABS(COALESCE(NULLIF(regexp_replace(split_part(num_dom, '.', 1), '[^0-9]', '', 'g'), '')::int, 1000000000) - COALESCE($${distanceParamIndex}, 0))
+                ELSE 2000000000
+              END,
+              char_length(num_dom) ASC,
+              smp ASC
+            LIMIT 500
+          `;
+          console.log('[buscar] prefixQuery', prefixQuery, [...prefixValues, cleanNumInt]);
+          const prefixResult = await pool.query(prefixQuery, [...prefixValues, cleanNumInt]);
+          console.log('[buscar] prefixResult rows', prefixResult.rows.length);
+          streetRows = prefixResult.rows;
+        }
+      }
+
+      console.log('[buscar] streetRows length', streetRows.length);
+      if (streetRows.length === 0) {
+        console.log('[buscar] no rows after street match');
+        return NextResponse.json({ found: false, lotes: [] });
+      }
+
+      // Normalizar número buscado y elegir el SMP que contenga ese número en su rango
+      console.log('[buscar] cleanNum', cleanNum);
+      let targetSmp: string | null = null;
+
+      for (const row of streetRows) {
+        const expanded = expandNumDomRange(row.num_dom || '');
+        console.log('[buscar] checking row', { rowNumDom: row.num_dom, expanded, smp: row.smp });
+        if (expanded.includes(cleanNum)) {
+          targetSmp = row.smp;
+          console.log('[buscar] match found', targetSmp);
+          break;
+        }
+      }
+
+      if (!targetSmp) {
+        console.log('[buscar] no match after expand');
+        return NextResponse.json({ found: false, lotes: [] });
+      }
+
+      // Paso 2: traer datos normativos del SMP encontrado
+      query = `
         SELECT 
           fp.*,
           pc.cur as codigo_urbanistico,
@@ -267,15 +356,14 @@ export async function GET(req: Request) {
           ROUND(CAST(pc.alicuota AS DECIMAL), 2) as alicuota,
           pm.m2_vendible,
           pm.sup_parcela
-        FROM picked p
-        JOIN public.frentesparcelas fp ON LOWER(fp.smp) = LOWER(p.smp)
+        FROM public.frentesparcelas fp
         LEFT JOIN public.parcelascur pc ON fp.smp = pc.smp
         LEFT JOIN public.cur_parcelas cp ON fp.smp = cp.smp
         LEFT JOIN public.prefapp_m2_parcela pm ON LOWER(fp.smp) = LOWER(pm.smp)
+        WHERE LOWER(fp.smp) = LOWER($${idx})
         LIMIT 1
       `;
-      values.push(frente);
-      values.push(num_dom);
+      values.push(targetSmp);
     }
 
     
