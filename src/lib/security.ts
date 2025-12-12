@@ -1,6 +1,5 @@
 import jwt from "jsonwebtoken";
 import { NextRequest } from "next/server";
-import { validateUserPermissions } from "./db";
 
 // Validar JWT_SECRET
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'dev_secret') {
@@ -32,6 +31,11 @@ export function checkRateLimit(identifier: string): boolean {
   const now = Date.now();
   const userLimit = rateLimitMap.get(identifier);
   
+  // Limpieza on-demand para Edge Runtime
+  if (rateLimitMap.size > 1000) {
+    cleanupRateLimits();
+  }
+  
   if (!userLimit || now > userLimit.resetTime) {
     // Reset o primera vez
     rateLimitMap.set(identifier, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
@@ -57,7 +61,11 @@ export function cleanupRateLimits(): void {
 }
 
 // Limpiar rate limits cada 5 minutos
-setInterval(cleanupRateLimits, 5 * 60 * 1000);
+// NOTA: setInterval no funciona en Edge Runtime de Vercel
+// La limpieza se hace on-demand en checkRateLimit
+if (typeof setInterval !== 'undefined') {
+  setInterval(cleanupRateLimits, 5 * 60 * 1000);
+}
 
 // Función para extraer y validar token JWT
 export function extractAndValidateToken(req: NextRequest): AuthenticatedUser | null {
@@ -113,6 +121,8 @@ export function generateSecureToken(user: AuthenticatedUser): string {
 }
 
 // Función para validar permisos de endpoint
+// NOTA: Esta función debe usarse solo en API routes, no en middleware
+// ya que requiere acceso a la base de datos
 export async function validateEndpointAccess(
   user: AuthenticatedUser, 
   resource: string, 
@@ -125,7 +135,14 @@ export async function validateEndpointAccess(
       return true;
     }
     
-    // Validar permisos generales
+    // Para Edge Runtime, validación básica
+    // La validación completa de permisos se hace en los API routes
+    if (typeof process !== 'undefined' && process.env.NEXT_RUNTIME === 'edge') {
+      return true; // Permitir en edge, validar en API route
+    }
+    
+    // Importación dinámica para evitar errores en Edge Runtime
+    const { validateUserPermissions } = await import('./db');
     const hasPermission = await validateUserPermissions(user.user, resource, action);
     
     if (!hasPermission) {

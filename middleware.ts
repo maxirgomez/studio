@@ -83,4 +83,5 @@ export const config = {
     // Proteger todas las rutas excepto las públicas y archivos estáticos
     '/((?!_next/static|_next/image|_next/webpack-hmr|favicon.ico|^$|login|api/login|api/public|api/test-db|api/reset-password-request|api/debug-jwt|api/debug-token|api/debug-user-token).*)',
   ],
+  runtime: 'experimental-edge', // Especificar runtime edge para Vercel
 }; 
